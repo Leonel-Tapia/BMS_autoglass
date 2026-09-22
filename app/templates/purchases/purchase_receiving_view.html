@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receiving Order</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .header {
+            background: #003366;
+            color: white;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .summary-box {
+            background: white;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 6px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            font-size: 0.85rem;
+        }
+
+        /* TABLA ULTRA COMPACTA */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+
+        th, td {
+            padding-top: 1px !important;
+            padding-bottom: 1px !important;
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            font-size: 0.78rem !important; /* MISMO TAMAÑO */
+            line-height: 1 !important;
+        }
+
+        th {
+            background: #003366;
+            color: white;
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+        }
+
+        tr.compact-row {
+            height: 18px !important; /* MÁS COMPACTO */
+        }
+
+        /* Inputs compactos sin reducir letra */
+        input[type="number"] {
+            width: 70px;
+            padding: 2px 4px !important;
+            height: 20px !important;
+            font-size: 0.78rem !important; /* MISMO TAMAÑO */
+        }
+
+        /* BOTONES FIJOS */
+        .fixed-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            padding: 8px;
+            border-top: 2px solid #ccc;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            border-radius: 4px;
+        }
+
+        .btn-exit { background: #444; }
+        .btn-cancel { background: #6c757d; }
+        .btn-secondary { background: #28a745; }
+        .btn-primary { background: #007bff; }
+    </style>
+
+    <script>
+        let receivingInProgress = false;
+
+        function disableAllButtons() {
+            document.querySelectorAll("button").forEach(btn => btn.disabled = true);
+        }
+
+        function enableAllButtons() {
+            document.querySelectorAll("button").forEach(btn => btn.disabled = false);
+        }
+
+        function receiveAll() {
+            if (receivingInProgress) return;
+
+            document.querySelectorAll(".receive-input").forEach(input => {
+                if (input.disabled) return;
+                const remaining = parseFloat(input.dataset.remaining);
+                input.value = remaining;
+            });
+        }
+
+        async function saveReceiving() {
+            if (receivingInProgress) return;
+
+            receivingInProgress = true;
+            disableAllButtons();
+
+            const items = [];
+            let hasError = false;
+
+            document.querySelectorAll(".receive-input").forEach(input => {
+                if (input.disabled) return;
+
+                const remaining = parseFloat(input.dataset.remaining || 0);
+                const qty = parseFloat(input.value || 0);
+
+                if (qty < 0) {
+                    alert("Quantities cannot be negative.");
+                    hasError = true;
+                    return;
+                }
+
+                if (qty > remaining) {
+                    alert("You cannot receive more than the remaining quantity.");
+                    hasError = true;
+                    return;
+                }
+
+                if (qty > 0) {
+                    items.push({
+                        po_detail_id: input.dataset.detailId,
+                        qty: qty
+                    });
+                }
+            });
+
+            if (hasError) {
+                receivingInProgress = false;
+                enableAllButtons();
+                return;
+            }
+
+            if (items.length === 0) {
+                alert("No quantities entered.");
+                receivingInProgress = false;
+                enableAllButtons();
+                return;
+            }
+
+            const payload = {
+                po_id: Number("{{ po_id }}"),
+                items: items
+            };
+
+            const response = await fetch("/purchase-receiving/receive-selected", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.status === "ok") {
+                setTimeout(() => {
+                    window.location.href = "/vendors/po-history/{{ vendor_id }}?t=" + Date.now();
+                }, 150);
+            } else {
+                alert(result.msg || "Error saving receiving.");
+                receivingInProgress = false;
+                enableAllButtons();
+            }
+        }
+
+        function cancelInputs() {
+            if (receivingInProgress) return;
+
+            document.querySelectorAll(".receive-input").forEach(input => {
+                if (!input.disabled) input.value = "";
+            });
+        }
+
+        function safeExit() {
+            if (receivingInProgress) {
+                alert("Receiving in progress. Please wait.");
+                return;
+            }
+
+            setTimeout(() => {
+                window.location.href = "/vendors/po-history/{{ vendor_id }}?t=" + Date.now();
+            }, 150);
+        }
+    </script>
+
+</head>
+
+<body>
+
+<div class="header">
+    Receiving Order: {{ po.po_number }}
+</div>
+
+<div class="container">
+
+    <div class="summary-box">
+        <b>Vendor:</b> {{ vendor_name }} (ID: {{ vendor_id }})<br>
+        <b>PO ID:</b> {{ po_id }}<br>
+        <b>Status:</b> {{ status_badge }}<br><br>
+
+        <b>Total Ordered:</b> {{ total_ordered }} |
+        <b>Total Received:</b> {{ total_received }} |
+        <b>Total Remaining:</b> {{ total_remaining }} |
+        <b>Completed:</b> {{ percent_complete }}%
+    </div>
+
+    <table class="receiving-table">
+        <thead>
+            <tr>
+                <th>Part #</th>
+                <th>Description</th>
+                <th>Ordered</th>
+                <th>Received</th>
+                <th>Remain</th>
+                <th>Receive</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for row in rows %}
+            <tr class="compact-row">
+                <td>{{ row.part_number }}</td>
+                <td>{{ row.description }}</td>
+                <td>{{ row.ordered_qty }}</td>
+                <td>{{ row.received_total }}</td>
+                <td>{{ row.remaining_qty }}</td>
+                <td>
+                    <input type="number"
+                           class="receive-input"
+                           data-detail-id="{{ row.detail_id }}"
+                           data-remaining="{{ row.remaining_qty }}"
+                           min="0"
+                           max="{{ row.remaining_qty }}"
+                           {% if row.remaining_qty == 0 %}disabled{% endif %}>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<div class="fixed-actions">
+
+    <button class="btn btn-exit" onclick="safeExit()">
+        EXIT
+    </button>
+
+    <button class="btn btn-cancel" onclick="cancelInputs()">
+        CANCEL
+    </button>
+
+    <button class="btn btn-secondary" onclick="receiveAll()">
+        RECEIVE ALL
+    </button>
+
+    <button class="btn btn-primary" onclick="saveReceiving()">
+        RECEIVE SELECTED
+    </button>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, sans-serif; padding-bottom: 80px; }
+        .form-control-sm { border-radius: 4px; height: 28px !important; font-size: 0.8rem !important; }
+        .table-details th { background-color: #343a40; color: white; font-size: 0.75rem; text-transform: uppercase; }
+        .totals-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 3px solid #0d6efd; padding: 15px; font-weight: bold; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+
+        .table-details td,
+        .table-details th {
+            padding-top: 1px !important;
+            padding-bottom: 1px !important;
+            height: 22px !important;
+        }
+
+        .table-details tr { line-height: 1 !important; }
+
+        .dup-msg {
+            color: red;
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="partsCatalogRaw" style="display:none;">[{% for part in parts_catalog %}{"id":"{{ part.id }}","part_number":"{{ part.part_number|string|trim }}","part_name":"{{ (part.part_name or part.name)|string|trim }}","unit_cost":{{ part.unit_cost or 0.0000 }}}{% if not loop.last %},{% endif %}{% endfor %}]</div>
+
+    <div class="container-fluid mt-3">
+        <div class="card shadow-sm">
+
+            <!-- HEADER ACTUALIZADO CON BOTÓN BACK A LA IZQUIERDA -->
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <a href="javascript:history.back()" 
+                       class="btn btn-outline-light btn-sm fw-bold">
+                        ← Back
+                    </a>
+                    <h6 class="mb-0 fw-bold">{{ title }}</h6>
+                </div>
+
+                <button type="submit" form="purchaseOrderForm" id="btnSubmit" class="btn btn-success btn-sm">
+                    Update Order
+                </button>
+            </div>
+
+            <div class="card-body">
+
+                <!-- ENCABEZADO DEL PO -->
+                <div class="row g-2 mb-3">
+
+                    <div class="col-md-3">
+                        <label>Vendor</label>
+                        <input type="text" class="form-control form-control-sm bg-white"
+                               value="[{{ vendor.vendor_code }}] {{ vendor.vendor_name }}" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label>PO Number</label>
+                        <input type="text" class="form-control form-control-sm bg-white"
+                               value="{{ po.po_number }}" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label>Order Date</label>
+                        <input type="text" class="form-control form-control-sm bg-white"
+                               value="{{ po.po_date }}" readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Payment Terms</label>
+                        <input type="text" class="form-control form-control-sm bg-white"
+                               value="{{ vendor.payment_terms or '' }}" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label>Terms Days</label>
+                        <input type="number" class="form-control form-control-sm bg-white"
+                               value="{{ vendor.terms_days or 0 }}" readonly>
+                    </div>
+
+                </div>
+
+                <form id="purchaseOrderForm" action="/purchases/update/{{ po.id }}" method="POST">
+                    <input type="hidden" name="order_date" value="{{ po.po_date }}">
+                    <input type="hidden" name="status" value="{{ po.status }}">
+                    <input type="hidden" name="payment_terms" value="{{ vendor.payment_terms or '' }}">
+                    <input type="hidden" name="terms_days" value="{{ vendor.terms_days or 0 }}">
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm table-details" id="detailsLinesContainer">
+                            <thead>
+                                <tr>
+                                    <th>Part Number</th>
+                                    <th>Description</th>
+                                    <th>Qty</th>
+                                    <th>Unit Cost</th>
+                                    <th>Subtotal</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in po.details %}
+                                <tr id="purchase_line_{{ loop.index0 }}">
+                                    <td>
+                                        <input type="text" 
+                                               name="details[{{ loop.index0 }}][part_number]" 
+                                               class="form-control form-control-sm manual-part-input" 
+                                               list="parts_list" 
+                                               value="{{ line.part_number }}">
+                                    </td>
+                                    <td><input type="text" name="details[{{ loop.index0 }}][item_description]" class="form-control form-control-sm input-description" value="{{ line.item_description }}" readonly></td>
+                                    <td><input type="number" name="details[{{ loop.index0 }}][quantity_ordered]" class="form-control form-control-sm text-end input-quantity" value="{{ line.quantity_ordered }}" step="0.01"></td>
+                                    <td><input type="number" name="details[{{ loop.index0 }}][unit_cost]" class="form-control form-control-sm text-end input-cost" value="{{ line.unit_cost }}" step="0.0001"></td>
+                                    <td><input type="number" class="form-control form-control-sm text-end input-subtotal" value="{{ line.line_subtotal }}" readonly></td>
+                                    <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm btn-remove-line">Delete</button></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnAddRow">+ Add New Line</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="totals-bar">
+        <span>Grand Total: $<span id="summary_grand_total">0.00</span></span>
+    </div>
+
+    <datalist id="parts_list">
+        {% for part in parts_catalog %}
+        <option value="{{ part.part_number|string|trim }}">
+        {% endfor %}
+    </datalist>
+
+    <script>
+    document.addEventListener("mousedown", function(e) {
+        if (e.target.classList.contains("manual-part-input")) {
+            e.target.value = "";
+        }
+    });
+    </script>
+
+    <script>
+        let linesCounter = parseInt("{{ po.details|length }}") || 0;
+        const partsCatalog = {};
+
+        const rawData = document.getElementById('partsCatalogRaw').textContent.trim();
+        if (rawData) {
+            JSON.parse(rawData).forEach(item => { partsCatalog[item.part_number.toLowerCase()] = item; });
+        }
+
+        const container = document.getElementById('detailsLinesContainer');
+
+        container.addEventListener('input', function(e) {
+            const row = e.target.closest('tr');
+            if (!row) return;
+            
+            if (e.target.classList.contains('manual-part-input')) {
+                const item = partsCatalog[e.target.value.toLowerCase()];
+                if (item) {
+                    row.querySelector('.input-description').value = item.part_name;
+                    row.querySelector('.input-cost').value = item.unit_cost.toFixed(4);
+                }
+            }
+            
+            const qty = row.querySelector('.input-quantity').value;
+            const cost = row.querySelector('.input-cost').value;
+            row.querySelector('.input-subtotal').value = (qty * cost).toFixed(2);
+            updateGrandTotal();
+        });
+
+        container.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-remove-line')) {
+                e.target.closest('tr').remove();
+                updateGrandTotal();
+                validateDuplicates();
+            }
+        });
+
+        document.getElementById('btnAddRow').addEventListener('click', function() {
+            const id = linesCounter++;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" name="details[${id}][part_number]" class="form-control form-control-sm manual-part-input" list="parts_list"></td>
+                <td><input type="text" name="details[${id}][item_description]" class="form-control form-control-sm input-description" readonly></td>
+                <td><input type="number" name="details[${id}][quantity_ordered]" class="form-control form-control-sm text-end input-quantity" value="1.00"></td>
+                <td><input type="number" name="details[${id}][unit_cost]" class="form-control form-control-sm text-end input-cost" value="0.0000"></td>
+                <td><input type="number" class="form-control form-control-sm text-end input-subtotal" value="0.00" readonly></td>
+                <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm btn-remove-line">Delete</button></td>
+            `;
+            container.querySelector('tbody').appendChild(tr);
+            validateDuplicates();
+        });
+
+        function updateGrandTotal() {
+            let total = 0;
+            document.querySelectorAll('.input-subtotal').forEach(i => total += Number(i.value));
+            document.getElementById('summary_grand_total').textContent = total.toFixed(2);
+        }
+
+        updateGrandTotal();
+    </script>
+
+    <script>
+    function validateDuplicates() {
+        const inputs = document.querySelectorAll(".manual-part-input");
+        const seen = new Set();
+        let hasDuplicate = false;
+
+        document.querySelectorAll(".dup-msg").forEach(el => el.remove());
+
+        inputs.forEach(inp => {
+            const val = inp.value.trim().toLowerCase();
+            inp.style.backgroundColor = "white";
+
+            if (val === "") return;
+
+            if (seen.has(val)) {
+                hasDuplicate = true;
+                inp.style.backgroundColor = "#ffb3b3";
+
+                const msg = document.createElement("div");
+                msg.className = "dup-msg";
+                msg.textContent = "Duplicate part number!";
+                inp.parentNode.appendChild(msg);
+            } else {
+                seen.add(val);
+            }
+        });
+
+        const btn = document.getElementById("btnSubmit");
+        if (btn) btn.disabled = hasDuplicate;
+    }
+
+    document.addEventListener("input", function(e) {
+        if (e.target.classList.contains("manual-part-input")) {
+            validateDuplicates();
+        }
+    });
+
+    window.addEventListener("load", validateDuplicates);
+    </script>
+
+</body>
+</html>

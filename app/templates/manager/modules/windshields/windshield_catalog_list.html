@@ -1,0 +1,106 @@
+<!-- ruta app>templates/manager>modules>windshield>windshield_catalog.html    072126 10:05am -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Windshields Catalog</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 10px; font-size: 14px; }
+        .container { width: 1100px; margin: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px #ccc; }
+        
+        .header-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+        h1 { margin: 0; font-size: 20px; }
+        
+        .forms-wrapper { display: flex; gap: 10px; flex-wrap: wrap; }
+        .add-form { display: flex; align-items: center; gap: 5px; background: #f9f9f9; padding: 5px 10px; border-radius: 4px; border: 1px solid #eee; }
+        .add-form input { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .add-form button { padding: 4px 10px; color: white; background-color: #007bff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        
+        .search-input { width: 98%; padding: 6px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        
+        /* Contenedor de tabla con scroll y cabecera fija */
+        .table-scroll-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+        
+        /* Hace que la cabecera de la tabla se quede fija arriba al hacer scroll */
+        th { 
+            background: #e9ecef; 
+            position: sticky; 
+            top: 0; 
+            z-index: 2; 
+        }
+
+        a { color: #0078d4; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- SECCIÓN SUPERIOR FIJA (Título, Formulario de Agregar y Buscador) -->
+    <div class="header-controls">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <a href="/manager/windshield_menu">&laquo; Back</a>
+            <h1 style="margin-left: 10px;">Windshields Catalog</h1>
+        </div>
+        
+        <!-- Formulario para agregar nuevo parabrisas -->
+        <div class="forms-wrapper">
+            <form action="/inventory/windshield/add" method="POST" class="add-form" style="width: 100%; justify-content: space-between;">
+                <div style="display: flex; gap: 5px; width: 95%;">
+                    <input type="text" name="nags_code" placeholder="NAGS Code" required style="width: 20%;">
+                    <input type="text" name="description" placeholder="Description" required style="width: 45%;">
+                    <input type="number" step="0.01" name="cost" placeholder="Cost" required style="width: 15%;">
+                    <input type="number" step="0.01" name="price" placeholder="Price" required style="width: 15%;">
+                </div>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Buscador fijo fuera del área de scroll -->
+    <input type="text" id="catalogSearch" class="search-input" onkeyup="filterTable()" placeholder="Search by NAGS Code or Description...">
+
+    <!-- SECCIÓN CON SCROLL (Solo se mueven las filas de la tabla) -->
+    <div class="table-scroll-container">
+        <table id="catalogTable">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">NAGS Code</th>
+                    <th style="width: 45%;">Description</th>
+                    <th style="width: 15%;">Cost</th>
+                    <th style="width: 20%;">Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="catalog-row">
+                    <td><strong>{{ item.nags_code }}</strong></td>
+                    <td>{{ item.description }}</td>
+                    <td>${{ "%.2f"|format(item.cost or 0.0) }}</td>
+                    <td>${{ "%.2f"|format(item.price or 0.0) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function filterTable() {
+    let filter = document.getElementById("catalogSearch").value.toLowerCase();
+    let rows = document.getElementById("catalogTable").getElementsByClassName("catalog-row");
+    for (let row of rows) {
+        let text = row.textContent || row.innerText;
+        row.style.display = text.toLowerCase().includes(filter) ? "" : "none";
+    }
+}
+</script>
+</body>
+</html>

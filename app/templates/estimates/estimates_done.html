@@ -1,0 +1,453 @@
+<!-- /app/templates/estimates/estimates_done.html | ACTUALIZADO: 2026-09-14 (sticky header + scroll interno) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimates Done - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            background: #eef7ee;
+            overflow: hidden; /* el scroll vive dentro del panel */
+        }
+
+        /* Layout: header + filtros + resumen fijos arriba; lista scrollea */
+        .page-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 12px 15px 15px 15px;
+        }
+
+        .fixed-top-section {
+            flex-shrink: 0;
+        }
+
+        /* Header verde */
+        .page-header {
+            background: linear-gradient(90deg, #1b5e20 0%, #2e7d32 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(27, 94, 32, 0.3);
+        }
+
+        .page-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .page-header .subtitle {
+            font-size: 0.78rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        /* Filtros */
+        .filter-card {
+            background: white;
+            border: 1px solid #b8ddb8;
+            border-left: 4px solid #2e7d32;
+            border-radius: 6px;
+            padding: 8px 15px;
+            margin-bottom: 10px;
+        }
+
+        .filter-card label {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #1b5e20;
+        }
+
+        /* Resumen */
+        .summary-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .summary-card {
+            flex: 1;
+            min-width: 130px;
+            background: white;
+            border-radius: 6px;
+            padding: 8px 14px;
+            border: 1px solid #b8ddb8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-card .label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6c757d;
+        }
+
+        .summary-card .value {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .summary-card.total .value { color: #1b5e20; }
+        .summary-card.shop .value  { color: #0d47a1; }
+        .summary-card.mobile .value { color: #b8860b; }
+        .summary-card.money .value { color: #198754; }
+        .summary-card.warning .value { color: #dc3545; }
+        .summary-card.warning {
+            border-color: #f5c2c7;
+            background: #fff5f5;
+        }
+
+        /* CONTENEDOR CON SCROLL */
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 6px;
+            border-radius: 6px;
+        }
+
+        .scroll-area::-webkit-scrollbar { width: 10px; }
+        .scroll-area::-webkit-scrollbar-track { background: #d9ecdb; border-radius: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #2e7d32; border-radius: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb:hover { background: #1b5e20; }
+
+        /* Grupos por día */
+        .day-group {
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .day-header {
+            background: #1b5e20;
+            color: white;
+            padding: 8px 15px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .day-header .count-pill {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .day-header .day-total {
+            background: #ffc107;
+            color: #000;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .day-group table {
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
+        .day-group thead th {
+            background: #eef7ee;
+            color: #1b5e20;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid #b8ddb8;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+
+        .day-group tbody td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #e5f0e5;
+            vertical-align: middle;
+        }
+
+        .day-group tbody tr:last-child td { border-bottom: none; }
+        .day-group tbody tr:hover { background: #eef7ee; }
+
+        .badge-type {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+
+        .badge-type.shop { background: #e3f2fd; color: #0d47a1; }
+        .badge-type.mobile { background: #fff3e0; color: #b8860b; }
+
+        .invoice-link {
+            color: #0078D4;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .invoice-link:hover { text-decoration: underline; }
+
+        .invoice-missing {
+            background: #dc3545;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .total-amount {
+            font-weight: 700;
+            color: #198754;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #1b5e20;
+            background: white;
+            border: 2px dashed #b8ddb8;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn-apply {
+            background: #1b5e20;
+            color: white;
+            border: none;
+            font-weight: 700;
+        }
+        .btn-apply:hover {
+            background: #124016;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .page-layout { padding: 8px; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 15px; }
+            .summary-bar { gap: 6px; }
+            .summary-card { min-width: 110px; padding: 6px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-layout">
+
+    <!-- ============ SECCIÓN FIJA (no scrollea) ============ -->
+    <div class="fixed-top-section">
+
+        <!-- HEADER -->
+        <div class="page-header">
+            <div>
+                <h3><i class="fas fa-check-circle me-2"></i> Estimates Done</h3>
+                <div class="subtitle">Estimates confirmed and converted to invoice</div>
+            </div>
+            <a href="/call_center/menu" class="btn btn-light btn-sm fw-bold">
+                <i class="fas fa-arrow-left me-1"></i> Back to Menu
+            </a>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="filter-card">
+            <form method="get" action="/call_center/estimates_done" id="filterForm" class="row align-items-center g-2">
+                <input type="hidden" name="service_type" id="service_type_input" value="{{ service_type | default('all') }}">
+
+                <div class="col-auto">
+                    <label for="from_date">From:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" id="from_date" name="from_date" value="{{ from_date }}"
+                           class="form-control form-control-sm" style="width: 150px;">
+                </div>
+
+                <div class="col-auto">
+                    <label for="to_date">To:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" id="to_date" name="to_date" value="{{ to_date }}"
+                           class="form-control form-control-sm" style="width: 150px;">
+                </div>
+
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-apply px-3">
+                        <i class="fas fa-search me-1"></i> Apply
+                    </button>
+                </div>
+
+                <div class="col-auto ms-auto">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button"
+                            class="btn {% if service_type == 'all' or not service_type %}btn-dark{% else %}btn-outline-dark{% endif %}"
+                            onclick="setServiceType('all')">
+                            All
+                        </button>
+                        <button type="button"
+                            class="btn {% if service_type == 'shop' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            onclick="setServiceType('shop')">
+                            <i class="fas fa-store me-1"></i> Shop
+                        </button>
+                        <button type="button"
+                            class="btn {% if service_type == 'movil' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}"
+                            onclick="setServiceType('movil')">
+                            <i class="fas fa-truck me-1"></i> Mobile
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- RESUMEN -->
+        <div class="summary-bar">
+            <div class="summary-card total">
+                <span class="label">Total Done</span>
+                <span class="value">{{ total_count }}</span>
+            </div>
+            <div class="summary-card shop">
+                <span class="label">🏪 Shop</span>
+                <span class="value">{{ shop_count }}</span>
+            </div>
+            <div class="summary-card mobile">
+                <span class="label">🚐 Mobile</span>
+                <span class="value">{{ mobile_count }}</span>
+            </div>
+            <div class="summary-card money">
+                <span class="label">💰 Grand Total</span>
+                <span class="value">${{ "%.2f"|format(grand_total) }}</span>
+            </div>
+            {% if missing_invoice_count > 0 %}
+            <div class="summary-card warning">
+                <span class="label">⚠️ Missing Invoice</span>
+                <span class="value">{{ missing_invoice_count }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ============ ÁREA CON SCROLL ============ -->
+    <div class="scroll-area">
+
+        {% if grouped_data %}
+            {% for day, items in grouped_data %}
+                {% set day_total = items | sum(attribute='total') %}
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>
+                            <i class="far fa-calendar-alt me-2"></i>
+                            {{ day.strftime('%A, %B %d, %Y') }}
+                        </span>
+                        <span>
+                            <span class="count-pill">{{ items|length }} done</span>
+                            <span class="day-total">${{ "%.2f"|format(day_total) }}</span>
+                        </span>
+                    </div>
+
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Customer</th>
+                                <th>Address</th>
+                                <th>Phone</th>
+                                <th>Vehicle</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center">Invoice #</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                                {% set estimate = item.estimate %}
+                                {% set customer = item.customer %}
+                                {% set addr = estimate.customer_address or (customer.address if customer else '') %}
+                                {% set city = estimate.customer_city or (customer.city if customer else '') %}
+                                {% set state = estimate.customer_state or (customer.state if customer else '') %}
+                                {% set zip_code = estimate.customer_zip or (customer.zip_code if customer else '') %}
+                                {% set full_address = (addr ~ (', ' if addr and city else '') ~ city ~ (', ' if (addr or city) and state else '') ~ state ~ (' ' if state and zip_code else '') ~ zip_code) if (addr or city or state or zip_code) else 'N/A' %}
+                                {% set st = estimate.service_type | default('') | lower %}
+
+                                <tr>
+                                    <td class="fw-bold text-success text-nowrap">{{ item.formatted_time }}</td>
+                                    <td>
+                                        {% if st in ['mobile', 'movil'] %}
+                                            <span class="badge-type mobile"><i class="fas fa-truck"></i> Mobile</span>
+                                        {% else %}
+                                            <span class="badge-type shop"><i class="fas fa-store"></i> Shop</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="/estimates/edit/{{ estimate.id }}?origin=call_center"
+                                           class="text-decoration-none fw-bold" target="_blank">
+                                            {{ item.customer_name }}
+                                        </a>
+                                        <span class="text-muted small ms-1">Est #{{ estimate.id }}</span>
+                                    </td>
+                                    <td>{{ full_address }}</td>
+                                    <td class="text-nowrap">{{ customer.phone if customer and customer.phone else (estimate.customer_phone | default('N/A')) }}</td>
+                                    <td>{{ item.vehicle_year.year if item.vehicle_year else (estimate.vehicle_year_id or '') }} {{ estimate.vehicle_make or '' }} {{ estimate.vehicle_model or '' }}</td>
+                                    <td class="text-end total-amount">${{ "%.2f"|format(item.total) }}</td>
+                                    <td class="text-center">
+                                        {% if estimate.invoice_number %}
+                                            <a href="/invoices/view/{{ estimate.invoice_number }}?return_url={{ return_url | urlencode }}"
+                                               class="invoice-link" target="_blank">
+                                                INV-{{ estimate.invoice_number }}
+                                            </a>
+                                        {% else %}
+                                            <span class="invoice-missing" title="This estimate was confirmed but no invoice was created.">
+                                                ⚠️ NO INVOICE
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                <div class="fw-bold">No confirmed estimates in this period.</div>
+                <div class="small mt-1">Adjust the date range or service type filter.</div>
+            </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function setServiceType(type) {
+        document.getElementById('service_type_input').value = type;
+        document.getElementById('filterForm').submit();
+    }
+</script>
+
+</body>
+</html>

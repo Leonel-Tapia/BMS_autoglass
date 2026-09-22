@@ -1,0 +1,125 @@
+<!-- 
+    ============================================================
+    RUTA: app/templates/vendors/vendor_po_history.html
+    ARCHIVO: vendor_po_history.html
+    ACTUALIZADO: 2026-05-26 18:27 MDT
+    DESCRIPCIÓN: Vista de historial de órdenes de compra por vendor
+    ============================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .table-ledger th { background-color: #343a40; color: #ffffff; font-size: 0.75rem; text-transform: uppercase; padding: 4px 8px !important; }
+        .table-ledger td { font-size: 0.80rem; padding: 3px 8px !important; vertical-align: middle; }
+        .btn-view { font-size: 0.70rem; padding: 0px 6px !important; }
+        .badge-purple { background-color: #6f42c1; }
+    </style>
+</head>
+
+<body class="bg-light">
+
+    <div class="container-fluid mt-2">
+        <div class="card shadow-sm">
+
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-1">
+                <h6 class="mb-0 fw-bold">PO History: {{ vendor.vendor_name }}</h6>
+                <a href="/vendors/list" class="btn btn-secondary btn-sm py-0 px-2 fw-bold" style="font-size: 0.75rem;">← Back</a>
+            </div>
+
+            <div class="px-3 pt-2 small text-end">
+                <span class="text-primary fw-bold">Accepted</span>
+                <span class="text-dark">–</span>
+                <span class="text-success fw-bold">Received</span>
+                <span class="text-dark">=</span>
+                <span class="fw-bold text-warning" data-bs-toggle="tooltip" title="Pending = Accepted – Received">
+                    Pending
+                </span>
+            </div>
+
+            <div class="p-2 border-bottom bg-white d-flex justify-content-end gap-4 small">
+                <div><span class="text-muted">Accepted:</span> <span class="fw-bold text-primary">${{ "{:,.2f}".format(total_accepted) }}</span></div>
+                <div><span class="text-muted">Received:</span> <span class="fw-bold text-success">${{ "{:,.2f}".format(total_received) }}</span></div>
+                <div><span class="text-muted">Pending:</span> <span class="fw-bold text-warning">${{ "{:,.2f}".format(total_pending) }}</span></div>
+                <div><span class="text-muted">Lifetime:</span> <span class="fw-bold text-dark">${{ "{:,.2f}".format(total_lifetime) }}</span></div>
+            </div>
+
+            <!-- 🔍 FILTRO DINÁMICO -->
+            <div class="p-2 bg-white border-bottom">
+                <input type="text" id="poHistorySearch" class="form-control form-control-sm"
+                       placeholder="🔍 Buscar por PO Number o Vendor PO #...">
+            </div>
+
+            <div class="card-body p-0">
+                <table class="table table-hover table-bordered table-ledger mb-0">
+                    <thead>
+                        <tr>
+                            <th>PO Number</th>
+                            <th>Vendor PO #</th>
+                            <th>Order Date</th>
+                            <th class="text-end">Grand Total</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for po in purchase_orders %}
+                        <tr class="po-history-row">
+                            <td class="fw-bold">{{ po.po_number }}</td>
+                            <td class="fw-bold">{{ po.vendor_invoice_number or '-' }}</td>
+                            <td>{{ po.po_date }}</td>
+                            <td class="text-end fw-bold">${{ "{:,.2f}".format(po.grand_total) }}</td>
+
+                            <td>
+                                <span class="badge 
+                                    {% if po.status == 'DRAFT' %} bg-secondary
+                                    {% elif po.status == 'ACCEPTED' %} bg-primary
+                                    {% elif po.status == 'ISSUED' %} bg-success
+                                    {% elif po.status == 'RECEIVED' %} badge-purple
+                                    {% elif po.status == 'CANCELLED' %} bg-danger
+                                    {% else %} bg-info
+                                    {% endif %}
+                                ">
+                                    {{ po.status }}
+                                </span>
+                            </td>
+
+                            <td class="text-center">
+                                <a href="/purchases/view/{{ po.id }}" class="btn btn-outline-primary btn-view">View</a>
+                            </td>
+                        </tr>
+
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-2 text-muted small">No purchase orders found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 🔍 SCRIPT DE FILTRO DINÁMICO -->
+    <script>
+        document.getElementById('poHistorySearch').addEventListener('keyup', function() {
+            const filter = this.value.toLowerCase();
+            document.querySelectorAll('.po-history-row').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

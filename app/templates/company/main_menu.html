@@ -1,0 +1,92 @@
+<!-- /app/templates/company/main_menu.html | Updated: 2026-07-21 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMS Autoglass | Main Menu</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f3;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .menu-container {
+            background-color: white;
+            padding: 40px;
+            width: 380px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 30px;
+            color: #2c3e50;
+            border-bottom: 2px solid #0078D4;
+            padding-bottom: 10px;
+        }
+
+        .menu-button {
+            display: block;
+            width: 90%;
+            padding: 15px;
+            margin: 15px auto;
+            background-color: #0078D4;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .menu-button:hover {
+            background-color: #005fa3;
+            transform: translateY(-2px);
+        }
+
+        .logout-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .logout-link:hover {
+            color: #d9534f;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="menu-container">
+        <h2>BMS Autoglass System</h2>
+
+        <a href="/customers/list" class="menu-button">Sales</a>
+        
+        <a href="/vendors/list" class="menu-button">Purchases</a>
+        
+        <a href="/inventory/menu" class="menu-button">Inventory</a>
+        
+        <!-- 🔥 ACTUALIZADO: Botón con alerta de En Proceso que no redirige -->
+        <button type="button" class="menu-button" onclick="alert('Module in progress...');">Reports</button>
+        
+        <a href="/manager/menu" class="menu-button">Manager</a>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <a href="/users/login" class="logout-link">Exit System</a>
+    </div>
+
+</body>
+</html>

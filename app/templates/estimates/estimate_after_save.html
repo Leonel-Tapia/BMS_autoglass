@@ -1,0 +1,132 @@
+<!-- ============================================================
+     Estimate After Save Screen
+     BMS Autoglass — Updated: 2026-08-16
+     ============================================================ -->
+
+<div style="
+    max-width:650px;
+    margin:auto;
+    padding:35px;
+    text-align:center;
+    font-family:Arial, sans-serif;
+">
+
+    <!-- TÍTULO PRINCIPAL -->
+    <h2 style="
+        font-size:24px;
+        font-weight:700;
+        margin-bottom:5px;
+        color:#222;
+    ">
+        Estimate #{{ estimate_id }} Saved Successfully
+    </h2>
+
+    <!-- ETIQUETA DE OPERADOR -->
+    {% if estimate.operator_username %}
+    <p style="font-size: 13px; color: #888; margin-bottom: 20px;">
+        Created by: <strong>{{ estimate.operator_username }}</strong>
+    </p>
+    {% endif %}
+
+    <!-- SUBTÍTULO -->
+    <p style="
+        font-size:15px;
+        color:#555;
+        margin-bottom:30px;
+    ">
+        Select one of the following options to continue:
+    </p>
+
+    <!-- CONTENEDOR DE BOTONES -->
+    <div style="
+        display:flex;
+        flex-direction:column;
+        gap:15px;
+        width:100%;
+    ">
+
+        <!-- BOTÓN: Crear otro estimado (Preservando el origin) -->
+        {% set new_estimate_url = '/estimates/new/' ~ customer_id %}
+        {% if origin %}
+            {% set new_estimate_url = new_estimate_url ~ '?origin=' ~ origin %}
+        {% endif %}
+
+        <button onclick="window.location.href='{{ new_estimate_url }}'"
+                style="
+                    background:#007bff;
+                    color:white;
+                    padding:12px 16px;
+                    font-size:16px;
+                    font-weight:600;
+                    border:none;
+                    border-radius:6px;
+                    cursor:pointer;
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    gap:10px;
+                    box-shadow:0px 2px 4px rgba(0,0,0,0.15);
+                    transition:0.2s;
+                "
+                onmouseover="this.style.background='#0066cc'"
+                onmouseout="this.style.background='#007bff'">
+            <span style="font-size:20px;">➕</span>
+            <span>Create Another Estimate (Same Customer)</span>
+        </button>
+
+        <!-- BOTÓN: Editar estimado (desactivado) -->
+        <button disabled
+                style="
+                    background:#6c757d;
+                    color:white;
+                    padding:12px 16px;
+                    font-size:16px;
+                    font-weight:600;
+                    border:none;
+                    border-radius:6px;
+                    opacity:0.45;
+                    cursor:not-allowed;
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    gap:10px;
+                    box-shadow:0px 2px 4px rgba(0,0,0,0.10);
+                ">
+            <span style="font-size:20px;">✏️</span>
+            <span>Edit Saved Estimate (Disabled)</span>
+        </button>
+
+        <!-- RESOLUCIÓN DINÁMICA DE RETORNO -->
+        {% set ns = namespace(return_url='/customers/list') %}
+        {% if origin == 'call_center' %}
+            {% set ns.return_url = '/call_center/search' %}
+        {% elif origin == 'manager' %}
+            {% set ns.return_url = '/customers/list' %}
+        {% endif %}
+
+        <!-- BOTÓN: Regresar al menú -->
+        <button onclick="window.location.href='{{ ns.return_url }}'"
+                style="
+                    background:#6f42c1;
+                    color:white;
+                    padding:12px 16px;
+                    font-size:16px;
+                    font-weight:600;
+                    border:none;
+                    border-radius:6px;
+                    cursor:pointer;
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    gap:10px;
+                    box-shadow:0px 2px 4px rgba(0,0,0,0.15);
+                    transition:0.2s;
+                "
+                onmouseover="this.style.background='#5a34a0'"
+                onmouseout="this.style.background='#6f42c1'">
+            <span style="font-size:20px;">↩️</span>
+            <span>Return to Menu</span>
+        </button>
+
+    </div>
+</div>

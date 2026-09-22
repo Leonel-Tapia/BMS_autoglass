@@ -1,0 +1,830 @@
+<!-- Path: app/templates/call_center/call_center_invoices_workshop.html | Updated: 2026-09-16 (Part column + bigger day badge) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoices / Workshop - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        .scroll-3-rows {
+            max-height: 165px;
+            overflow-y: auto;
+        }
+        .scroll-3-rows thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background-color: #d1e7dd !important;
+            box-shadow: inset 0 -1px 0 #a3cfbb;
+        }
+
+        .scroll-4-rows {
+            max-height: 210px;
+            overflow-y: auto;
+        }
+        .scroll-4-rows thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background-color: #212529 !important;
+            color: #fff !important;
+            box-shadow: inset 0 -1px 0 #495057;
+        }
+
+        /* Tech badges */
+        .tech-unassigned {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .tech-unassigned:hover {
+            background-color: #b02a37;
+            color: white;
+        }
+        .tech-assigned {
+            background-color: #d1e7dd;
+            color: #0d6e6e;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        /* Badge del día — más grande y visible */
+        #dayNameBadge {
+            font-size: 1.15rem;
+            font-weight: bold;
+            padding: 6px 16px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(13, 110, 253, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container-fluid py-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h3 class="mb-0 fs-5">Invoices / Workshop</h3>
+            </div>
+            <div>
+                <a href="/call_center/menu" class="btn btn-secondary btn-sm py-1 px-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Menu
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-2">
+            <div class="card-body bg-white py-2 px-3">
+                <form method="get" action="/invoices/workshop" id="filterForm" class="row align-items-center g-2">
+                    <input type="hidden" name="status_filter" id="status_filter_input" value="{{ status_filter | default('all') }}">
+                    <input type="hidden" name="tech_filter" id="tech_filter_input" value="{{ tech_filter | default('all') }}">
+
+                    <div class="col-auto">
+                        <label for="selected_date" class="col-form-label fw-bold small">Select Date:</label>
+                    </div>
+
+                    <div class="col-auto">
+                        <input type="date" id="selected_date" name="selected_date" value="{{ selected_date }}"
+                               class="form-control form-control-sm py-1">
+                    </div>
+
+                    <div class="col-auto">
+                        <span class="badge bg-primary" id="dayNameBadge">
+                            <i class="far fa-calendar-alt me-2"></i><span id="dayNameText">{{ day_name }}</span>
+                        </span>
+                    </div>
+
+                    <div class="col-auto">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary py-1 px-2" onclick="setQuickDate('yesterday')">Yesterday</button>
+                            <button type="button" class="btn btn-outline-primary py-1 px-2" onclick="setQuickDate('today')">Today</button>
+                            <button type="button" class="btn btn-outline-secondary py-1 px-2" onclick="setQuickDate('tomorrow')">Tomorrow</button>
+                        </div>
+                    </div>
+
+                    <div class="col-auto ms-auto">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button"
+                                class="btn {% if status_filter == 'all' or not status_filter %}btn-dark{% else %}btn-outline-dark{% endif %}"
+                                onclick="setStatusFilter('all')">
+                                <i class="fas fa-th-list me-1"></i>
+                                All ({{ total_invoices }})
+                            </button>
+
+                            <button type="button"
+                                class="btn {% if status_filter == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %}"
+                                onclick="setStatusFilter('pending')">
+                                <i class="fas fa-clock me-1"></i>
+                                Pending ({{ pending_count }})
+                            </button>
+
+                            <button type="button"
+                                class="btn {% if status_filter == 'partially_paid' %}btn-info{% else %}btn-outline-info{% endif %}"
+                                onclick="setStatusFilter('partially_paid')">
+                                <i class="fas fa-hand-holding-usd me-1"></i>
+                                Partial ({{ partially_paid_count }})
+                            </button>
+
+                            <button type="button"
+                                class="btn {% if status_filter == 'paid' %}btn-success{% else %}btn-outline-success{% endif %}"
+                                onclick="setStatusFilter('paid')">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Paid ({{ paid_count }})
+                            </button>
+
+                            <button type="button"
+                                class="btn {% if status_filter == 'void' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                                onclick="setStatusFilter('void')">
+                                <i class="fas fa-ban me-1"></i>
+                                Void ({{ void_count }})
+                            </button>
+
+                            <button type="button"
+                                class="btn {% if tech_filter == 'unassigned' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                                onclick="setTechFilter('unassigned')"
+                                title="Show only invoices without technician assigned">
+                                <i class="fas fa-user-slash me-1"></i>
+                                Unassigned ({{ unassigned_count }})
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ROUTE OPTIMIZER TOOLBAR -->
+        <div class="card shadow-sm mb-2 border-primary">
+            <div class="card-body bg-white py-2 px-3">
+                <div class="row align-items-center g-2">
+                    <div class="col-auto">
+                        <label for="technicianSelect" class="col-form-label fw-bold small">
+                            <i class="fas fa-user-cog text-primary me-1"></i> Technician:
+                        </label>
+                    </div>
+                    <div class="col-auto">
+                        <select id="technicianSelect" class="form-select form-select-sm py-1" onchange="setTechFilter(this.value || 'all')">
+                            <option value="">All Technicians</option>
+                            {% for tech in technicians %}
+                                <option value="{{ tech.id }}"
+                                        {% if tech_filter == tech.id|string %}selected{% endif %}>
+                                    {{ tech.full_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" id="optimizeRouteBtn" class="btn btn-primary btn-sm py-1 px-3"
+                                data-has-origin="{{ 'true' if has_origin_address else 'false' }}"
+                                {% if is_past_date or total_invoices == 0 or not has_origin_address %}disabled{% endif %}
+                                {% if not has_origin_address %}title="Origin Address not configured. Go to Manager → Company → Edit to set it."{% endif %}>
+                            <i class="fas fa-route me-1"></i> Optimize Route by Distance
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <div id="loadingSpinner" class="spinner-border spinner-border-sm text-primary" role="status" style="display: none;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    {% if not has_origin_address %}
+                    <div class="col-12 mt-1">
+                        <div class="alert alert-warning py-1 px-2 mb-0" style="font-size: 12px;">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            <strong>Origin Address not configured.</strong>
+                            Go to <strong>Manager → Company → Edit</strong> to set the starting point for route optimization.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTIMIZED ROUTE RESULTS -->
+        <div id="optimizationResults" class="card shadow-sm mb-2 border-success" style="display: none;">
+            <div class="card-header bg-success text-white py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-route me-1"></i>
+                    <strong>Optimized Route Suggestion</strong>
+                </div>
+                <div>
+                    <button type="button" id="applyAllBtn" class="btn btn-sm btn-light py-0 px-2 me-1">
+                        <i class="fas fa-check-double me-1"></i> Apply All (after client confirmation)
+                    </button>
+                    <button type="button" id="hideResultsBtn" class="btn btn-sm btn-outline-light py-0 px-2">
+                        <i class="fas fa-times me-1"></i> Hide
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <div class="mb-2 small">
+                    <strong>Origin:</strong> <span id="originAddress"></span> &nbsp;|&nbsp;
+                    <strong>Start:</strong> <span id="startTime"></span> &nbsp;|&nbsp;
+                    <strong>Minutes per visit:</strong> <span id="minutesPerVisit"></span>
+                </div>
+                <div class="table-responsive scroll-3-rows">
+                    <table class="table table-sm table-striped table-hover align-middle mb-0 small" id="optimizedRouteTable">
+                        <thead class="table-success">
+                            <tr>
+                                <th class="text-nowrap">Order</th>
+                                <th class="text-nowrap">Invoice #</th>
+                                <th>Customer</th>
+                                <th>Address</th>
+                                <th class="text-nowrap">Travel</th>
+                                <th class="text-nowrap">Distance</th>
+                                <th class="text-nowrap">Original Time</th>
+                                <th class="text-nowrap">Suggested Arrival</th>
+                                <th class="text-center text-nowrap">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoices Table Card -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive scroll-4-rows">
+                    <table class="table table-hover table-striped table-sm align-middle mb-0 small">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="py-2 text-nowrap">#</th>
+                                <th class="py-2 text-nowrap">Time</th>
+                                <th class="py-2">Customer</th>
+                                <th class="py-2 text-center text-nowrap">Tech</th>
+                                <th class="py-2 text-nowrap">Part</th>
+                                <th class="py-2">Vehicle</th>
+                                <th class="py-2 text-nowrap">Total</th>
+                                <th class="py-2 text-nowrap">Paid</th>
+                                <th class="py-2 text-nowrap">Balance</th>
+                                <th class="py-2 text-nowrap">Type</th>
+                                <th class="py-2 text-center text-nowrap">Status</th>
+                                <th class="py-2 text-center text-nowrap">Actions</th>
+                                <th class="py-2 text-center text-nowrap">Glass</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if invoices_data %}
+                                {% for invoice, customer, vehicle_year, total_paid, balance_due, appt_time in invoices_data %}
+                                {% set status = invoice.status | default('PENDING') %}
+                                {% set is_void = status | upper == 'VOID' %}
+                                {% set tech_name = tech_names.get(invoice.id) %}
+                                {% set gn = glass_needed.get(invoice.id) %}
+                                <tr class="{% if is_void %}table-danger{% endif %}">
+                                    <td class="py-1 text-nowrap">
+                                        <a href="/invoices/view/{{ invoice.id }}?return_url={{ return_url }}" class="fw-bold text-decoration-none">
+                                            #{{ invoice.id }}
+                                        </a>
+                                    </td>
+                                    <td class="py-1 text-nowrap">
+                                        {{ appt_time.strftime('%I:%M %p') if appt_time else '—' }}
+                                    </td>
+                                    <td class="py-1">
+                                        {% if customer %}
+                                            <a href="/call_center/lookup/{{ customer.id }}" class="text-decoration-none">
+                                                {{ customer.name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-1 text-center text-nowrap">
+                                        {% if tech_name %}
+                                            <span class="tech-assigned">
+                                                <i class="fas fa-user-check me-1"></i>{{ tech_name }}
+                                            </span>
+                                        {% else %}
+                                            <a href="/invoices/view/{{ invoice.id }}?return_url={{ return_url }}"
+                                               class="tech-unassigned text-decoration-none"
+                                               title="Click to assign a technician">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>UNASSIGNED
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-1" style="min-width:120px;">
+                                        {% if gn and gn.nags %}
+                                            <div style="font-weight:bold; color:#0d6e6e; font-size:0.8rem;">{{ gn.nags }}</div>
+                                            {% if gn.description %}
+                                                <div style="font-size:0.68rem; color:#6c757d;">{{ gn.description }}</div>
+                                            {% endif %}
+                                            {% if gn.extra_count > 0 %}
+                                                <div style="font-size:0.65rem; color:#0d6e6e; font-weight:bold;">+{{ gn.extra_count }} more</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted" style="font-size:0.7rem;">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-1">
+                                        {{ vehicle_year or '' }} {{ invoice.vehicle_make or '' }} {{ invoice.vehicle_model or '' }}
+                                    </td>
+                                    <td class="py-1 fw-bold">
+                                        ${{ "%.2f"|format(invoice.total or 0) }}
+                                    </td>
+                                    <td class="py-1 text-success fw-bold">
+                                        ${{ "%.2f"|format(total_paid or 0) }}
+                                    </td>
+                                    <td class="py-1 fw-bold {% if balance_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ${{ "%.2f"|format(balance_due or 0) }}
+                                    </td>
+                                    <td class="py-1 text-nowrap">
+                                        {% set st = invoice.service_type | default('') | lower %}
+                                        {% if st in ['mobile', 'movil'] %}
+                                            <span class="badge bg-success"><i class="fas fa-truck"></i> Mobile</span>
+                                        {% elif st == 'shop' %}
+                                            <span class="badge bg-primary"><i class="fas fa-store"></i> Shop</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <span class="badge {% if is_void %}bg-danger{% elif status | upper == 'PAID' %}bg-success{% elif status | upper == 'PARTIALLY_PAID' %}bg-info text-dark{% else %}bg-warning text-dark{% endif %}">
+                                            {{ status | upper }}
+                                        </span>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                            <a href="/invoices/view/{{ invoice.id }}?return_url={{ return_url }}" 
+                                               class="btn btn-sm btn-outline-primary py-0 px-2" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not is_void and status | upper != 'PAID' %}
+                                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-pay" 
+                                                        data-invoice-id="{{ invoice.id }}"
+                                                        data-customer-name="{{ customer.name if customer else '' }}"
+                                                        data-total="{{ invoice.total }}">
+                                                    <i class="fas fa-dollar-sign"></i>
+                                                </button>
+                                            {% endif %}
+                                            {% if not is_void and user_role == 'admin' %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-void" 
+                                                        data-invoice-id="{{ invoice.id }}">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-print" 
+                                                    data-invoice-id="{{ invoice.id }}" title="Download PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="py-1 text-center">
+                                        <a href="/invoices/{{ invoice.id }}/glasses"
+                                           class="btn btn-sm py-0 px-2"
+                                           style="background-color:#0d6e6e; color:white; border:none; font-size:0.75rem;"
+                                           title="Glass Register">
+                                            <i class="fas fa-car-side me-1"></i>Glass
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="13" class="text-center py-3 text-muted">
+                                        <i class="fas fa-info-circle me-1"></i> No invoices found for this date and filter.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PAYMENT -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="paymentModalLabel"><i class="fas fa-dollar-sign me-2"></i>Register Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="paymentForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="payment_invoice_id" name="invoice_id">
+                        <div class="mb-2">
+                            <label class="fw-bold small">Customer</label>
+                            <p class="mb-0" id="payment_customer_name">-</p>
+                        </div>
+                        <div class="mb-2">
+                            <label class="fw-bold small">Invoice Total</label>
+                            <p class="mb-0 fw-bold" id="payment_invoice_total">$0.00</p>
+                        </div>
+                        <div class="mb-2">
+                            <label for="payment_amount" class="fw-bold small">Amount <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" id="payment_amount" name="amount" required>
+                        </div>
+                        <div class="mb-2">
+                            <label for="payment_type" class="fw-bold small">Payment Type <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="payment_type" name="payment_type" required>
+                                <option value="CASH">Cash</option>
+                                <option value="CREDIT_CARD">Credit Card</option>
+                                <option value="DEBIT_CARD">Debit Card</option>
+                                <option value="CHECK">Check</option>
+                                <option value="TRANSFER">Transfer</option>
+                                <option value="ZELLE">Zelle</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="payment_reference" class="fw-bold small">Reference</label>
+                            <input type="text" class="form-control form-control-sm" id="payment_reference" name="reference" placeholder="Check #, Auth #...">
+                        </div>
+                        <div class="mb-2">
+                            <label for="payment_date" class="fw-bold small">Payment Date</label>
+                            <input type="date" class="form-control form-control-sm" id="payment_date" name="payment_date">
+                        </div>
+                        <div class="mb-0">
+                            <label for="payment_notes" class="fw-bold small">Notes</label>
+                            <input type="text" class="form-control form-control-sm" id="payment_notes" name="notes" placeholder="Optional notes...">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success btn-sm">Register Payment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VOID -->
+    <div class="modal fade" id="voidModal" tabindex="-1" aria-labelledby="voidModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="voidModalLabel"><i class="fas fa-ban me-2"></i>Void Invoice</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="voidForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="void_invoice_id" name="invoice_id">
+                        <div class="mb-2">
+                            <label class="fw-bold small">Are you sure you want to void this invoice?</label>
+                            <p class="text-danger small">This action cannot be undone.</p>
+                        </div>
+                        <div class="mb-0">
+                            <label for="void_reason" class="fw-bold small">Reason <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-sm" id="void_reason" name="reason" rows="3" required placeholder="Enter void reason..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Confirm Void</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function setStatusFilter(status) {
+            document.getElementById('status_filter_input').value = status;
+            document.getElementById('filterForm').submit();
+        }
+
+        function setTechFilter(value) {
+            document.getElementById('tech_filter_input').value = value || 'all';
+            document.getElementById('filterForm').submit();
+        }
+
+        function setQuickDate(target) {
+            const d = new Date();
+            if (target === 'yesterday') { d.setDate(d.getDate() - 1); }
+            else if (target === 'tomorrow') { d.setDate(d.getDate() + 1); }
+
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+            document.getElementById("selected_date").value = formattedDate;
+            document.getElementById("filterForm").submit();
+        }
+
+        document.getElementById("selected_date").addEventListener("change", function () {
+            const dateVal = this.value;
+            if (dateVal) {
+                const [year, month, day] = dateVal.split('-');
+                const d = new Date(year, month - 1, day);
+                const options = { weekday: 'long' };
+                const dayName = d.toLocaleDateString('en-US', options);
+                document.getElementById("dayNameText").textContent = dayName;
+            }
+            document.getElementById("filterForm").submit();
+        });
+
+        function openPaymentModal(invoiceId, customerName, invoiceTotal) {
+            document.getElementById('payment_invoice_id').value = invoiceId;
+            document.getElementById('payment_customer_name').textContent = customerName || 'Unknown';
+            document.getElementById('payment_invoice_total').textContent = '$' + parseFloat(invoiceTotal).toFixed(2);
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('payment_date').value = today;
+            
+            document.getElementById('payment_amount').value = '';
+            document.getElementById('payment_reference').value = '';
+            document.getElementById('payment_notes').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+            modal.show();
+        }
+
+        function openVoidModal(invoiceId) {
+            document.getElementById('void_invoice_id').value = invoiceId;
+            document.getElementById('void_reason').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('voidModal'));
+            modal.show();
+        }
+
+        function printInvoice(invoiceId) {
+            window.location.href = '/invoices/download/' + invoiceId;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.btn-pay').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var invoiceId = this.getAttribute('data-invoice-id');
+                    var customerName = this.getAttribute('data-customer-name');
+                    var total = this.getAttribute('data-total');
+                    openPaymentModal(invoiceId, customerName, total);
+                });
+            });
+
+            document.querySelectorAll('.btn-void').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var invoiceId = this.getAttribute('data-invoice-id');
+                    openVoidModal(invoiceId);
+                });
+            });
+
+            document.querySelectorAll('.btn-print').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var invoiceId = this.getAttribute('data-invoice-id');
+                    printInvoice(invoiceId);
+                });
+            });
+        });
+    </script>
+
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const invoiceId = document.getElementById('payment_invoice_id').value;
+            
+            try {
+                const response = await fetch(`/invoices/${invoiceId}/payments`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Payment registered successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to register payment.'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        });
+    </script>
+
+    <script>
+        document.getElementById('voidForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const invoiceId = document.getElementById('void_invoice_id').value;
+            const reason = document.getElementById('void_reason').value;
+            
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            
+            try {
+                const response = await fetch(`/invoices/void/${invoiceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        reason: reason,
+                        return_url: returnUrl
+                    })
+                });
+                
+                if (response.status === 303 || response.status === 302) {
+                    const redirectUrl = response.headers.get('location');
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    const result = await response.json();
+                    alert('Error: ' + (result.detail || 'Failed to void invoice.'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const optimizeBtn = document.getElementById('optimizeRouteBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultsDiv = document.getElementById('optimizationResults');
+            const routeBody = document.getElementById('routeTableBody');
+            const applyAllBtn = document.getElementById('applyAllBtn');
+            const hideResultsBtn = document.getElementById('hideResultsBtn');
+            const dateInput = document.getElementById('selected_date');
+            const technicianSelect = document.getElementById('technicianSelect');
+
+            const HAS_ORIGIN_ADDRESS = optimizeBtn.dataset.hasOrigin === 'true';
+
+            optimizeBtn.addEventListener('click', async function() {
+                const date = dateInput ? dateInput.value : null;
+                if (!date) {
+                    alert('Please select a date first.');
+                    return;
+                }
+
+                // Bloquear si hay invoices sin técnico asignado en la vista actual
+                const unassignedBadges = document.querySelectorAll('.tech-unassigned');
+                if (unassignedBadges.length > 0) {
+                    alert(
+                        '⚠️ Cannot optimize route.\n\n' +
+                        unassignedBadges.length + ' invoice(s) on this view have no technician assigned.\n\n' +
+                        'Please assign a technician to every invoice before optimizing the route.'
+                    );
+                    return;
+                }
+
+                const technicianId = technicianSelect ? technicianSelect.value : '';
+
+                loadingSpinner.style.display = 'inline-block';
+                optimizeBtn.disabled = true;
+                resultsDiv.style.display = 'none';
+
+                try {
+                    const url = `/invoices/workshop/optimize-route?date=${date}${technicianId ? '&technician_id=' + technicianId : ''}`;
+                    const response = await fetch(url, { method: 'POST' });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        const errMsg = data.detail || data.message || 'Unknown error';
+                        alert('Error: ' + errMsg);
+                        return;
+                    }
+
+                    if (!data.success) {
+                        alert('Error: ' + (data.message || 'Unknown error'));
+                        return;
+                    }
+
+                    if (!data.route || data.route.length === 0) {
+                        alert(data.message || 'No invoices found for this date/technician.');
+                        return;
+                    }
+
+                    displayRoute(data);
+                    resultsDiv.style.display = 'block';
+                    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                } catch (error) {
+                    console.error('Error optimizing route:', error);
+                    alert('An error occurred while optimizing the route.');
+                } finally {
+                    loadingSpinner.style.display = 'none';
+                    if (HAS_ORIGIN_ADDRESS) {
+                        optimizeBtn.disabled = false;
+                    }
+                }
+            });
+
+            function displayRoute(data) {
+                document.getElementById('originAddress').textContent = data.origin;
+                document.getElementById('startTime').textContent = data.start_time;
+                document.getElementById('minutesPerVisit').textContent = data.minutes_per_visit;
+
+                routeBody.innerHTML = '';
+                data.route.forEach(item => {
+                    const row = document.createElement('tr');
+
+                    const arrival = new Date(item.suggested_arrival);
+                    const arrivalStr = arrival.toLocaleString('en-US', {
+                        hour: '2-digit', minute: '2-digit', hour12: true, month: 'short', day: 'numeric'
+                    });
+
+                    let originalStr = '—';
+                    if (item.original_appointment) {
+                        const orig = new Date(item.original_appointment);
+                        originalStr = orig.toLocaleString('en-US', {
+                            hour: '2-digit', minute: '2-digit', hour12: true, month: 'short', day: 'numeric'
+                        });
+                    }
+
+                    row.innerHTML = `
+                        <td><strong>#${item.order_index}</strong></td>
+                        <td>INV-${item.invoice_id}</td>
+                        <td>${item.customer_name || ''}</td>
+                        <td>${item.address || 'N/A'}</td>
+                        <td>${item.travel_time_minutes} min</td>
+                        <td>${item.distance_miles} mi</td>
+                        <td class="text-muted">${originalStr}</td>
+                        <td><strong class="text-success">${arrivalStr}</strong></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-success apply-time-btn py-0 px-2"
+                                    data-invoice-id="${item.invoice_id}">
+                                <i class="fas fa-check me-1"></i> Apply
+                            </button>
+                        </td>
+                    `;
+                    routeBody.appendChild(row);
+                });
+
+                document.querySelectorAll('.apply-time-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const invoiceId = this.dataset.invoiceId;
+                        await applyTimeToInvoice(invoiceId, this);
+                    });
+                });
+            }
+
+            async function applyTimeToInvoice(invoiceId, buttonElement) {
+                if (!confirm(`Apply the suggested time to invoice #INV-${invoiceId}?\n\nOnly do this AFTER the customer has accepted the new time.`)) {
+                    return;
+                }
+
+                const originalHTML = buttonElement.innerHTML;
+                buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                buttonElement.disabled = true;
+
+                try {
+                    const response = await fetch(`/invoices/${invoiceId}/apply-tentative-time`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        buttonElement.innerHTML = '<i class="fas fa-check-double me-1"></i> Done';
+                        buttonElement.className = 'btn btn-sm btn-secondary py-0 px-2';
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        alert('Error: ' + (data.detail || data.message || 'Failed to apply time.'));
+                        buttonElement.innerHTML = originalHTML;
+                        buttonElement.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error applying time:', error);
+                    alert('Network error: ' + error.message);
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.disabled = false;
+                }
+            }
+
+            applyAllBtn.addEventListener('click', async function() {
+                const buttons = Array.from(document.querySelectorAll('.apply-time-btn:not(:disabled)'));
+                if (buttons.length === 0) {
+                    alert('No pending applications found.');
+                    return;
+                }
+                if (!confirm(`Apply ALL ${buttons.length} suggested times?\n\nOnly do this AFTER every customer has accepted the new time.`)) {
+                    return;
+                }
+
+                for (const btn of buttons) {
+                    const invoiceId = btn.dataset.invoiceId;
+                    await applyTimeToInvoice(invoiceId, btn);
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                }
+            });
+
+            hideResultsBtn.addEventListener('click', function() {
+                resultsDiv.style.display = 'none';
+            });
+        });
+    </script>
+
+</body>
+</html>

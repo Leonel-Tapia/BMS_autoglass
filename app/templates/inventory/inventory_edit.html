@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BMS Autoglass - Manage Part</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 10px; }
+        
+        .form-container { 
+            max-width: 98%; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 12px 20px; 
+            border-radius: 4px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid #0078D4; 
+            margin-bottom: 12px; 
+            padding-bottom: 6px; 
+        }
+
+        .header h2 { color: #0078D4; margin: 0; font-size: 1.2rem; }
+
+        /* Grid System Compact: 3 Columns */
+        .grid-form { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px 15px; 
+        }
+
+        .form-group { display: flex; flex-direction: column; }
+        .full-width { grid-column: span 3; }
+        .span-2 { grid-column: span 2; }
+
+        label { font-size: 11px; font-weight: 600; color: #555; margin-bottom: 3px; text-transform: uppercase; }
+
+        input, textarea, select { 
+            padding: 4px 8px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-size: 13px; 
+            outline: none;
+            height: 26px;
+            box-sizing: border-box;
+        }
+
+        textarea { height: auto; resize: vertical; }
+
+        input:focus { border-color: #0078D4; }
+        input:disabled { background-color: #f5f5f5; color: #777; cursor: not-allowed; }
+
+        /* Estilo para los campos obligatorios idéntico a Add Part */
+        .required-input {
+            border-left: 3px solid #a80000 !important;
+        }
+        .required-asterisk {
+            color: #a80000;
+            font-weight: bold;
+            margin-right: 2px;
+        }
+
+        /* Status Toggle Switch Compact */
+        .status-container {
+            background: #f8f9fa;
+            padding: 2px 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 26px;
+            box-sizing: border-box;
+        }
+
+        .status-label { font-weight: bold; color: #333; font-size: 11px; }
+        
+        .toggle-status {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 16px;
+        }
+
+        .toggle-status input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .3s; border-radius: 16px;
+        }
+
+        .slider:before {
+            position: absolute; content: "";
+            height: 12px; width: 12px; left: 2px; bottom: 2px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #107c10; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end; }
+        
+        .btn { 
+            padding: 4px 15px; 
+            border-radius: 4px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border: none; 
+            font-size: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            height: 26px;
+            box-sizing: border-box;
+        }
+
+        .btn-save { background: #0078D4; color: white; }
+        .btn-save:hover { background: #005a9e; }
+        .btn-cancel { background: #fff; color: #333; border: 1px solid #ccc; }
+        .btn-cancel:hover { background: #f3f2f1; }
+
+        /* Messaging */
+        #msg { margin-top: 10px; padding: 6px; border-radius: 4px; display: none; font-size: 12px; text-align: center; }
+        .msg-success { background: #dff6dd; color: #107c10; border: 1px solid #107c10; }
+        .msg-error { background: #fde7e9; color: #a80000; border: 1px solid #a80000; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <div class="header">
+        <h2>Manage Part: {{ part.sku }}</h2>
+        <a href="/inventory/view/catalogo" class="btn btn-cancel">Back to Catalog</a>
+    </div>
+
+    <form id="editForm">
+        <div class="grid-form">
+            <div class="form-group">
+                <label><span class="required-asterisk">*</span>SKU (System ID)</label>
+                <input type="text" value="{{ part.sku }}" class="required-input" disabled>
+            </div>
+
+            <div class="form-group">
+                <label><span class="required-asterisk">*</span>Mfr. Part Number</label>
+                <input type="text" id="part_number" value="{{ part.part_number }}" class="required-input">
+            </div>
+
+            <div class="form-group">
+                <label>Inventory Status</label>
+                <div class="status-container">
+                    <span class="status-label" id="statusText">
+                        {{ 'ACTIVE' if part.is_active else 'INACTIVE' }}
+                    </span>
+                    <label class="toggle-status">
+                        <input type="checkbox" id="is_active" {% if part.is_active %}checked{% endif %} onchange="updateStatusText()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group span-2">
+                <label><span class="required-asterisk">*</span>Part Name</label>
+                <input type="text" id="part_name" value="{{ part.part_name }}" class="required-input" required>
+            </div>
+
+            <div class="form-group">
+                <label>Warehouse Location</label>
+                <input type="text" id="location" value="{{ part.location }}">
+            </div>
+
+            <div class="form-group full-width">
+                <label>Description</label>
+                <textarea id="description" rows="2">{{ part.description }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Qty On Hand</label>
+                <input type="number" id="quantity_on_hand" value="{{ part.quantity_on_hand }}">
+            </div>
+
+            <div class="form-group">
+                <label><span class="required-asterisk">*</span>Min. Level</label>
+                <input type="number" id="minimum_quantity" value="{{ part.minimum_quantity }}" class="required-input">
+            </div>
+
+            <div class="form-group">
+                <label>Max. Level</label>
+                <input type="number" id="maximum_quantity" value="{{ part.maximum_quantity or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label><span class="required-asterisk">*</span>Unit Cost ($)</label>
+                <input type="number" step="0.01" id="unit_cost" value="{{ part.unit_cost }}" class="required-input">
+            </div>
+
+            <div class="form-group">
+                <label><span class="required-asterisk">*</span>Sale Price ($)</label>
+                <input type="number" step="0.01" id="unit_sale" value="{{ part.unit_sale }}" class="required-input">
+            </div>
+
+            <div class="form-group">
+            </div>
+        </div>
+
+        <div id="msg"></div>
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-save">Update Information</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let previousStatus = document.getElementById('is_active').checked;
+
+    function updateStatusText() {
+        const check = document.getElementById('is_active');
+        const txt = document.getElementById('statusText');
+        const isChecked = check.checked;
+
+        if (previousStatus !== isChecked) {
+            const action = isChecked ? "ACTIVATE" : "INACTIVATE";
+            const message = isChecked 
+                ? `Are you sure you want to ${action} this product?\n\nIt will become visible again in searches and outgoing orders.`
+                : `Are you sure you want to ${action} this product?\n\nBy doing so, it will no longer appear in quick searches or new outgoing orders.`;
+
+            const confirmAction = confirm(message);
+            
+            if (!confirmAction) {
+                check.checked = previousStatus;
+                return;
+            }
+        }
+
+        txt.innerText = isChecked ? 'ACTIVE' : 'INACTIVE';
+        txt.style.color = isChecked ? '#107c10' : '#666';
+        previousStatus = isChecked;
+    }
+
+    document.getElementById('editForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('msg');
+        
+        const data = {
+            part_name: document.getElementById('part_name').value,
+            part_number: document.getElementById('part_number').value,
+            description: document.getElementById('description').value,
+            quantity_on_hand: document.getElementById('quantity_on_hand').value,
+            location: document.getElementById('location').value,
+            unit_cost: document.getElementById('unit_cost').value,
+            unit_sale: document.getElementById('unit_sale').value,
+            minimum_quantity: document.getElementById('minimum_quantity').value,
+            maximum_quantity: document.getElementById('maximum_quantity').value,
+            is_active: document.getElementById('is_active').checked
+        };
+
+        try {
+            const response = await fetch('/inventory/update/{{ part.sku }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            
+            if (response.ok) {
+                msg.innerText = "Record updated successfully.";
+                msg.className = "msg-success";
+                msg.style.display = "block";
+                setTimeout(() => { window.location.href = "/inventory/view/catalogo"; }, 1500);
+            } else {
+                throw new Error(result.detail || "Error updating record");
+            }
+        } catch (err) {
+            msg.innerText = err.message;
+            msg.className = "msg-error";
+            msg.style.display = "block";
+        }
+    };
+    
+    updateStatusText();
+</script>
+</body>
+</html>

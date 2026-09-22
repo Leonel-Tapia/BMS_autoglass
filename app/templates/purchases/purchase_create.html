@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding-bottom: 100px; }
+        .form-control-sm, .form-select-sm { border-radius: 4px; border: 1px solid #ced4da; height: 26px !important; padding: 2px 6px !important; font-size: 0.75rem !important; }
+        label { font-size: 0.80rem; color: #333; font-weight: 600; }
+        .vendor-info-box { background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 4px; padding: 2px 8px; font-weight: 600; font-size: 0.80rem; height: 26px; display: flex; align-items: center; }
+        .table-details th { background-color: #212529; font-size: 0.75rem !important; text-transform: uppercase; color: #ffffff; padding: 4px !important; }
+        .table-details td { padding: 2px !important; font-size: 0.75rem !important; }
+        .totals-bar { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 999; background: #ffffff; border-top: 3px solid #0d6efd; padding: 10px 20px; font-weight: 600; display: flex; justify-content: center; gap: 40px; box-shadow: 0 -3px 8px rgba(0,0,0,0.15); }
+
+        .table-details td,
+        .table-details th {
+            padding-top: 1px !important;
+            padding-bottom: 1px !important;
+            height: 22px !important;
+        }
+
+        .table-details tr {
+            line-height: 1 !important;
+        }
+
+        /* estilo para duplicados */
+        .is-invalid {
+            border-color: #dc3545 !important;
+            background-color: #ffe6e6 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="partsCatalogRaw" style="display:none;">[{% for part in parts_catalog %}{"id":"{{ part.id }}","part_number":"{{ part.part_number|string|trim }}","part_name":"{{ (part.part_name or part.name)|string|trim }}","unit_cost":{{ part.unit_cost or 0.0000 }}}{% if not loop.last %},{% endif %}{% endfor %}]</div>
+
+    <div class="container-fluid mt-2">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ title }}</h6>
+                <div class="d-flex gap-2">
+                    <a href="/vendors/list" class="btn btn-secondary btn-sm fw-bold">← Cancel</a>
+                    <button type="submit" form="purchaseOrderForm" id="btnSubmit" class="btn btn-success btn-sm fw-bold">Save Draft Order</button>
+                </div>
+            </div>
+
+            <div class="card-body pt-2 pb-2">
+                <form id="purchaseOrderForm">
+
+                    <!-- PRIMERA FILA -->
+                    <div class="row g-2 mb-2">
+
+                        <div class="col-md-3">
+                            <label>Vendor</label>
+                            {% if vendor %}
+                                <div class="vendor-info-box">[{{ vendor.vendor_code }}] {{ vendor.vendor_name }}</div>
+                                <input type="hidden" name="vendor_id" id="vendor_id_val" value="{{ vendor.id }}">
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>PO Number</label>
+                            <input type="text" class="form-control form-control-sm bg-white" value="PO-PENDING" readonly>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>Vendor Invoice #</label>
+                            <input type="text" id="vendor_invoice_number" class="form-control form-control-sm" placeholder="Invoice #">
+                        </div>
+
+                        <div class="col-md-1">
+                            <label>Order Date</label>
+                            <input type="date" name="order_date" id="order_date" class="form-control form-control-sm">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>Est. Delivery Date</label>
+                            <input type="text" id="delivery_date_display" class="form-control form-control-sm bg-white" readonly>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label>Payment Due Date</label>
+                            <input type="text" id="payment_due_date" class="form-control form-control-sm bg-white" readonly>
+                        </div>
+
+                    </div>
+
+                    <!-- SEGUNDA FILA -->
+                    <div class="row g-2 mb-2 align-items-center">
+
+                        <div class="col-auto">
+                            <label>Payment Terms</label>
+                            <select id="payment_terms_select" class="form-select form-select-sm" style="width:110px;">
+                                <option value="due">Due on Receipt</option>
+                                <option value="7">Net 7</option>
+                                <option value="15">Net 15</option>
+                                <option value="30" selected>Net 30</option>
+                                <option value="45">Net 45</option>
+                                <option value="60">Net 60</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+
+                        <div class="col-auto" style="margin-top: 18px;">
+                            <div id="terms_days_display_text" style="font-size:0.75rem; color:#555;">
+                                (30 days)
+                            </div>
+                        </div>
+
+                        <div class="col-auto">
+                            <label>Ship</label>
+                            <input type="number" id="shipping_handling" class="form-control form-control-sm"
+                                   style="width:70px;" value="0.00" min="0" step="0.01" oninput="calc()">
+                        </div>
+
+                        <div class="col-auto">
+                            <label>Tax</label>
+                            <input type="number" id="tax_amount" class="form-control form-control-sm"
+                                   style="width:70px;" value="0.00" min="0" step="0.01" oninput="calc()">
+                        </div>
+
+                        <div class="col">
+                            <label>Notes</label>
+                            <input type="text" id="internal_notes" class="form-control form-control-sm"
+                                   placeholder="Optional notes..." style="width:100%;">
+                        </div>
+
+                        <div class="col-auto" id="custom_days_container" style="display:none;">
+                            <label>Custom Days</label>
+                            <input type="number" id="custom_days_input" class="form-control form-control-sm"
+                                   style="width:70px;" min="0" value="0">
+                        </div>
+
+                        <input type="hidden" id="terms_days" name="terms_days" value="30">
+                        <input type="hidden" id="payment_terms" name="payment_terms" value="Net 30">
+
+                    </div>
+
+                    <!-- TABLA -->
+                    <table class="table table-bordered table-sm table-details mt-2">
+                        <thead>
+                            <tr>
+                                <th>Part Number</th>
+                                <th>Description</th>
+                                <th>Qty</th>
+                                <th>Cost</th>
+                                <th>Subtotal</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailsLinesContainer"></tbody>
+                    </table>
+
+                    <button type="button" id="btnAddItem" class="btn btn-outline-primary btn-sm" onclick="addNewLine()">+ Add Item</button>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="totals-bar">
+        <span>Subtotal: <span id="summary_subtotal">0.00</span></span>
+        <span>Shipping: <span id="summary_shipping">0.00</span></span>
+        <span>Tax: <span id="summary_tax">0.00</span></span>
+        <span class="text-primary">Grand Total: <span id="summary_grand_total">0.00</span></span>
+    </div>
+
+<datalist id="parts_list">
+    {% for part in parts_catalog %}
+    <option value="{{ part.part_number|string|trim }}">
+    {% endfor %}
+</datalist>
+<script>
+
+    function formatNumber(num) {
+        return Number(num).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function calcPaymentDueDate() {
+        const orderDate = document.getElementById("order_date").value;
+        const termsDays = parseInt(document.getElementById("terms_days").value) || 0;
+
+        if (!orderDate) return;
+
+        const d = new Date(orderDate);
+        d.setDate(d.getDate() + termsDays);
+
+        document.getElementById("payment_due_date").value = d.toISOString().split("T")[0];
+    }
+
+    let linesCounter = 0;
+    const partsCatalog = {};
+
+    try {
+        const data = JSON.parse(document.getElementById('partsCatalogRaw').textContent);
+        data.forEach(item => { partsCatalog[item.part_number.toLowerCase()] = item; });
+    } catch(e) { console.error(e); }
+
+    function initDates() {
+        const d = new Date();
+        const today = d.toISOString().split('T')[0];
+
+        document.getElementById('order_date').value = today;
+        document.getElementById('delivery_date_display').value = today;
+
+        calcPaymentDueDate();
+    }
+
+    function addNewLine(skipFocus = false) {
+        const container = document.getElementById('detailsLinesContainer');
+        const tr = document.createElement('tr');
+        tr.id = `line_${linesCounter}`;
+        tr.innerHTML = `
+            <td>
+                <input type="text" class="form-control form-control-sm part-input" 
+                       list="parts_list" oninput="handlePart(this)">
+            </td>
+            <td><input type="text" class="form-control form-control-sm desc-input" readonly></td>
+            <td><input type="number" class="form-control form-control-sm qty-input" value="1" min="0" oninput="calc()"></td>
+            <td><input type="text" class="form-control form-control-sm cost-input" data-value="0" value="0.00"></td>
+            <td><input type="text" class="form-control form-control-sm sub-input" readonly value="0.00"></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm py-0" 
+                        onclick="this.closest('tr').remove(); calc(); validateDuplicates();">X</button>
+            </td>
+        `;
+        container.appendChild(tr);
+        linesCounter++;
+
+        if (!skipFocus) {
+            setTimeout(() => {
+                const lastRow = document.querySelector("#detailsLinesContainer tr:last-child");
+                if (lastRow) {
+                    const partInput = lastRow.querySelector(".part-input");
+                    if (partInput) {
+                        partInput.focus();
+                        partInput.select();
+                    }
+                }
+            }, 50);
+        }
+
+        validateDuplicates();
+    }
+
+    /* ============================================================
+       VALIDACIÓN DE DUPLICADOS + BLOQUEO DE BOTONES
+       ============================================================ */
+    function validateDuplicates() {
+        const rows = document.querySelectorAll('#detailsLinesContainer tr');
+        const seen = new Set();
+        let hasDuplicate = false;
+
+        rows.forEach(row => {
+            const input = row.querySelector('.part-input');
+            const val = (input.value || "").trim().toLowerCase();
+
+            input.classList.remove("is-invalid");
+            const msg = row.querySelector(".dup-msg");
+            if (msg) msg.remove();
+
+            if (val !== "") {
+                if (seen.has(val)) {
+                    hasDuplicate = true;
+
+                    input.classList.add("is-invalid");
+
+                    const small = document.createElement("div");
+                    small.className = "dup-msg text-danger";
+                    small.style.fontSize = "0.70rem";
+                    small.textContent = "Duplicate part number!";
+                    input.parentNode.appendChild(small);
+                } else {
+                    seen.add(val);
+                }
+            }
+        });
+
+        // bloquear / desbloquear SAVE
+        const btnSave = document.getElementById("btnSubmit");
+        btnSave.style.pointerEvents = hasDuplicate ? "none" : "auto";
+        btnSave.style.opacity = hasDuplicate ? "0.5" : "1";
+
+        // bloquear / desbloquear ADD ITEM
+        const btnAdd = document.getElementById("btnAddItem");
+        btnAdd.style.pointerEvents = hasDuplicate ? "none" : "auto";
+        btnAdd.style.opacity = hasDuplicate ? "0.5" : "1";
+
+        return hasDuplicate;
+    }
+
+    /* ============================================================
+       BLOQUEAR SALIDA DEL CAMPO SI ES DUPLICADO
+       ============================================================ */
+    document.addEventListener("focusout", function(e) {
+        if (e.target.classList.contains("part-input")) {
+
+            const isDup = validateDuplicates();
+
+            if (isDup && e.target.classList.contains("is-invalid")) {
+                // regresar el foco al campo duplicado
+                setTimeout(() => {
+                    e.target.focus();
+                    e.target.select();
+                }, 10);
+            }
+        }
+    });
+
+    function handlePart(el) {
+        const row = el.closest('tr');
+        const part = partsCatalog[el.value.toLowerCase()];
+        if (part) {
+            row.querySelector('.desc-input').value = part.part_name;
+            row.querySelector('.cost-input').setAttribute("data-value", part.unit_cost);
+            row.querySelector('.cost-input').value = formatNumber(part.unit_cost);
+
+            const qtyInput = row.querySelector('.qty-input');
+            qtyInput.focus();
+            qtyInput.select();
+        }
+
+        validateDuplicates();
+        calc();
+    }
+
+    function calc() {
+        let subtotal = 0;
+
+        document.querySelectorAll('#detailsLinesContainer tr').forEach(row => {
+
+            const qty = Math.max(0, parseFloat(row.querySelector('.qty-input').value) || 0);
+            row.querySelector('.qty-input').value = qty;
+
+            const costInput = row.querySelector('.cost-input');
+            const realCost = parseFloat(costInput.getAttribute("data-value")) || 0;
+
+            const sub = qty * realCost;
+            row.querySelector('.sub-input').value = formatNumber(sub);
+
+            subtotal += sub;
+        });
+
+        const shipping = Math.max(0, parseFloat(document.getElementById('shipping_handling').value) || 0);
+        const tax = Math.max(0, parseFloat(document.getElementById('tax_amount').value) || 0);
+
+        document.getElementById('summary_subtotal').textContent = formatNumber(subtotal);
+        document.getElementById('summary_shipping').textContent = formatNumber(shipping);
+        document.getElementById('summary_tax').textContent = formatNumber(tax);
+        document.getElementById('summary_grand_total').textContent = formatNumber(subtotal + shipping + tax);
+    }
+
+    document.addEventListener("focusin", e => {
+        if (e.target.classList.contains("cost-input")) {
+            const real = e.target.getAttribute("data-value");
+            e.target.value = real;
+        }
+    });
+
+    document.addEventListener("focusout", e => {
+        if (e.target.classList.contains("cost-input")) {
+            const val = parseFloat(e.target.value || 0);
+            e.target.setAttribute("data-value", val);
+            e.target.value = formatNumber(val);
+            calc();
+        }
+    });
+
+    document.getElementById('purchaseOrderForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (validateDuplicates()) {
+            alert("You have duplicate part numbers. Please fix them before saving.");
+            return;
+        }
+        
+        const lines = Array.from(document.querySelectorAll('#detailsLinesContainer tr')).map(row => ({
+            part_number: row.querySelector('.part-input').value,
+            item_description: row.querySelector('.desc-input').value,
+            quantity_ordered: row.querySelector('.qty-input').value,
+            unit_cost: row.querySelector('.cost-input').getAttribute("data-value")
+        }));
+
+        const payload = {
+            vendor_id: document.getElementById('vendor_id_val').value,
+            vendor_invoice_number: document.getElementById('vendor_invoice_number').value,
+            order_date: document.getElementById('order_date').value,
+            shipping_handling: document.getElementById('shipping_handling').value,
+            tax_amount: document.getElementById('tax_amount').value,
+            internal_notes: document.getElementById('internal_notes').value,
+            terms_days: document.getElementById('terms_days').value,
+            payment_terms: document.getElementById('payment_terms').value,
+            payment_due_date: document.getElementById('payment_due_date').value,
+            lines: lines
+        };
+
+        try {
+            const res = await fetch('/purchases/save-draft', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("Draft saved!");
+                window.location.href = "/vendors/list";
+            } else {
+                const errorText = await res.text();
+                alert("Error saving draft. Details: " + errorText.substring(0, 150));
+            }
+        } catch (err) {
+            alert("Connection error.");
+        }
+    });
+
+    window.onload = () => { 
+        initDates(); 
+        addNewLine(true);
+
+        const invoiceInput = document.getElementById('vendor_invoice_number');
+        if (invoiceInput) {
+            invoiceInput.focus();
+            invoiceInput.select();
+        }
+    };
+
+</script>
+</body>
+</html>

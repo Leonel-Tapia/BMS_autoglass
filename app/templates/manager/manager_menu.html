@@ -1,0 +1,231 @@
+<!-- /templates/manager/manager_menu.html - Updated 2026-09-14 (rediseño) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BMS Autoglass – Manager Menu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef1f5 0%, #dde3ec 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #0078D4 0%, #005A9E 100%);
+            color: white;
+            padding: 16px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header .title {
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header .title i {
+            font-size: 22px;
+        }
+
+        /* CAMBIO 2026-09-14: Back button a la derecha */
+        .back-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: 0.15s;
+        }
+
+        .back-btn:hover {
+            background-color: white;
+            color: #0078D4;
+        }
+
+        .container {
+            margin: 30px auto;
+            width: 92%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: all 0.2s ease;
+            border-top: 4px solid #0078D4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 170px;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .card-icon {
+            font-size: 34px;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: #333;
+            flex-grow: 1;
+        }
+
+        .card-btn {
+            padding: 9px 20px;
+            background-color: #0078D4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.15s;
+        }
+
+        .card-btn:hover {
+            background-color: #005A9E;
+        }
+
+        /* Colores por categoría */
+        .card-config { border-top-color: #0078D4; }
+        .card-config .card-icon { color: #0078D4; }
+        .card-config .card-btn { background-color: #0078D4; }
+        .card-config .card-btn:hover { background-color: #005A9E; }
+
+        .card-inventory { border-top-color: #28a745; }
+        .card-inventory .card-icon { color: #28a745; }
+        .card-inventory .card-btn { background-color: #28a745; }
+        .card-inventory .card-btn:hover { background-color: #1e7e34; }
+
+        .card-company { border-top-color: #3f51b5; }
+        .card-company .card-icon { color: #3f51b5; }
+        .card-company .card-btn { background-color: #3f51b5; }
+        .card-company .card-btn:hover { background-color: #283593; }
+
+        .card-activity { border-top-color: #fd7e14; }
+        .card-activity .card-icon { color: #fd7e14; }
+        .card-activity .card-btn { background-color: #fd7e14; }
+        .card-activity .card-btn:hover { background-color: #d96809; }
+
+        .card-disabled { border-top-color: #adb5bd; opacity: 0.7; }
+        .card-disabled .card-icon { color: #adb5bd; }
+        .card-disabled .card-btn {
+            background-color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 10px; padding: 14px 15px; }
+            .container { gap: 14px; margin: 20px auto; }
+            .card { min-height: 150px; padding: 18px 15px; }
+            .card-icon { font-size: 28px; }
+            .card-title { font-size: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- CAMBIO 2026-09-14: Header con título a la izquierda y Back a la derecha -->
+<div class="header">
+    <div class="title">
+        <i class="fas fa-cogs"></i>
+        Manager Menu
+    </div>
+    <a href="/company/main_menu" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="container">
+
+    <!-- Users -->
+    <div class="card card-config">
+        <div>
+            <div class="card-icon"><i class="fas fa-users"></i></div>
+            <div class="card-title">Users</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/users/list'">Open</button>
+    </div>
+
+    <!-- Permissions -->
+    <div class="card card-config">
+        <div>
+            <div class="card-icon"><i class="fas fa-lock"></i></div>
+            <div class="card-title">Permissions</div>
+        </div>
+        <button class="card-btn card-btn-disabled" disabled>Coming Soon</button>
+    </div>
+
+    <!-- Company -->
+    <div class="card card-company">
+        <div>
+            <div class="card-icon"><i class="fas fa-building"></i></div>
+            <div class="card-title">Company</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/company/create'">Open</button>
+    </div>
+
+    <!-- Inventory Parts -->
+    <div class="card card-inventory">
+        <div>
+            <div class="card-icon"><i class="fas fa-boxes"></i></div>
+            <div class="card-title">Inventory Parts</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/inventory/view/catalogo'">Open</button>
+    </div>
+
+    <!-- Windshield -->
+    <div class="card card-inventory">
+        <div>
+            <div class="card-icon"><i class="fas fa-car"></i></div>
+            <div class="card-title">Windshield</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/manager/windshield_menu'">Open</button>
+    </div>
+
+    <!-- Activity Concepts -->
+    <div class="card card-activity">
+        <div>
+            <div class="card-icon"><i class="fas fa-clipboard-list"></i></div>
+            <div class="card-title">Activity Concepts</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/manager/activities_concepts'">Open</button>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!-- PATH: app/templates/call_center/callcenter_search.html | UPDATED: 2026-09-11 (geocode indicator) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Center Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .scrollable-results {
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 5px;
+            background: #fff;
+        }
+
+        /* 🔥 NUEVO: marcar SAD y ANGRY en rojo */
+        .result-alert {
+            background-color: #f8d7da !important;
+            border-radius: 6px;
+            padding: 6px;
+        }
+
+        /* 🔥 NUEVO: indicador de geocodificación */
+        .geo-badge {
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+        .geo-badge.ok {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .geo-badge.fail {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white py-1 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Customer Search</h6>
+                <a href="/call_center/menu" class="btn btn-sm btn-outline-light">Menu</a>
+            </div>
+            <div class="card-body py-2">
+                <form id="searchForm" class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small mb-0">Phone</label>
+                        <input type="text" id="phoneInput" class="form-control form-control-sm" placeholder="222-222-2222">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small mb-0">Name</label>
+                        <input type="text" id="nameInput" class="form-control form-control-sm" placeholder="Search by name">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="resultsContainer"></div>
+    </div>
+
+    <script>
+        const nameInput = document.getElementById("nameInput");
+        const phoneInput = document.getElementById("phoneInput");
+        const resultsContainer = document.getElementById("resultsContainer");
+        let timer = null;
+
+        async function updateResults() {
+            const name = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
+
+            if (!name && !phone.replace(/\D/g, '')) {
+                resultsContainer.innerHTML = "";
+                return;
+            }
+
+            const res = await fetch(`/call_center/search-json?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
+            const data = await res.json();
+            
+            if (data && data.length > 0) {
+                let itemsHtml = data.map(c => {
+                    let createdDateStr = '';
+                    if (c.created_at) {
+                        createdDateStr = ` | Created: ${c.created_at.split('T')[0]}`;
+                    }
+
+                    /* 🔥 NUEVO: si mood es sad o angry → agregar clase result-alert */
+                    const alertClass = (c.mood && ['sad','angry'].includes(c.mood.toLowerCase()))
+                        ? 'result-alert'
+                        : '';
+
+                    /* 🔥 NUEVO: badge de geocodificación */
+                    const geoBadge = c.has_geocode
+                        ? '<span class="geo-badge ok" title="Address geocoded">📍 Geocoded</span>'
+                        : '<span class="geo-badge fail" title="Address not geocoded yet">⚠️ No geocode</span>';
+
+                    return `
+                    <div class="card mb-1 shadow-sm border-primary ${alertClass}">
+                        <div class="card-body p-1">
+                            <div class="row align-items-center">
+                                <div class="col-md-10">
+                                    <h6 class="card-title text-primary mb-0">
+                                        ${c.name} 
+                                        <span class="badge bg-info text-dark ms-2" style="font-size: 0.7em;">${c.mood || ''}</span>
+                                        ${geoBadge}
+                                        <small class="text-muted ms-2" style="font-size: 0.8em;">
+                                            ${c.phone} | ${c.address || ''}, ${c.city || ''}${createdDateStr}
+                                        </small>
+                                    </h6>
+                                </div>
+                                <div class="col-md-2 text-md-end">
+                                    <a href="/call_center/lookup/${c.id}" class="btn btn-outline-primary btn-sm py-0">View</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+                resultsContainer.innerHTML = `<div class="scrollable-results">${itemsHtml}</div>`;
+            } else {
+                const encodedName = encodeURIComponent(name);
+                const encodedPhone = encodeURIComponent(phone);
+                
+                resultsContainer.innerHTML = `
+                    <div class="p-3 bg-white border rounded shadow-sm d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">No customers found.</span>
+                        <a href="/customers/add?name=${encodedName}&phone=${encodedPhone}&origin=call_center" class="btn btn-primary btn-sm">
+                            + Add Customer
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        [nameInput, phoneInput].forEach(el => {
+            el.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(updateResults, 300);
+            });
+        });
+
+        phoneInput.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 10) v = v.slice(0, 10);
+            e.target.value = v.length > 6 ? `(${v.slice(0,3)}) ${v.slice(3,6)}-${v.slice(6)}` : (v.length > 3 ? `(${v.slice(0,3)}) ${v.slice(3)}` : v);
+        });
+    </script>
+</body>
+</html>

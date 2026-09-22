@@ -1,0 +1,445 @@
+<!-- /app/templates/manager/activities_concepts.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Activity Concepts - BMS Autoglass</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #eef2f3;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 13px;
+        }
+        .container {
+            background: white;
+            padding: 12px 18px;
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0078D4;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .header h2 { margin: 0; color: #2c3e50; font-size: 18px; }
+        .header-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .btn {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-primary { background: #0078D4; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-sm { padding: 2px 8px; font-size: 11px; }
+
+        .table-wrapper {
+            overflow-y: auto;
+            max-height: 450px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .table-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .table-wrapper thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .table-wrapper thead th {
+            background: #f8f9fa;
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 12px;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .table-wrapper tbody td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+        .table-wrapper tbody tr:hover { background: #f8f9fa; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-success { background: #28a745; color: white; }
+        .badge-danger { background: #dc3545; color: white; }
+        .empty-message { text-align: center; color: #6c757d; padding: 20px 0; }
+        .actions-cell { display: flex; gap: 4px; flex-wrap: nowrap; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px 25px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0078D4;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+        }
+        .modal-header h3 { margin: 0; color: #2c3e50; font-size: 16px; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .modal-close:hover { color: #333; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #0078D4;
+            box-shadow: 0 0 0 2px rgba(0,120,212,0.15);
+        }
+        .form-group .required { color: #dc3545; }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 10px;
+            border-top: 1px solid #e9ecef;
+        }
+        .alert {
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: none;
+            font-size: 13px;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert.show { display: block; }
+
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #c1c7cd;
+            border-radius: 4px;
+        }
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #a0a8b0;
+        }
+
+        @media (max-width: 640px) {
+            .container { padding: 10px; }
+            .header { flex-direction: column; align-items: stretch; text-align: center; }
+            .header-actions { justify-content: center; }
+            .modal-content { margin: 10px; padding: 15px; }
+            .actions-cell { flex-wrap: wrap; }
+            .table-wrapper { max-height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>📋 Activity Concepts</h2>
+        <div class="header-actions">
+            <a href="/manager/menu" class="btn btn-secondary btn-sm">← Back</a>
+            <button class="btn btn-success btn-sm" onclick="openAddModal()">➕ Add</button>
+        </div>
+    </div>
+
+    <div id="alertSuccess" class="alert alert-success"></div>
+    <div id="alertError" class="alert alert-danger"></div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px;">ID</th>
+                    <th style="min-width:150px;">Name</th>
+                    <th style="width:65px;">Status</th>
+                    <th style="width:80px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="conceptsBody">
+                <tr><td colspan="4" class="empty-message">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: AGREGAR / EDITAR (SIN DESCRIPTION) -->
+<div id="conceptModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add Concept</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="conceptForm">
+            <input type="hidden" id="conceptId" value="">
+            <div class="form-group">
+                <label>Name <span class="required">*</span></label>
+                <input type="text" id="conceptName" placeholder="ej: Called Customer" required>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="conceptStatus">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: CONFIRMAR ELIMINACIÓN -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content" style="max-width:360px;">
+        <div class="modal-header">
+            <h3 style="color:#dc3545;">⚠️ Delete</h3>
+            <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <p id="deleteMessage" style="font-size:14px; margin-bottom:14px;">Delete this concept?</p>
+        <input type="hidden" id="deleteConceptId" value="">
+        <div class="form-actions" style="border-top:none; padding-top:0;">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function loadConcepts() {
+        const tbody = document.getElementById('conceptsBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-message">Loading...</td></tr>';
+
+        fetch('/manager/api/concepts/all')
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="empty-message">No concepts found.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = '';
+                    result.data.forEach(concept => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${concept.id}</td>
+                            <td><strong>${escapeHtml(concept.name)}</strong></td>
+                            <td><span class="badge ${concept.is_active ? 'badge-success' : 'badge-danger'}">${concept.is_active ? 'Active' : 'Inactive'}</span></td>
+                            <td><div class="actions-cell">
+                                <button class="btn btn-warning btn-sm" onclick="editConcept(${concept.id})">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${concept.id}, '${escapeHtml(concept.name)}')">🗑</button>
+                            </div></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    showError(result.error || 'Failed to load.');
+                }
+            })
+            .catch(error => showError('Network error: ' + error.message));
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showSuccess(message) {
+        const el = document.getElementById('alertSuccess');
+        el.textContent = message;
+        el.className = 'alert alert-success show';
+        setTimeout(() => { el.className = 'alert alert-success'; }, 4000);
+    }
+
+    function showError(message) {
+        const el = document.getElementById('alertError');
+        el.textContent = message;
+        el.className = 'alert alert-danger show';
+        setTimeout(() => { el.className = 'alert alert-danger'; }, 4000);
+    }
+
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = '➕ Add Concept';
+        document.getElementById('conceptId').value = '';
+        document.getElementById('conceptName').value = '';
+        document.getElementById('conceptStatus').value = 'active';
+        document.getElementById('conceptModal').style.display = 'flex';
+        document.getElementById('conceptName').focus();
+    }
+
+    function editConcept(id) {
+        fetch('/manager/api/concepts/all')
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    const concept = result.data.find(c => c.id === id);
+                    if (concept) {
+                        document.getElementById('modalTitle').textContent = '✏️ Edit';
+                        document.getElementById('conceptId').value = concept.id;
+                        document.getElementById('conceptName').value = concept.name;
+                        document.getElementById('conceptStatus').value = concept.is_active ? 'active' : 'inactive';
+                        document.getElementById('conceptModal').style.display = 'flex';
+                        document.getElementById('conceptName').focus();
+                    } else {
+                        showError('Not found.');
+                    }
+                }
+            })
+            .catch(error => showError('Error: ' + error.message));
+    }
+
+    function closeModal() {
+        document.getElementById('conceptModal').style.display = 'none';
+    }
+
+    document.getElementById('conceptForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('conceptId').value;
+        const name = document.getElementById('conceptName').value.trim();
+        const isActive = document.getElementById('conceptStatus').value === 'active';
+
+        if (!name) {
+            showError('Name is required.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('is_active', isActive ? 'true' : 'false');
+
+        const url = id ? `/manager/api/concepts/${id}` : '/manager/api/concepts';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, { method: method, body: formData })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    closeModal();
+                    showSuccess(id ? 'Updated!' : 'Created!');
+                    loadConcepts();
+                } else {
+                    showError(result.error || 'Failed.');
+                }
+            })
+            .catch(error => showError('Network error.'));
+    });
+
+    function openDeleteModal(id, name) {
+        document.getElementById('deleteConceptId').value = id;
+        document.getElementById('deleteMessage').textContent = `Delete "${name}"?`;
+        document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    function confirmDelete() {
+        const id = document.getElementById('deleteConceptId').value;
+        fetch(`/manager/api/concepts/${id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    closeDeleteModal();
+                    showSuccess('Deleted!');
+                    loadConcepts();
+                } else {
+                    showError(result.error || 'Failed.');
+                }
+            })
+            .catch(error => showError('Network error.'));
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { closeModal(); closeDeleteModal(); }
+    });
+
+    document.getElementById('conceptModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+    document.getElementById('deleteModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadConcepts();
+    });
+</script>
+
+</body>
+</html>

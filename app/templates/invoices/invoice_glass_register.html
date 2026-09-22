@@ -1,0 +1,553 @@
+<!-- Path: app/templates/invoices/invoice_glass_register.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice #{{ invoice.id }} - Glass Register - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { background: #fffcf5; font-size: 0.75rem; margin-bottom: 80px; }
+        .top-header { background: #0d6e6e; color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .section-box { background: white; padding: 8px 10px; border-radius: 4px; margin-bottom: 8px; border: 1px solid #0d6e6e; }
+        .section-title { color: #0d6e6e; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid #a8d5d5; margin-bottom: 8px; padding-bottom: 3px; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        @media (max-width: 768px) { .info-grid { grid-template-columns: 1fr; } }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border-left: 3px solid #0d6e6e;
+        }
+        .info-box label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: bold;
+            margin-bottom: 2px;
+            display: block;
+        }
+        .info-box .value { font-size: 0.85rem; font-weight: 500; }
+
+        /* Required glass box */
+        .required-glass-box {
+            background: #fff8e1;
+            border: 2px dashed #f0ad4e;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+        .required-glass-box .section-title {
+            color: #b8860b;
+            border-bottom: 1px solid #f0ad4e;
+            margin-bottom: 6px;
+        }
+
+        .required-table { font-size: 0.75rem; margin-bottom: 0; }
+        .required-table th {
+            font-size: 0.65rem;
+            padding: 3px 5px;
+            background: #fff3cd;
+            text-transform: uppercase;
+            color: #856404;
+            border-bottom: 2px solid #f0ad4e;
+        }
+        .required-table td { padding: 3px 5px; vertical-align: middle; }
+
+        /* ============ MODAL COMPACTO ============ */
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            padding: 10px;
+        }
+        .modal-content-custom {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-height: 96vh;
+            overflow-y: auto;
+            width: 720px;
+            max-width: 98%;
+        }
+
+        .modal-title-compact {
+            font-size: 1.15rem;
+            color: #0d6e6e;
+            margin-bottom: 8px;
+            text-align: center;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .compact-form .form-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: bold;
+            margin-bottom: 1px;
+            letter-spacing: 0.3px;
+        }
+        .compact-form .form-control,
+        .compact-form .form-select {
+            font-size: 0.72rem;
+            height: 24px;
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+        .compact-form textarea.form-control {
+            height: auto;
+            min-height: 26px;
+            padding: 2px 5px;
+        }
+        .compact-form .form-check-input {
+            width: 13px;
+            height: 13px;
+            margin-top: 3px;
+        }
+        .compact-form .form-check-label {
+            font-size: 0.72rem;
+            padding-left: 2px;
+        }
+        .compact-form .row { margin: 0; }
+        .compact-form .row > [class*="col-"] {
+            padding-left: 3px;
+            padding-right: 3px;
+            margin-bottom: 4px;
+        }
+
+        .modal-footer-compact {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-footer-compact .btn {
+            font-size: 0.75rem;
+            padding: 3px 14px;
+        }
+
+        /* ============ GLASS LIST TABLE ============ */
+        .glass-table { font-size: 0.75rem; }
+        .glass-table th {
+            font-size: 0.7rem;
+            padding: 4px 6px;
+            background: #f8f9fa;
+            text-transform: uppercase;
+            color: #0d6e6e;
+            border-bottom: 2px solid #0d6e6e;
+        }
+        .glass-table td { padding: 4px 6px; vertical-align: middle; }
+
+        .badge-status-ORDERED   { background-color: #f0ad4e; color: white; }
+        .badge-status-RECEIVED  { background-color: #0275d8; color: white; }
+        .badge-status-INSTALLED { background-color: #28a745; color: white; }
+        .badge-status-DAMAGED   { background-color: #dc3545; color: white; }
+        .badge-status-RETURNED  { background-color: #6c757d; color: white; }
+        .badge-status-CANCELLED { background-color: #343a40; color: white; }
+
+        .pay-PAID    { background-color: #28a745; color: white; }
+        .pay-CREDIT  { background-color: #0d6e6e; color: white; }
+        .pay-PENDING { background-color: #f0ad4e; color: white; }
+
+        .status-badge {
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .action-btn {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            margin: 1px;
+        }
+
+        .footer-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-top: 2px solid #0d6e6e;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            z-index: 900;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-2">
+
+    <!-- HEADER -->
+    <div class="top-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0">
+                🪟 GLASS REGISTER — Invoice #{{ invoice.id }}
+                <span class="badge bg-light text-dark ms-2" style="font-size:0.7rem;">
+                    Status: {{ invoice.status or 'PENDING' }}
+                </span>
+            </h4>
+            <small><strong>Customer:</strong> {{ customer.name if customer else 'N/A' }}</small>
+            <small class="ms-3"><strong>Vehicle:</strong>
+                {{ vehicle_year or '' }} {{ invoice.vehicle_make or '' }} {{ invoice.vehicle_model or '' }}
+            </small>
+            <small class="ms-3"><strong>Total Glasses:</strong> {{ glasses|length }}</small>
+        </div>
+        <div>
+            <a href="/invoices/workshop" class="btn btn-light btn-sm text-dark fw-bold" style="font-size:0.75rem;">
+                ← Back to Workshop
+            </a>
+        </div>
+    </div>
+
+    <!-- INVOICE SUMMARY -->
+    <div class="section-box">
+        <div class="section-title">Invoice Summary</div>
+        <div class="info-grid">
+            <div class="info-box">
+                <label>Customer</label>
+                <div class="value">
+                    {{ customer.name if customer else 'N/A' }}<br>
+                    <span style="font-size:0.75rem;">{{ customer.phone if customer else '' }}</span>
+                </div>
+            </div>
+            <div class="info-box">
+                <label>Vehicle</label>
+                <div class="value">
+                    {{ vehicle_year or '' }} {{ invoice.vehicle_make or '' }} {{ invoice.vehicle_model or '' }}<br>
+                    <span style="font-size:0.75rem;">VIN: {{ invoice.vehicle_vin or 'N/A' }}</span>
+                </div>
+            </div>
+            <div class="info-box">
+                <label>Appointment</label>
+                <div class="value">
+                    {{ invoice.estimated_appointment_date or 'N/A' }}
+                    {% if invoice.estimated_appointment_time %}
+                        @ {{ invoice.estimated_appointment_time.strftime('%I:%M %p') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLASS REQUIRED -->
+    <div class="required-glass-box">
+        <div class="section-title">⚠ Glass Required for This Invoice</div>
+        {% if invoice_items %}
+            <table class="table table-sm required-table">
+                <thead>
+                    <tr>
+                        <th style="width:35px;">#</th>
+                        <th style="width:110px;">NAGS Code</th>
+                        <th>Description</th>
+                        <th style="width:60px;" class="text-center">Qty</th>
+                        <th style="width:85px;" class="text-end">Cost</th>
+                        <th style="width:85px;" class="text-end">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice_items %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ item.product_name or '-' }}</strong></td>
+                        <td>{{ item.description or '-' }}</td>
+                        <td class="text-center">{{ item.quantity or 1 }}</td>
+                        <td class="text-end">${{ "%.2f"|format(item.cost or 0) }}</td>
+                        <td class="text-end">${{ "%.2f"|format(item.price or 0) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="mt-1" style="font-size:0.7rem; color:#856404;">
+                <strong>Verify the NAGS code matches before registering the purchase below.</strong>
+            </div>
+        {% else %}
+            <div class="text-muted" style="font-size:0.75rem;">
+                <em>No items registered in this invoice yet.</em>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- ADD GLASS BUTTON -->
+    <div class="section-box">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="section-title mb-0">Glasses Purchased for This Invoice</div>
+            <button type="button" class="btn btn-sm text-white fw-bold"
+                    style="background:#0d6e6e; font-size:0.75rem;"
+                    onclick="openAddModal()">
+                ➕ Add Glass
+            </button>
+        </div>
+    </div>
+
+    <!-- GLASS LIST -->
+    <div class="section-box">
+        <div class="table-responsive">
+            <table class="table table-bordered glass-table">
+                <thead>
+                    <tr>
+                        <th style="width:35px;">#</th>
+                        <th style="width:100px;">Vendor</th>
+                        <th style="width:80px;">PO #</th>
+                        <th style="width:80px;">NAGS</th>
+                        <th>Description</th>
+                        <th style="width:65px;">Type</th>
+                        <th style="width:75px;">Position</th>
+                        <th style="width:75px;">Purch $</th>
+                        <th style="width:75px;">Sales $</th>
+                        <th style="width:75px;">Payment</th>
+                        <th style="width:85px;">Status</th>
+                        <th style="width:75px;">Storage</th>
+                        <th style="width:130px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if glasses %}
+                        {% for g in glasses %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ g.vendor or '-' }}</td>
+                            <td>{{ g.purchase_order_number or '-' }}</td>
+                            <td>{{ g.nags_code or '-' }}</td>
+                            <td>{{ g.description or '-' }}</td>
+                            <td>{{ g.glass_type or '-' }}</td>
+                            <td>{{ g.position or '-' }}</td>
+                            <td class="text-end">${{ "%.2f"|format(g.purchase_price or 0) }}</td>
+                            <td class="text-end">${{ "%.2f"|format(g.sales_price or 0) }}</td>
+                            <td class="text-center">
+                                <span class="status-badge pay-{{ g.payment_status or 'PENDING' }}">
+                                    {{ g.payment_status or 'PENDING' }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="status-badge badge-status-{{ g.status or 'ORDERED' }}">
+                                    {{ g.status or 'ORDERED' }}
+                                </span>
+                            </td>
+                            <td>{{ g.storage_location or '-' }}</td>
+                            <td>
+                                <button type="button" class="btn btn-outline-primary action-btn"
+                                        data-glass='{{ g.to_dict()|tojson }}'
+                                        onclick="openEditModal(this)">
+                                    Edit
+                                </button>
+                                <form method="POST"
+                                      action="/invoices/glasses/{{ g.id }}/delete"
+                                      style="display:inline;"
+                                      onsubmit="return confirm('Delete this glass record? This cannot be undone.');">
+                                    <button type="submit" class="btn btn-outline-danger action-btn">Del</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="13" class="text-center text-muted py-3">
+                                No glasses registered yet. Click "➕ Add Glass" to register the first one.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: ADD / EDIT GLASS (COMPACTO) -->
+<!-- ============================================================ -->
+<div id="glassModal" class="modal" style="display:none;">
+    <div class="modal-content-custom">
+        <h4 class="modal-title-compact" id="glass-modal-title">Add Glass</h4>
+
+        <form id="glassForm" method="POST" action="/invoices/{{ invoice.id }}/glasses" class="compact-form">
+            <div class="row">
+                <!-- Row 1: Vendor + PO# + Vendor Invoice # -->
+                <div class="col-5">
+                    <label class="form-label">Vendor</label>
+                    <input type="text" name="vendor" id="f_vendor" class="form-control" placeholder="Mygrant, Pilkington...">
+                </div>
+                <div class="col-3">
+                    <label class="form-label">PO #</label>
+                    <input type="text" name="purchase_order_number" id="f_purchase_order_number" class="form-control">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Vendor Invoice #</label>
+                    <input type="text" name="vendor_invoice_number" id="f_vendor_invoice_number" class="form-control">
+                </div>
+
+                <!-- Row 2: Vendor Invoice Date + Purchase Date + NAGS Code -->
+                <div class="col-4">
+                    <label class="form-label">Vendor Inv. Date</label>
+                    <input type="date" name="vendor_invoice_date" id="f_vendor_invoice_date" class="form-control">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Purchase Date</label>
+                    <input type="date" name="purchase_date" id="f_purchase_date" class="form-control">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">NAGS Code</label>
+                    <input type="text" name="nags_code" id="f_nags_code" class="form-control">
+                </div>
+
+                <!-- Row 3: Description (full) -->
+                <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <input type="text" name="description" id="f_description" class="form-control" placeholder="e.g., Windshield w/ Acoustic">
+                </div>
+
+                <!-- Row 4: Glass Type + Position + Storage -->
+                <div class="col-4">
+                    <label class="form-label">Glass Type</label>
+                    <select name="glass_type" id="f_glass_type" class="form-select">
+                        <option value="">-- Select --</option>
+                        <option value="WINDSHIELD">WINDSHIELD</option>
+                        <option value="SIDE_WINDOW">SIDE WINDOW</option>
+                        <option value="REAR_WINDOW">REAR WINDOW</option>
+                        <option value="QUARTER_WINDOW">QUARTER WINDOW</option>
+                        <option value="SUNROOF">SUNROOF</option>
+                        <option value="OTHER">OTHER</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Position</label>
+                    <select name="position" id="f_position" class="form-select">
+                        <option value="">-- Select --</option>
+                        <option value="FRONT">FRONT</option>
+                        <option value="REAR">REAR</option>
+                        <option value="LEFT">LEFT</option>
+                        <option value="RIGHT">RIGHT</option>
+                        <option value="DRIVER">DRIVER</option>
+                        <option value="PASSENGER">PASSENGER</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Storage Location</label>
+                    <input type="text" name="storage_location" id="f_storage_location" class="form-control" placeholder="Rack A-3">
+                </div>
+
+                <!-- Row 5: Purchase Price + Sales Price + Payment Status + Glass Status + Is Ordered -->
+                <div class="col-3">
+                    <label class="form-label">Purchase Price</label>
+                    <input type="number" step="0.01" min="0" name="purchase_price" id="f_purchase_price" class="form-control" placeholder="0.00">
+                </div>
+                <div class="col-3">
+                    <label class="form-label">Sales Price</label>
+                    <input type="number" step="0.01" min="0" name="sales_price" id="f_sales_price" class="form-control" placeholder="0.00">
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Payment</label>
+                    <select name="payment_status" id="f_payment_status" class="form-select">
+                        <option value="PENDING">PENDING</option>
+                        <option value="PAID">PAID</option>
+                        <option value="CREDIT">CREDIT</option>
+                    </select>
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Glass Status</label>
+                    <select name="status" id="f_status" class="form-select">
+                        <option value="ORDERED">ORDERED</option>
+                        <option value="RECEIVED">RECEIVED</option>
+                        <option value="INSTALLED">INSTALLED</option>
+                        <option value="DAMAGED">DAMAGED</option>
+                        <option value="RETURNED">RETURNED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                </div>
+                <div class="col-2 d-flex align-items-end" style="padding-bottom:2px;">
+                    <div class="form-check">
+                        <input type="checkbox" name="is_ordered" id="f_is_ordered" class="form-check-input">
+                        <label class="form-check-label" for="f_is_ordered">Ordered?</label>
+                    </div>
+                </div>
+
+                <!-- Row 6: Notes (full) -->
+                <div class="col-12">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" id="f_notes" class="form-control" rows="1"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer-compact">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeGlassModal()">Cancel</button>
+                <button type="submit" class="btn btn-sm text-white fw-bold" style="background:#0d6e6e;">
+                    💾 Save Glass
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-bar">
+    <div>
+        <a href="/invoices/workshop" class="btn btn-secondary btn-sm py-1 px-3" style="font-size:0.8rem;">
+            ← Back to Workshop
+        </a>
+    </div>
+    <div style="font-size:0.8rem; color:#6c757d;">
+        Total glasses registered: <strong>{{ glasses|length }}</strong>
+    </div>
+</div>
+
+<script>
+function openAddModal() {
+    document.getElementById('glass-modal-title').textContent = 'Add Glass';
+    document.getElementById('glassForm').action = '/invoices/{{ invoice.id }}/glasses';
+    document.getElementById('glassForm').reset();
+    document.getElementById('f_payment_status').value = 'PENDING';
+    document.getElementById('f_status').value = 'ORDERED';
+    document.getElementById('f_is_ordered').checked = false;
+    document.getElementById('glassModal').style.display = 'flex';
+}
+
+function openEditModal(btn) {
+    const glass = JSON.parse(btn.dataset.glass);
+    document.getElementById('glass-modal-title').textContent = 'Edit Glass #' + glass.id;
+    document.getElementById('glassForm').action = '/invoices/glasses/' + glass.id + '/update';
+
+    document.getElementById('f_vendor').value = glass.vendor || '';
+    document.getElementById('f_purchase_order_number').value = glass.purchase_order_number || '';
+    document.getElementById('f_vendor_invoice_number').value = glass.vendor_invoice_number || '';
+    document.getElementById('f_vendor_invoice_date').value = glass.vendor_invoice_date || '';
+    document.getElementById('f_purchase_date').value = glass.purchase_date || '';
+    document.getElementById('f_nags_code').value = glass.nags_code || '';
+    document.getElementById('f_description').value = glass.description || '';
+    document.getElementById('f_glass_type').value = glass.glass_type || '';
+    document.getElementById('f_position').value = glass.position || '';
+    document.getElementById('f_storage_location').value = glass.storage_location || '';
+    document.getElementById('f_purchase_price').value = glass.purchase_price || '';
+    document.getElementById('f_sales_price').value = glass.sales_price || '';
+    document.getElementById('f_payment_status').value = glass.payment_status || 'PENDING';
+    document.getElementById('f_status').value = glass.status || 'ORDERED';
+    document.getElementById('f_is_ordered').checked = !!glass.is_ordered;
+    document.getElementById('f_notes').value = glass.notes || '';
+
+    document.getElementById('glassModal').style.display = 'flex';
+}
+
+function closeGlassModal() {
+    document.getElementById('glassModal').style.display = 'none';
+}
+</script>
+
+</body>
+</html>

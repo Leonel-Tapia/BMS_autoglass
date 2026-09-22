@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BMS Autoglass – Add New Part</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .form-container { background: white; max-width: 950px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #0078D4; margin-top: 0; border-bottom: 2px solid #0078D4; padding-bottom: 10px; font-size: 1.4rem; }
+        
+        /* Marca para campos obligatorios */
+        .required-mark { color: #d93025; font-weight: bold; margin-left: 2px; }
+        .required-note { font-size: 11px; color: #666; margin-bottom: 15px; font-style: italic; }
+
+        .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 10px; }
+        .grid-row.five-cols { grid-template-columns: repeat(5, 1fr); }
+        
+        .form-group { display: flex; flex-direction: column; }
+        label { font-weight: bold; font-size: 11px; color: #444; margin-bottom: 3px; text-transform: uppercase; }
+        input, textarea { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        
+        /* Borde resaltado para campos obligatorios vacíos (opcional) */
+        input:required { border-left: 3px solid #d93025; }
+
+        .margin-box { background-color: #e7f3ff; border: 1px solid #0078D4; color: #0078D4; font-weight: bold; text-align: center; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 14px; min-height: 30px; }
+        
+        .status-container { background-color: #f9f9f9; padding: 8px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+        .action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+        .btn-save { background-color: #0078D4; color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background-color: #6c757d; color: white; text-decoration: none; padding: 10px 25px; border-radius: 4px; font-size: 14px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Add New Part</h2>
+    <p class="required-note">Fields marked with <span class="required-mark">*</span> are required.</p>
+    
+    <form id="part-form">
+        <div class="grid-row">
+            <div class="form-group">
+                <label>SKU (Internal) <span class="required-mark">*</span></label>
+                <input type="text" id="sku" required placeholder="Unique ID">
+            </div>
+            <div class="form-group">
+                <label>Mfr. Part Number</label>
+                <input type="text" id="part_number">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Part Name <span class="required-mark">*</span></label>
+                <input type="text" id="part_name" required>
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <div class="form-group">
+                <label>Warehouse Location</label>
+                <input type="text" id="location">
+            </div>
+            <div class="form-group">
+                <label>Qty On Hand</label>
+                <input type="number" id="quantity_on_hand" value="0">
+            </div>
+            <div class="form-group">
+                <label>Min. Level</label>
+                <input type="number" id="minimum_quantity" value="0">
+            </div>
+            <div class="form-group">
+                <label>Max. Level</label>
+                <input type="number" id="maximum_quantity">
+            </div>
+        </div>
+
+        <div class="grid-row five-cols">
+            <div class="form-group">
+                <label>Unit Cost ($) <span class="required-mark">*</span></label>
+                <input type="number" id="unit_cost" step="0.01" value="0.00" required oninput="calculateMargin()">
+            </div>
+            <div class="form-group">
+                <label>Sale Price ($)</label>
+                <input type="number" id="unit_sale" step="0.01" value="0.00" oninput="calculateMargin()">
+            </div>
+            <div class="form-group">
+                <label>Profit Margin (%)</label>
+                <div id="margin_display" class="margin-box">0%</div>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Status</label>
+                <div class="status-container">
+                    <input type="checkbox" id="is_active" checked>
+                    <span style="font-size: 12px; font-weight: bold;">ACTIVE PRODUCT</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <a href="/inventory/view/catalogo" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-save">Save & Register</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function calculateMargin() {
+        const cost = parseFloat(document.getElementById('unit_cost').value) || 0;
+        const sale = parseFloat(document.getElementById('unit_sale').value) || 0;
+        const display = document.getElementById('margin_display');
+
+        if (sale > 0) {
+            const margin = ((sale - cost) / sale) * 100;
+            display.innerText = margin.toFixed(1) + '%';
+            display.style.backgroundColor = margin < 0 ? '#f8d7da' : '#e7f3ff';
+            display.style.color = margin < 0 ? '#721c24' : '#0078D4';
+            display.style.borderColor = margin < 0 ? '#f5c6cb' : '#0078D4';
+        } else {
+            display.innerText = '0%';
+        }
+    }
+
+    document.getElementById('part-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            sku: document.getElementById('sku').value,
+            part_number: document.getElementById('part_number').value,
+            part_name: document.getElementById('part_name').value,
+            quantity_on_hand: parseInt(document.getElementById('quantity_on_hand').value) || 0,
+            minimum_quantity: parseInt(document.getElementById('minimum_quantity').value) || 0,
+            maximum_quantity: document.getElementById('maximum_quantity').value ? parseInt(document.getElementById('maximum_quantity').value) : null,
+            location: document.getElementById('location').value,
+            unit_cost: document.getElementById('unit_cost').value,
+            unit_sale: document.getElementById('unit_sale').value,
+            is_active: document.getElementById('is_active').checked
+        };
+
+        try {
+            const response = await fetch('/inventory/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            if (response.ok) window.location.href = '/inventory/view/catalogo';
+            else {
+                const err = await response.json();
+                alert('Error: ' + err.detail);
+            }
+        } catch (error) {
+            alert('Connection failed');
+        }
+    });
+</script>
+
+</body>
+</html>

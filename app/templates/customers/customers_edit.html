@@ -1,0 +1,334 @@
+<!-- RUTA: /app/templates/customers/customers_edit.html ACTUALIZADO: 08/03/2026 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Customer</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #eef4ee; margin: 0; padding: 0; }
+        .container { width: 95%; max-width: 1300px; margin: 20px auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #28a745; padding-bottom: 8px; }
+        h2 { margin: 0; color: #28a745; font-size: 22px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+        label { display: block; margin-top: 3px; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 3px 5px; margin-top: 2px; border-radius: 4px; border: 1px solid #ccc; height: 24px; box-sizing: border-box; }
+        .notes-line { width: 100%; height: 26px; padding: 3px 5px; border-radius: 4px; border: 1px solid #ccc; resize: none; overflow: hidden; white-space: nowrap; box-sizing: border-box; }
+        .full-width { grid-column: span 3; }
+        .row-3-inline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+        .buttons-row { display: flex; gap: 10px; margin-top: 18px; justify-content: space-between; align-items: center; }
+        .buttons-right { display: flex; gap: 10px; align-items: center; }
+        .btn { padding: 6px 14px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; text-align: center; }
+        .btn:hover { background-color: #1e7e34; }
+        .cancel-btn { background-color: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; padding: 6px 14px; text-align: center; text-decoration: none; display: inline-block; box-sizing: border-box; }
+        .cancel-btn:hover { background-color: #c82333; }
+        .menu-btn { background-color: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; padding: 6px 14px; text-align: center; text-decoration: none; display: inline-block; box-sizing: border-box; }
+        .menu-btn:hover { background-color: #117a8b; }
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 60%; padding: 20px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.3); }
+        .modal h3 { margin-top: 0; text-align: center; color: #28a745; }
+        .close-btn { background-color: #6c757d; color: white; padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; float: right; }
+        .close-btn:hover { background-color: #545b62; }
+        .autocomplete-list { position: absolute; background: white; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-height: 180px; overflow-y: auto; z-index: 1000; display: none; }
+        .autocomplete-item { padding: 6px 8px; cursor: pointer; font-size: 13px; }
+        .autocomplete-item:hover { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="customerForm" method="post" action="/customers/edit/{{ customer.id }}">
+            <input type="hidden" id="origin" name="origin" value="{{ origin }}">
+            <input type="hidden" id="estimate_id" name="estimate_id" value="{{ estimate_id }}">
+            <input type="hidden" id="customer_id" name="customer_id" value="{{ customer.id }}">
+            <input type="hidden" id="next" name="next" value="{{ next }}">
+
+
+
+            <div class="header-container">
+                <h2>Edit Customer</h2>
+            </div>
+
+            <div class="grid-3">
+                <div>
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ customer.name }}" required>
+                    <label>Business Name</label>
+                    <input type="text" name="business_name" value="{{ customer.business_name }}">
+                    <label>Primary Contact Name</label>
+                    <input type="text" name="contact_name" value="{{ customer.contact_name }}">
+                    <label>Primary Contact Phone</label>
+                    <input type="text" name="contact_phone" value="{{ customer.contact_phone }}" oninput="formatPhone(this)">
+                    <label>Phone</label>
+                    <input type="text" name="phone" value="{{ customer.phone }}" oninput="formatPhone(this)">
+                    <label>Phone 2</label>
+                    <input type="text" name="phone2" value="{{ customer.phone2 }}" oninput="formatPhone(this)">
+                </div>
+                <div>
+                    <label>Second Contact Name</label>
+                    <input type="text" name="contact_name2" value="{{ customer.contact_name2 }}">
+                    <label>Second Contact Phone</label>
+                    <input type="text" name="contact_phone2" value="{{ customer.contact_phone2 }}" oninput="formatPhone(this)">
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ customer.email }}">
+                    <label>Tax ID</label>
+                    <input type="text" name="tax_id" value="{{ customer.tax_id }}">
+                </div>
+                <div style="position: relative;">
+                    <label>Address</label>
+                    <input type="text" name="address" value="{{ customer.address }}">
+
+                    <label>ZIP Code</label>
+                    <input type="text" id="zip_code" name="zip_code" value="{{ customer.zip_code }}" autocomplete="off">
+                    <div id="zip_suggestions" class="autocomplete-list"></div>
+
+                    <label>City</label>
+                    <input type="text" id="city" name="city" value="{{ customer.city }}">
+                    
+                    <label>State</label>
+                    <select id="state" name="state">
+                        <option value="">Select State</option>
+                        <option value="CO" {% if customer.state == "CO" %}selected{% endif %}>Colorado (CO)</option>
+                        <option value="AL" {% if customer.state == "AL" %}selected{% endif %}>Alabama (AL)</option>
+                        <option value="AK" {% if customer.state == "AK" %}selected{% endif %}>Alaska (AK)</option>
+                        <option value="AZ" {% if customer.state == "AZ" %}selected{% endif %}>Arizona (AZ)</option>
+                        <option value="AR" {% if customer.state == "AR" %}selected{% endif %}>Arkansas (AR)</option>
+                        <option value="CA" {% if customer.state == "CA" %}selected{% endif %}>California (CA)</option>
+                        <option value="CT" {% if customer.state == "CT" %}selected{% endif %}>Connecticut (CT)</option>
+                        <option value="DE" {% if customer.state == "DE" %}selected{% endif %}>Delaware (DE)</option>
+                        <option value="FL" {% if customer.state == "FL" %}selected{% endif %}>Florida (FL)</option>
+                        <option value="GA" {% if customer.state == "GA" %}selected{% endif %}>Georgia (GA)</option>
+                        <option value="HI" {% if customer.state == "HI" %}selected{% endif %}>Hawaii (HI)</option>
+                        <option value="ID" {% if customer.state == "ID" %}selected{% endif %}>Idaho (ID)</option>
+                        <option value="IL" {% if customer.state == "IL" %}selected{% endif %}>Illinois (IL)</option>
+                        <option value="IN" {% if customer.state == "IN" %}selected{% endif %}>Indiana (IN)</option>
+                        <option value="IA" {% if customer.state == "IA" %}selected{% endif %}>Iowa (IA)</option>
+                        <option value="KS" {% if customer.state == "KS" %}selected{% endif %}>Kansas (KS)</option>
+                        <option value="KY" {% if customer.state == "KY" %}selected{% endif %}>Kentucky (KY)</option>
+                        <option value="LA" {% if customer.state == "LA" %}selected{% endif %}>Louisiana (LA)</option>
+                        <option value="ME" {% if customer.state == "ME" %}selected{% endif %}>Maine (ME)</option>
+                        <option value="MD" {% if customer.state == "MD" %}selected{% endif %}>Maryland (MD)</option>
+                        <option value="MA" {% if customer.state == "MA" %}selected{% endif %}>Massachusetts (MA)</option>
+                        <option value="MI" {% if customer.state == "MI" %}selected{% endif %}>Michigan (MI)</option>
+                        <option value="MN" {% if customer.state == "MN" %}selected{% endif %}>Minnesota (MN)</option>
+                        <option value="MS" {% if customer.state == "MS" %}selected{% endif %}>Mississippi (MS)</option>
+                        <option value="MO" {% if customer.state == "MO" %}selected{% endif %}>Missouri (MO)</option>
+                        <option value="MT" {% if customer.state == "MT" %}selected{% endif %}>Montana (MT)</option>
+                        <option value="NE" {% if customer.state == "NE" %}selected{% endif %}>Nebraska (NE)</option>
+                        <option value="NV" {% if customer.state == "NV" %}selected{% endif %}>Nevada (NV)</option>
+                        <option value="NH" {% if customer.state == "NH" %}selected{% endif %}>New Hampshire (NH)</option>
+                        <option value="NJ" {% if customer.state == "NJ" %}selected{% endif %}>New Jersey (NJ)</option>
+                        <option value="NM" {% if customer.state == "NM" %}selected{% endif %}>New Mexico (NM)</option>
+                        <option value="NY" {% if customer.state == "NY" %}selected{% endif %}>New York (NY)</option>
+                        <option value="NC" {% if customer.state == "NC" %}selected{% endif %}>North Carolina (NC)</option>
+                        <option value="ND" {% if customer.state == "ND" %}selected{% endif %}>North Dakota (ND)</option>
+                        <option value="OH" {% if customer.state == "OH" %}selected{% endif %}>Ohio (OH)</option>
+                        <option value="OK" {% if customer.state == "OK" %}selected{% endif %}>Oklahoma (OK)</option>
+                        <option value="OR" {% if customer.state == "OR" %}selected{% endif %}>Oregon (OR)</option>
+                        <option value="PA" {% if customer.state == "PA" %}selected{% endif %}>Pennsylvania (PA)</option>
+                        <option value="RI" {% if customer.state == "RI" %}selected{% endif %}>Rhode Island (RI)</option>
+                        <option value="SC" {% if customer.state == "SC" %}selected{% endif %}>South Carolina (SC)</option>
+                        <option value="SD" {% if customer.state == "SD" %}selected{% endif %}>South Dakota (SD)</option>
+                        <option value="TN" {% if customer.state == "TN" %}selected{% endif %}>Tennessee (TN)</option>
+                        <option value="TX" {% if customer.state == "TX" %}selected{% endif %}>Texas (TX)</option>
+                        <option value="UT" {% if customer.state == "UT" %}selected{% endif %}>Utah (UT)</option>
+                        <option value="VT" {% if customer.state == "VT" %}selected{% endif %}>Vermont (VT)</option>
+                        <option value="VA" {% if customer.state == "VA" %}selected{% endif %}>Virginia (VA)</option>
+                        <option value="WA" {% if customer.state == "WA" %}selected{% endif %}>Washington (WA)</option>
+                        <option value="WV" {% if customer.state == "WV" %}selected{% endif %}>West Virginia (WV)</option>
+                        <option value="WI" {% if customer.state == "WI" %}selected{% endif %}>Wisconsin (WI)</option>
+                        <option value="WY" {% if customer.state == "WY" %}selected{% endif %}>Wyoming (WY)</option>
+                    </select>
+
+                    <label>Language</label>
+                    <select name="language">
+                        <option value="ENGLISH" {% if customer.language == "ENGLISH" %}selected{% endif %}>English</option>
+                        <option value="SPANISH" {% if customer.language == "SPANISH" %}selected{% endif %}>Spanish</option>
+                        <option value="MIXED" {% if customer.language == "MIXED" %}selected{% endif %}>Mixed</option>
+                    </select>
+                </div>
+                <div class="full-width">
+                    <div class="row-3-inline">
+                        <div>
+                            <label>Customer Type</label>
+                            <select name="customer_type">
+                                <option value="GENERAL" {% if customer.customer_type == "GENERAL" %}selected{% endif %}>General</option>
+                                <option value="RETAIL" {% if customer.customer_type == "RETAIL" %}selected{% endif %}>Retail</option>
+                                <option value="AUTO" {% if customer.customer_type == "AUTO" %}selected{% endif %}>Auto</option>
+                                <option value="MONEYWIRE" {% if customer.customer_type == "MONEYWIRE" %}selected{% endif %}>Money Wire</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Mood</label>
+                            <select name="mood">
+                                <option value="HAPPY" {% if customer.mood == "HAPPY" %}selected{% endif %}>Happy</option>
+                                <option value="QUIET" {% if customer.mood == "QUIET" %}selected{% endif %}>Quiet</option>
+                                <option value="SAD" {% if customer.mood == "SAD" %}selected{% endif %}>Sad</option>
+                                <option value="ANGRY" {% if customer.mood == "ANGRY" %}selected{% endif %}>Angry</option>
+                                <option value="NEUTRAL" {% if customer.mood == "NEUTRAL" %}selected{% endif %}>Neutral</option>
+                                <option value="CONFUSED" {% if customer.mood == "CONFUSED" %}selected{% endif %}>Confused</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="ACTIVE" {% if customer.status == "ACTIVE" %}selected{% endif %}>Active</option>
+                                <option value="INACTIVE" {% if customer.status == "INACTIVE" %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label style="margin-top: 8px;">Internal Notes</label>
+                    <textarea class="notes-line" name="internal_notes">{{ customer.internal_notes }}</textarea>
+                </div>
+            </div>
+
+            <div id="additionalModal" class="modal">
+                <div class="modal-content">
+                    <h3>Additional Information</h3>
+                    <div class="grid-3">
+                        <div>
+                            <label>Allow SMS</label>
+                            <select name="allow_sms">
+                                <option value="true" {% if customer.allow_sms %}selected{% endif %}>Yes</option>
+                                <option value="false" {% if not customer.allow_sms %}selected{% endif %}>No</option>
+                            </select>
+                            <label>SMS Opt-Out Reason</label>
+                            <input type="text" name="sms_opt_out_reason" value="{{ customer.sms_opt_out_reason }}">
+                            <label>Preferred Contact Method</label>
+                            <select name="preferred_contact_method">
+                                <option value="PHONE" {% if customer.preferred_contact_method == "PHONE" %}selected{% endif %}>Phone</option>
+                                <option value="SMS" {% if customer.preferred_contact_method == "SMS" %}selected{% endif %}>SMS</option>
+                                <option value="EMAIL" {% if customer.preferred_contact_method == "EMAIL" %}selected{% endif %}>Email</option>
+                            </select>
+                            <label>Preferred Contact</label>
+                            <select name="preferred_contact">
+                                <option value="PHONE" {% if customer.preferred_contact == "PHONE" %}selected{% endif %}>Phone</option>
+                                <option value="SMS" {% if customer.preferred_contact == "SMS" %}selected{% endif %}>SMS</option>
+                                <option value="EMAIL" {% if customer.preferred_contact == "EMAIL" %}selected{% endif %}>Email</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Referral Source</label>
+                            <input type="text" name="referral_source" value="{{ customer.referral_source }}">
+                            <label>Tags</label>
+                            <input type="text" name="tags" value="{{ customer.tags }}">
+                            <label>Birthday</label>
+                            <input type="date" name="birthday" value="{{ customer.birthday }}">
+                        </div>
+                        <div>
+                            <label>Credit Limit</label>
+                            <input type="text" name="credit_limit" value="{{ customer.credit_limit }}">
+                            <label>Last Purchase Date</label>
+                            <input type="date" name="last_purchase_date" value="{{ customer.last_purchase_date }}">
+                            <label>Customer Rating</label>
+                            <input type="text" name="customer_rating" value="{{ customer.customer_rating }}">
+                        </div>
+                        <div>
+                            <label>Tax Exempt</label>
+                            <select name="tax_exempt">
+                                <option value="false" {% if not customer.tax_exempt %}selected{% endif %}>No</option>
+                                <option value="true" {% if customer.tax_exempt %}selected{% endif %}>Yes</option>
+                            </select>
+                            <label>Tax Exempt License</label>
+                            <input type="text" name="tax_exempt_license" value="{{ customer.tax_exempt_license }}">
+                        </div>
+                    </div>
+                    <button type="button" class="close-btn" onclick="closeAdditional()">Close</button>
+                </div>
+            </div>
+
+            <div class="buttons-row">
+                <button type="button" class="cancel-btn" onclick="confirmCancel()">Cancel / Does Not Save / Back</button>
+                <div class="buttons-right">
+                    <button type="button" class="menu-btn" onclick="openAdditional()">Additional Information</button>
+                    <button type="submit" class="btn">Save / Back</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function openAdditional() { document.getElementById("additionalModal").style.display = "flex"; }
+        function closeAdditional() { document.getElementById("additionalModal").style.display = "none"; }
+        
+        function confirmCancel() {
+            const isConfirmed = confirm("Are you sure you want to cancel? Any unsaved changes will be lost and you will return to the previous screen.");
+            if (isConfirmed) {
+                const origin = document.getElementById("origin").value;
+                const estimateId = document.getElementById("estimate_id").value;
+
+                // Lógica de retorno exacta basada en el origen guardado sin enviar al menú principal
+                if (origin === "estimates" && estimateId) {
+                    window.location.href = `/estimates/edit/${estimateId}`;
+                } else if (origin === "estimates_add") {
+                    window.location.href = `/estimates/add`;
+
+                } else if (origin === "call_center") {
+                    const customerId = document.getElementById("customer_id").value;
+                    window.location.href = `/call_center/lookup/${customerId}`;
+
+                } else if (origin.startsWith("manager")) {
+                    // Si viene del módulo manager, regresa a su respectiva pantalla y no al menú
+                    window.location.href = `/${origin}`;
+                } else if (origin) {
+                    window.location.href = `/${origin}`;
+                } else {
+                    window.location.href = `/customers`;
+                }
+            }
+        }
+
+        function formatPhone(input) {
+            let value = input.value.replace(/\D/g, "");
+            if (value.length > 10) value = value.slice(0, 10);
+            if (value.length >= 7) input.value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6)}`;
+            else if (value.length >= 4) input.value = `(${value.slice(0,3)}) ${value.slice(3)}`;
+            else if (value.length >= 1) input.value = `(${value}`;
+        }
+
+        document.querySelectorAll("input, textarea").forEach(el => { el.addEventListener("focus", function() { this.select(); }); });
+        
+        const zipInput = document.getElementById("zip_code");
+        const cityInput = document.getElementById("city");
+        const stateInput = document.getElementById("state");
+        const suggestionsBox = document.getElementById("zip_suggestions");
+
+        zipInput.addEventListener("input", async function () {
+            const query = this.value.trim();
+            if (query.length < 2) { suggestionsBox.style.display = "none"; return; }
+            const response = await fetch(`/zipcodes/search?q=${query}`);
+            const data = await response.json();
+            suggestionsBox.innerHTML = "";
+            if (data.length === 0) { suggestionsBox.style.display = "none"; return; }
+            data.forEach(item => {
+                const div = document.createElement("div");
+                div.classList.add("autocomplete-item");
+                div.textContent = `${item.zip_code} – ${item.city}, ${item.state}`;
+                div.addEventListener("click", () => {
+                    zipInput.value = item.zip_code;
+                    cityInput.value = item.city;
+                    stateInput.value = item.state;
+                    suggestionsBox.style.display = "none";
+                    cityInput.focus();
+                });
+                suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = "block";
+        });
+
+        document.addEventListener("click", function (e) { if (!suggestionsBox.contains(e.target) && e.target !== zipInput) { suggestionsBox.style.display = "none"; } });
+
+        zipInput.addEventListener("blur", async function () {
+            const zip = this.value.trim();
+            if (zip.length === 0) return;
+            if (zip.length < 5) { alert("ZIP Code must be 5 digits."); cityInput.value = ""; stateInput.value = ""; return; }
+            const response = await fetch(`/zipcodes/search?q=${zip}`);
+            const data = await response.json();
+            if (data.length === 0) { alert("ZIP Code not found in database."); cityInput.value = ""; stateInput.value = ""; return; }
+            cityInput.value = data[0].city;
+            stateInput.value = data[0].state;
+            cityInput.focus();
+        });
+    </script>
+</body>
+</html>

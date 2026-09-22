@@ -1,0 +1,342 @@
+<!-- Path: app/templates/call_center/callcenter_lookup.html | Updated: 2026-08-25 | Time: 15:30 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Details: {{ customer.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h3 { margin: 5px 0 10px 0; font-size: 18px; }
+        .mood-good { background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .mood-bad { background: #f8d7da; color: #721c24; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 0; }
+        th, td { padding: 1px 8px; border-bottom: 1px solid #ddd; text-align: left; font-size: 13px; line-height: 1.1; }
+        th { background: #f8f9fa; padding: 3px 8px; }
+
+        .btn-small { background: #0078D4; color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px; font-size: 12px; white-space: nowrap; border: none; cursor: pointer; }
+        .btn-small:hover { background: #005fa3; }
+        .btn-details { background: #28a745; }
+        .btn-details:hover { background: #218838; }
+        .btn-back { background: #6c757d; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #b52a37; }
+
+        .scrollable-table { max-height: 150px; overflow-y: auto; border: 1px solid #ddd; }
+        .scrollable-table thead th { position: sticky; top: 0; z-index: 1; border-bottom: 2px solid #ddd; }
+        
+        .badge-shop { background: #007bff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .badge-mobile { background: #28a745; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        
+        .total-label { font-weight: bold; font-size: 14px; }
+        .total-general { color: #0078D4; }
+        .total-pending { color: #dc3545; }
+        .total-paid { color: #28a745; }
+        
+        .customer-since { font-size: 14px; color: #6c757d; margin-left: 8px; }
+        
+        /* Estilo para filas Void */
+        .row-void { background-color: #f8d7da !important; color: #721c24 !important; }
+        .row-void td { background-color: #f8d7da !important; color: #721c24 !important; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <div style="flex-grow: 1;">
+            <strong style="font-size: 16px;">{{ customer.name }}</strong>
+            <span class="customer-since">
+                {% if customer.created_at %}
+                    | Customer since: {{ customer.created_at.strftime('%Y-%m-%d') }}
+                {% endif %}
+            </span>
+            <br>
+            <span style="font-size: 14px; color: #555;">{{ customer.phone }} — {{ customer.address }}</span> | 
+            <span style="font-size: 14px;">{{ customer.language }}</span> | 
+            <span style="font-size: 14px;"><strong>Mood:</strong> 
+                <span class="{% if customer.mood == 'bad' %}mood-bad{% else %}mood-good{% endif %}">
+                    {{ customer.mood | upper }}
+                </span>
+            </span>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+
+            <!-- Edit Customer -->
+            <a href="/customers/edit/{{ customer.id }}?origin=call_center&next={{ next }}" 
+               class="btn-small">Edit Customer</a>
+
+            <!-- View Map -->
+            <a href="https://maps.google.com/?q={{ customer.address }}" target="_blank" class="btn-small">View Map</a>
+
+            <!-- ESTIMATES BUTTON - Dinámico según rol -->
+            {% set estimate_origin = 'call_center' if request.session.get('role')|lower == 'sales' else 'manager' %}
+            <a href="/estimates/new/{{ customer.id }}?origin={{ estimate_origin }}&next={{ next }}" 
+               class="btn-small" style="background:#6c757d;">Estimates</a>
+
+            <!-- Back to Search -->
+            <a href="{{ back_url }}" class="btn-small btn-back">Back to Search</a>
+        </div>
+    </div>
+</div>
+
+<!-- INVOICE HISTORY -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 0 5px 0; flex-wrap: wrap; gap: 8px;">
+        <h3 style="margin: 0;">Invoice History</h3>
+        <div id="invoice-totals" style="display: flex; gap: 15px; font-size: 14px; flex-wrap: wrap;">
+            <span class="total-label total-general">Total: $0.00</span>
+            <span class="total-label total-pending">Pending: $0.00</span>
+            <span class="total-label total-paid">Paid: $0.00</span>
+        </div>
+    </div>
+    <div class="scrollable-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice #</th>
+                    <th>Est #</th>
+                    <th>Year</th>
+                    <th>Make</th>
+                    <th>Model</th>
+                    <th>Total</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Operator</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="invoice-history-body">
+                <tr>
+                    <td colspan="11" style="text-align: center; color: #999;">Loading invoices...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ESTIMATE HISTORY -->
+<div class="card">
+    <h3>Estimate History</h3>
+    <div class="scrollable-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Est #</th>
+                    <th>Invoice #</th>
+                    <th>Year</th>
+                    <th>Make</th>
+                    <th>Model</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Operator</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estimate, year in estimates %}
+                <tr {% if estimate.status == 'Void' %}style="background-color: #f8d7da; color: #721c24;"{% endif %}>
+                    <td>{{ estimate.estimated_appointment_date }}</td>
+                    <td><a href="/estimates/edit/{{ estimate.id }}?origin={{ estimate_origin }}">{{ estimate.id }}</a></td>
+                    <td>
+                        {% if estimate.invoice_number %}
+                            INV-{{ estimate.invoice_number }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ year }}</td>
+                    <td>{{ estimate.vehicle_make }}</td>
+                    <td>{{ estimate.vehicle_model }}</td>
+                    <td>${{ "{:,.2f}".format(estimate.total or 0) }}</td>
+                    <td><strong>{{ estimate.status }}</strong></td>
+                    <td>{{ estimate.operator_username or '' }}</td>
+                    <td>
+                        <button type="button" class="btn-small btn-details" onclick="viewEstimateDetails('{{ estimate.id }}')">Details</button>
+                        {% if estimate.status == 'Void' %}
+                            <button type="button" class="btn-small btn-danger"
+                                    onclick="viewVoidInfo('{{ estimate.voided_by }}','{{ estimate.voided_at }}','{{ estimate.void_reason }}')">
+                                Why Void?
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// 1. LOAD INVOICE HISTORY
+// ============================================================
+async function loadInvoiceHistory(customerId) {
+    const tbody = document.getElementById('invoice-history-body');
+    const totalsContainer = document.getElementById('invoice-totals');
+    try {
+        const response = await fetch(`/invoices/history/${customerId}`);
+        const data = await response.json();
+
+        // Verificar si la respuesta tiene la nueva estructura
+        const invoices = data.invoices || data;
+        const totals = data.totals || null;
+
+        if (!invoices || invoices.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #999;">No invoices found</td></tr>`;
+            totalsContainer.innerHTML = `
+                <span class="total-label total-general">Total: $0.00</span>
+                <span class="total-label total-pending">Pending: $0.00</span>
+                <span class="total-label total-paid">Paid: $0.00</span>
+            `;
+            return;
+        }
+
+        let html = '';
+        let grandTotal = 0;
+        let pendingTotal = 0;
+        let paidTotal = 0;
+
+        // Construir return_url fijo para este customer
+        const returnUrl = encodeURIComponent('/call_center/lookup/' + customerId);
+
+        invoices.forEach(inv => {
+            const date = inv.date || 'N/A';
+            const total = parseFloat(inv.total) || 0;
+            grandTotal += total;
+
+            // Clasificar por estado para los totales
+            const statusUpper = (inv.status || 'PENDING').toUpperCase();
+            if (['PAID', 'COMPLETED', 'PAGADO'].includes(statusUpper)) {
+                paidTotal += total;
+            } else {
+                pendingTotal += total;
+            }
+
+            // Determinar badge de tipo de servicio
+            let typeBadge = '';
+            const serviceType = (inv.service_type || '').toUpperCase();
+            if (serviceType === 'SHOP') {
+                typeBadge = '<span class="badge-shop">SHOP</span>';
+            } else if (serviceType === 'MOVIL' || serviceType === 'MOBILE') {
+                typeBadge = '<span class="badge-mobile">MOBILE</span>';
+            } else {
+                typeBadge = serviceType || '-';
+            }
+            
+            // Determinar clase para Void
+            const isVoid = statusUpper === 'VOID' || statusUpper === 'VOIDED';
+            const rowClass = isVoid ? 'row-void' : '';
+            
+            html += `
+                <tr class="${rowClass}">
+                    <td>${date}</td>
+                    <td><a href="/invoices/view/${inv.id}?return_url=${returnUrl}" ${isVoid ? 'style="color:#721c24;"' : ''}>${inv.invoice_number}</a></td>
+                    <td>${inv.estimate_id || '-'}</td>
+                    <td>${inv.year || '-'}</td>
+                    <td>${inv.make || '-'}</td>
+                    <td>${inv.model || '-'}</td>
+                    <td>$${total.toFixed(2)}</td>
+                    <td>${typeBadge}</td>
+                    <td><strong>${inv.status || 'PENDING'}</strong></td>
+                    <td>${inv.operator || '-'}</td>
+                    <td>
+                        <button type="button" class="btn-small btn-details" onclick="viewInvoiceDetails(${inv.id})">Details</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+        // Actualizar totales desglosados
+        totalsContainer.innerHTML = `
+            <span class="total-label total-general">Total: $${grandTotal.toFixed(2)}</span>
+            <span class="total-label total-pending">Pending: $${pendingTotal.toFixed(2)}</span>
+            <span class="total-label total-paid">Paid: $${paidTotal.toFixed(2)}</span>
+        `;
+
+    } catch (error) {
+        console.error('Error loading invoice history:', error);
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #999;">Error loading invoices</td></tr>`;
+        totalsContainer.innerHTML = `
+            <span class="total-label total-general">Total: $0.00</span>
+            <span class="total-label total-pending">Pending: $0.00</span>
+            <span class="total-label total-paid">Paid: $0.00</span>
+        `;
+    }
+}
+
+// ============================================================
+// 2. VIEW INVOICE DETAILS (AJAX)
+// ============================================================
+async function viewInvoiceDetails(invoiceId) {
+    try {
+        const response = await fetch(`/invoices/details/${invoiceId}`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            let message = "Invoice Items:\n\n";
+            data.forEach(item => {
+                message += `• ${item.product_name || 'No name'}: $${parseFloat(item.price || 0).toFixed(2)} x ${item.quantity || 1}\n`;
+            });
+            alert(message);
+        } else {
+            alert("No details found for invoice #" + invoiceId);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while loading the invoice details.");
+    }
+}
+
+// ============================================================
+// 3. VIEW ESTIMATE DETAILS (existing)
+// ============================================================
+async function viewEstimateDetails(estimateId) {
+    try {
+        const response = await fetch(`/call_center/estimates/details/${estimateId}`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            let message = "Services/Parts:\n\n";
+            data.forEach(item => {
+                message += `• ${item.product_name || 'No name'}: $${parseFloat(item.price || 0).toFixed(2)}\n`;
+            });
+            alert(message);
+        } else {
+            alert("No details found for estimate #" + estimateId);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while loading the details.");
+    }
+}
+
+// ============================================================
+// 4. VIEW VOID INFO (existing)
+// ============================================================
+function viewVoidInfo(voidedBy, voidedAt, voidReason) {
+    alert(
+        "VOID INFORMATION\n\n" +
+        "Voided By: " + voidedBy + "\n" +
+        "Voided At: " + voidedAt + "\n" +
+        "Reason: " + voidReason
+    );
+}
+
+// ============================================================
+// 5. INIT ON PAGE LOAD
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    var customerId = parseInt("{{ customer.id }}", 10);
+    loadInvoiceHistory(customerId);
+});
+</script>
+
+</body>
+</html>

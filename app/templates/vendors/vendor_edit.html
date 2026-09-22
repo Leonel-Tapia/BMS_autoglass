@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-size: 0.85rem; }
+        .card { border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #dee2e6; }
+        .form-label { font-weight: 600; color: #495057; margin-bottom: 0.15rem; font-size: 0.8rem; }
+        .form-control, .form-select { font-size: 0.85rem; padding: 0.25rem 0.5rem; border-radius: 4px; }
+        .card-title { font-size: 0.95rem; margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; padding-bottom: 0.25rem !important; }
+        .btn-sm-custom { padding: 0.25rem 0.75rem; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid px-3 my-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+            <h5 class="mb-0 text-primary fw-bold" style="font-size: 1.1rem;">Edit Vendor</h5>
+            <small class="text-muted" style="font-size: 0.75rem;">ID: {{ vendor.id }} | System: BMS Autoglass</small>
+        </div>
+        <a href="/vendors/list" class="btn btn-outline-secondary btn-sm btn-sm-custom">
+            ← Back to List
+        </a>
+    </div>
+
+    <form action="/vendors/edit/{{ vendor.id }}" method="POST">
+        <div class="card p-3">
+            <h5 class="card-title border-bottom text-secondary fw-bold">General Information</h5>
+            
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <label class="form-label">Vendor Code</label>
+                    <input type="text" class="form-control" name="vendor_code" value="{{ vendor.vendor_code or '' }}">
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label">Vendor Name *</label>
+                    <input type="text" class="form-control" name="vendor_name" value="{{ vendor.vendor_name }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tax ID (RFC/EIN)</label>
+                    <input type="text" class="form-control" name="tax_id" value="{{ vendor.tax_id or '' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Contact Name</label>
+                    <input type="text" class="form-control" name="contact_name" value="{{ vendor.contact_name or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Contact Title</label>
+                    <input type="text" class="form-control" name="contact_title" value="{{ vendor.contact_title or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-control" name="email" value="{{ vendor.email or '' }}">
+                </div>
+            </div>
+
+            <h5 class="card-title border-bottom text-secondary fw-bold">Contact & Logistics</h5>
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label">Phone</label>
+                    <input type="text" class="form-control phone-mask" name="phone" placeholder="(999) 999-9999" value="{{ vendor.phone or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Mobile</label>
+                    <input type="text" class="form-control phone-mask" name="mobile" placeholder="(999) 999-9999" value="{{ vendor.mobile or '' }}">
+                </div>
+
+                <!-- PAYMENT TERMS + TERMS DAYS -->
+                <div class="col-md-3">
+                    <label class="form-label">Payment Terms</label>
+                    <input type="text" class="form-control" name="payment_terms"
+                           placeholder="Net 30, 7 días, etc."
+                           value="{{ vendor.payment_terms or '' }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Terms Days</label>
+                    <input type="number" class="form-control" name="terms_days"
+                           value="{{ vendor.terms_days or 0 }}" readonly>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Website</label>
+                    <input type="url" class="form-control" name="website" placeholder="https://..." value="{{ vendor.website or '' }}">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Street Address</label>
+                    <input type="text" class="form-control" name="address" value="{{ vendor.address or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">City</label>
+                    <input type="text" class="form-control" name="city" value="{{ vendor.city or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">State</label>
+                    <input type="text" class="form-control" name="state" value="{{ vendor.state or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Zip Code</label>
+                    <input type="text" class="form-control" name="zip_code" value="{{ vendor.zip_code or '' }}">
+                </div>
+
+                <div class="col-md-9">
+                    <label class="form-label">Internal Notes</label>
+                    <textarea class="form-control" name="notes" rows="1" style="resize: none;">{{ vendor.notes or '' }}</textarea>
+                </div>
+
+                <div class="col-md-3 d-flex flex-column justify-content-end pb-1">
+                    <label class="form-label mb-1">Vendor Status</label>
+                    <div class="form-check form-switch fs-6">
+                        <input class="form-check-input" type="checkbox" name="status_active" value="true"
+                               {% if vendor.is_active %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" style="font-size: 0.85rem;">Active Vendor</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                <a href="/vendors/list" class="btn btn-secondary btn-sm btn-sm-custom">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-sm btn-sm-custom">Save Changes</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Phone mask
+    document.querySelectorAll('.phone-mask').forEach(function(input) {
+        input.addEventListener('input', function (e) {
+            var x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+            e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+        });
+    });
+</script>
+
+</body>
+</html>

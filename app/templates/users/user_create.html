@@ -1,0 +1,121 @@
+<!-- app/templates/users/user_create.html - Updated: 2026-09-04 Compact Mode -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMS Autoglass - Create User</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+
+    <div class="max-w-4xl mx-auto bg-white shadow-sm rounded border border-gray-300">
+        <!-- Header mas delgado -->
+        <div class="bg-slate-800 p-2">
+            <h2 class="text-lg font-bold text-white text-center">New User Registration</h2>
+        </div>
+
+        <form action="/users/create" method="POST" class="p-4 text-sm">
+            <!-- Section 1: Auth (Compact) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
+                <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Full Name *</label>
+                    <input type="text" name="full_name" required class="w-full border border-gray-300 rounded p-1 focus:ring-1 focus:ring-blue-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Email *</label>
+                    <input type="email" name="email" required class="w-full border border-gray-300 rounded p-1 focus:ring-1 focus:ring-blue-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Username *</label>
+                    <input type="text" name="username" required class="w-full border border-gray-300 rounded p-1 focus:ring-1 focus:ring-blue-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Password *</label>
+                    <input type="text" name="password" required class="w-full border border-gray-300 rounded p-1 focus:ring-1 focus:ring-blue-400 outline-none">
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 my-2"></div>
+
+            <!-- Section 2: Role & Job (Compact) -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Role *</label>
+                    <select name="role" required class="w-full border border-gray-300 rounded p-1 bg-white">
+
+                        <!-- ROLES EN INGLÉS ORDEN ALFABÉTICO -->
+                        <option value="ACCOUNTING">ACCOUNTING</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="AUDITOR">AUDITOR</option>
+                        <option value="HR">HR</option>
+                        <option value="MANAGER">MANAGER</option>
+                        <option value="PURCHASING">PURCHASING</option>
+                        <option value="SALES">SALES</option>
+                        <option value="SUPPORT">SUPPORT</option>
+                        <option value="TECHNICIAN">TECHNICIAN</option>
+                        <option value="USER">USER</option>
+                        <option value="WAREHOUSE">WAREHOUSE</option>
+
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Position</label>
+                    <input type="text" name="position" class="w-full border border-gray-300 rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Salary</label>
+                    <input type="number" step="0.01" name="salary" class="w-full border border-gray-300 rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Hire Date</label>
+                    <input type="date" name="hire_date" class="w-full border border-gray-300 rounded p-1">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Status</label>
+                    <select name="is_active" class="w-full border border-gray-300 rounded p-1 bg-white font-bold text-blue-700">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 my-2"></div>
+
+            <!-- Section 3: Location (Very Compact) -->
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-2 mb-4">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Address</label>
+                    <input type="text" name="address" class="w-full border border-gray-300 rounded p-1 text-xs">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">City</label>
+                    <input type="text" name="city" class="w-full border border-gray-300 rounded p-1 text-xs">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">State</label>
+                    <input type="text" name="state" class="w-full border border-gray-300 rounded p-1 text-xs">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Postal Code</label>
+                    <input type="text" name="postal_code" class="w-full border border-gray-300 rounded p-1 text-xs">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Phone 1</label>
+                    <input type="text" name="phone_1" class="w-full border border-gray-300 rounded p-1 text-xs">
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="flex justify-end gap-3 border-t border-gray-200 pt-3">
+                <a href="/users/list" class="text-xs text-gray-500 hover:text-gray-800 self-center">Cancel</a>
+                <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white text-xs px-6 py-1.5 rounded font-bold shadow-sm transition-all uppercase tracking-wider">
+                    Create User
+                </button>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

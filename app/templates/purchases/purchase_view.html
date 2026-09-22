@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-size: 0.85rem; padding-bottom: 70px; }
+        .table-ledger th { background-color: #343a40; color: #ffffff; text-transform: uppercase; font-size: 0.75rem; padding: 6px; }
+        .table-ledger td { padding: 4px 6px; vertical-align: middle; }
+        .card-header { padding: 0.4rem 1rem; }
+        .card-body { padding: 0.8rem 1rem; }
+
+        .fixed-totals-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border-top: 2px solid #dee2e6;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+            z-index: 1030;
+            padding: 8px 18px;
+        }
+        .total-item {
+            padding: 0 12px;
+            border-right: 1px solid #dee2e6;
+        }
+        .total-item:last-child {
+            border-right: none;
+        }
+
+        .compact-row { margin-bottom: 0.4rem !important; }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container-fluid mt-2">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
+                <h5 class="mb-0 fw-bold">{{ title }}</h5>
+                <div>
+
+                    <!-- EDIT PO -->
+                    <a href="/purchases/edit/{{ po.id }}" class="btn btn-sm btn-warning fw-bold me-2">
+                        Edit PO
+                    </a>
+
+                    <!-- ACCEPT PO -->
+                    {% if po.status == 'DRAFT' %}
+                    <form action="/purchases/accept/{{ po.id }}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-success fw-bold me-2">Accept PO</button>
+                    </form>
+                    {% endif %}
+
+                    <!-- RECEIVE ITEMS -->
+                    {% if po.status == 'ACCEPTED' or po.status == 'PARTIAL' %}
+                        <a href="/receiving/{{ po.id }}" class="btn btn-sm btn-warning fw-bold me-2" style="background-color: #ffc107; color: #000;">Receive Items</a>
+                    {% endif %}
+
+                    <!-- BACK -->
+                    <a href="/vendors/po-history/{{ vendor.id }}?t={{ '%s' % (range(999999999)|random) }}" 
+                       class="btn btn-sm btn-outline-light fw-bold me-2">
+                        ← Back
+                    </a>
+
+                    <!-- VENDOR -->
+                    <a href="/vendors/list" 
+                       class="btn btn-sm btn-outline-light fw-bold">
+                        ← Vendor
+                    </a>
+
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                {% set lines_total = namespace(value=0) %}
+                {% for item in po.details %}
+                    {% set lines_total.value = lines_total.value + item.line_subtotal %}
+                {% endfor %}
+
+                <!-- VENDOR INFO -->
+                <div class="row compact-row">
+                    <div class="col-12 d-flex justify-content-between align-items-center border-bottom pb-1">
+                        <div>
+                            <h6 class="text-uppercase text-muted small mb-1">Vendor Information</h6>
+                            <h6 class="mb-0 fw-bold text-dark">{{ vendor.vendor_name }}</h6>
+                        </div>
+                        <div class="text-end small">
+                            <span class="text-muted me-1">PO Ref:</span> <strong>{{ po.po_number }}</strong>
+                            <span class="mx-1 text-muted">|</span>
+                            <span class="text-muted me-1">Date:</span> <strong>{{ po.po_date }}</strong>
+                            <span class="mx-1 text-muted">|</span>
+                            <span class="text-muted me-1">Status:</span>
+
+                            <span class="badge 
+                                {% if po.status == 'DRAFT' %} bg-secondary 
+                                {% elif po.status == 'ACCEPTED' %} bg-primary 
+                                {% elif po.status == 'PARTIAL' %} bg-warning text-dark
+                                {% elif po.status == 'RECEIVED' %} bg-success
+                                {% else %} bg-info 
+                                {% endif %}">
+                                {{ po.status }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTERNAL NOTES -->
+                {% if po.internal_notes %}
+                <div class="card mb-2 border-warning">
+                    <div class="card-header bg-warning text-dark fw-bold py-1">
+                        Internal Notes
+                    </div>
+                    <div class="card-body py-1">
+                        <pre style="white-space: pre-wrap; font-size: 13px; margin: 0;">{{ po.internal_notes }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- SEARCH BAR -->
+                <div class="p-1 bg-white border-bottom mb-1">
+                    <input type="text" id="poDetailSearch" class="form-control form-control-sm"
+                           placeholder="🔍 Search by Part Number or Description...">
+                </div>
+
+                <!-- TABLE -->
+                <div class="table-responsive mt-1">
+                    <table class="table table-bordered table-hover table-ledger mb-0">
+                        <thead>
+                            <tr>
+                                <th>Part Number</th>
+                                <th>Description</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Unit Cost</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in po.details %}
+                            <tr class="po-detail-row">
+                                <td class="fw-bold">{{ item.part_number }}</td>
+                                <td>{{ item.item_description }}</td>
+                                <td class="text-end">{{ item.quantity_ordered }}</td>
+                                <td class="text-end">${{ "{:,.2f}".format(item.unit_cost) }}</td>
+                                <td class="text-end fw-bold">${{ "{:,.2f}".format(item.line_subtotal) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- FIXED BOTTOM BAR -->
+    <div class="fixed-totals-bar d-flex justify-content-between align-items-center">
+
+        <!-- LEFT BUTTONS -->
+        <div class="d-flex align-items-center gap-2">
+
+            {% if po.status == 'DRAFT' %}
+            <form action="/purchases/void/{{ po.id }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-danger btn-sm fw-bold">
+                    VOID PO
+                </button>
+            </form>
+            {% endif %}
+
+            {% if po.status != 'DRAFT' %}
+            <form action="/purchases/void-receiving/{{ po.id }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-outline-danger btn-sm fw-bold">
+                    VOID RECEIVING
+                </button>
+            </form>
+            {% endif %}
+
+        </div>
+
+        <!-- RIGHT TOTALS -->
+        <div class="d-flex align-items-center">
+            <div class="total-item text-end">
+                <span class="text-muted small d-block">Subtotal (Lines):</span>
+                <span class="fw-semibold text-dark fs-6">${{ "{:,.2f}".format(lines_total.value) }}</span>
+            </div>
+
+            {% if po.tax_amount > 0 %}
+            <div class="total-item text-end">
+                <span class="text-muted small d-block">Tax:</span>
+                <span class="fw-semibold text-dark fs-6">${{ "{:,.2f}".format(po.tax_amount) }}</span>
+            </div>
+            {% endif %}
+
+            {% if po.shipping_handling > 0 %}
+            <div class="total-item text-end">
+                <span class="text-muted small d-block">Shipping & Handling:</span>
+                <span class="fw-semibold text-dark fs-6">${{ "{:,.2f}".format(po.shipping_handling) }}</span>
+            </div>
+            {% endif %}
+
+            {% set explained_extra = po.tax_amount + po.shipping_handling %}
+            {% set unexplained_diff = po.grand_total - lines_total.value - explained_extra %}
+
+            {% if unexplained_diff|abs > 0.01 %}
+            <div class="total-item text-end text-danger">
+                <span class="small d-block fw-bold">Unexplained Diff:</span>
+                <span class="fw-bold fs-6">${{ "{:,.2f}".format(unexplained_diff) }}</span>
+            </div>
+            {% endif %}
+
+            <div class="total-item text-end ps-4 pe-2">
+                <span class="text-dark small fw-bold d-block">TOTAL ORDER:</span>
+                <span class="fw-bold text-primary fs-4">${{ "{:,.2f}".format(po.grand_total) }}</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('poDetailSearch').addEventListener('keyup', function() {
+            const filter = this.value.toLowerCase();
+            document.querySelectorAll('.po-detail-row').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+
+</body>
+</html>

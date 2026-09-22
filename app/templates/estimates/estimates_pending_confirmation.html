@@ -1,0 +1,444 @@
+<!-- /app/templates/estimates/estimates_pending_confirmation.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Appointments Pending Confirmation - BMS Autoglass</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-light">
+
+    <div class="container-fluid py-2">
+        <!-- Header & Back Button -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h3 class="mb-0 fs-5">Daily Appointments Pending Confirmation</h3>
+            </div>
+            <div>
+                <a href="/call_center/menu" class="btn btn-secondary btn-sm py-1 px-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Menu
+                </a>
+            </div>
+        </div>
+
+        <!-- Date Selector & Quick Filters Card -->
+        <div class="card shadow-sm mb-2">
+            <div class="card-body bg-white py-2 px-3">
+                <form method="get" action="/call_center/daily_estimates" id="filterForm" class="row align-items-center g-2">
+                    <input type="hidden" name="service_type" id="service_type_input" value="{{ service_type | default('all') }}">
+
+                    <div class="col-auto">
+                        <label for="selected_date" class="col-form-label fw-bold small">Select Date:</label>
+                    </div>
+
+                    <div class="col-auto">
+                        <input type="date" id="selected_date" name="selected_date" value="{{ selected_date }}"
+                               class="form-control form-control-sm py-1">
+                    </div>
+
+                    <div class="col-auto">
+                        <span class="badge bg-primary fs-6 py-1 px-2" id="dayNameBadge">
+                            <i class="far fa-calendar-alt me-1"></i> <span id="dayNameText">{{ day_name }}</span>
+                        </span>
+                    </div>
+
+                    <!-- Quick Date Buttons -->
+                    <div class="col-auto">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary py-1 px-2" onclick="setQuickDate('yesterday')">Yesterday</button>
+                            <button type="button" class="btn btn-outline-primary py-1 px-2" onclick="setQuickDate('today')">Today</button>
+                            <button type="button" class="btn btn-outline-secondary py-1 px-2" onclick="setQuickDate('tomorrow')">Tomorrow</button>
+                        </div>
+                    </div>
+
+                    <!-- Shop vs Mobile Filter Buttons -->
+                    <div class="col-auto ms-auto">
+                        <div class="btn-group btn-group-sm" role="group">
+
+                            <!-- ALL -->
+                            <button type="button"
+                                class="btn {% if service_type == 'all' or not service_type %}btn-dark{% else %}btn-outline-dark{% endif %}"
+                                onclick="setServiceType('all')">
+                                <i class="fas fa-th-list me-1"></i>
+                                All ({{ total_estimates }})
+                            </button>
+
+                            <!-- SHOP -->
+                            <button type="button"
+                                class="btn {% if service_type == 'shop' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                onclick="setServiceType('shop')">
+                                <i class="fas fa-store me-1"></i>
+                                Shop ({{ shop_count }})
+                            </button>
+
+                            <!-- MOBILE -->
+                            <button type="button"
+                                class="btn {% if service_type == 'movil' %}btn-success{% else %}btn-outline-success{% endif %}"
+                                onclick="setServiceType('movil')">
+                                <i class="fas fa-truck me-1"></i>
+                                Mobile ({{ mobile_count }})
+                            </button>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Estimates Table Card -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped table-sm align-middle mb-0 small">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="py-2 text-nowrap">Time <i class="fas fa-sort-numeric-up ms-1 small"></i></th>
+                                <th class="py-2 text-nowrap">Type</th>
+                                <th class="py-2">Customer Name</th>
+                                <th class="py-2">Address & City</th>
+                                <th class="py-2 text-nowrap">Phone</th>
+                                <th class="py-2">Vehicle (Year, Make, Model)</th>
+                                <th class="py-2 text-center text-nowrap">Status</th>
+                                <th class="py-2 text-center text-nowrap">Action / Confirmation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if estimates_data %}
+                                {% for estimate, customer, formatted_time, customer_name, vehicle_year in estimates_data %}
+                                {% set addr = estimate.customer_address or (customer.address if customer else '') %}
+                                {% set city = estimate.customer_city or (customer.city if customer else '') %}
+                                {% set state = estimate.customer_state or (customer.state if customer else '') %}
+                                {% set zip_code = estimate.customer_zip or (customer.zip_code if customer else '') %}
+                                {% set full_address = (addr ~ (', ' if addr and city else '') ~ city ~ (', ' if (addr or city) and state else '') ~ state ~ (' ' if state and zip_code else '') ~ zip_code) if (addr or city or state or zip_code) else 'N/A' %}
+                                <tr class="{% if estimate.status == 'Void' %}table-danger{% endif %}">
+                                    <td class="py-1 text-nowrap">
+                                        <span class="fw-bold text-primary">{{ formatted_time }}</span>
+                                    </td>
+                                    <td class="py-1 text-nowrap">
+                                        {% set st = estimate.service_type | default('') | lower %}
+                                        {% if st in ['mobile', 'movil'] %}
+                                            <span class="badge bg-success"><i class="fas fa-truck"></i> Mobile</span>
+                                        {% else %}
+                                            <span class="badge bg-primary"><i class="fas fa-store"></i> Shop</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-1">
+                                        <a href="/estimates/edit/{{ estimate.id }}?origin=call_center&selected_date={{ selected_date }}&service_type=all" class="text-decoration-none fw-bold">
+                                            {{ customer_name }}
+                                        </a>
+                                    </td>
+                                    <td class="py-1">
+                                        {{ full_address }}
+                                    </td>
+                                    <td class="py-1 phone-number text-nowrap">
+                                        {{ customer.phone if customer and customer.phone else (estimate.customer_phone | default('N/A')) }}
+                                    </td>
+                                    <td class="py-1">
+                                        {{ vehicle_year.year if vehicle_year else (estimate.vehicle_year_id or 'N/A') }} {{ estimate.vehicle_make }} {{ estimate.vehicle_model }}
+                                    </td>
+
+                                    <!-- STATUS + CLICKABLE ESTIMATE NUMBER -->
+                                    <td class="py-1 text-center">
+                                        <span class="badge {% if estimate.status == 'Confirmed' %}bg-success{% elif estimate.status == 'Void' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                            {{ estimate.status }}
+                                        </span>
+
+                                        <!-- Clickable number -->
+                                        <a href="/estimates/edit/{{ estimate.id }}?origin=call_center&selected_date={{ selected_date }}&service_type=all"
+                                            class="ms-1 fw-bold text-secondary small text-decoration-none">
+                                            #{{ estimate.id }}
+                                        </a>
+                                    </td>
+
+                                    <!-- ACTION -->
+                                    <td class="py-1 text-center">
+                                        {% if estimate.status == 'Void' %}
+                                            <span class="text-danger fw-bold small">
+                                                <i class="fas fa-ban"></i> Voided
+                                            </span>
+                                        {% elif estimate.status != 'Confirmed' %}
+                                            {% set is_past_date = estimate.estimated_appointment_date and (estimate.estimated_appointment_date | string) < today_date %}
+                                            {% if is_past_date %}
+                                                <button type="button" class="btn btn-secondary btn-sm py-0 px-2" style="font-size: 0.8rem;" disabled title="Cannot confirm an estimate with a past date. You must edit it.">
+                                                    <i class="fas fa-lock me-1"></i> Locked
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-success btn-sm py-0 px-2" style="font-size: 0.8rem;"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#confirmModal"
+                                                        data-estimate-id="{{ estimate.id }}"
+                                                        data-customer-name="{{ customer_name }}"
+                                                        data-vehicle="{{ vehicle_year.year if vehicle_year else (estimate.vehicle_year_id or '') }} {{ estimate.vehicle_make or '' }} {{ estimate.vehicle_model or '' }}"
+                                                        data-address="{{ full_address }}"
+                                                        data-datetime="{{ selected_date }} ({{ day_name }}) - {{ formatted_time }}">
+                                                    <i class="fas fa-check me-1"></i> Confirm
+                                                </button>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-success fw-bold small">
+                                                <i class="fas fa-check-circle"></i> Confirmed by {{ estimate.authorized_by | default('System', true) }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-3 text-muted">
+                                        <i class="fas fa-info-circle me-1"></i> No appointments found for this date and filter.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estimate Confirmation and Audit Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white" style="cursor: move;" id="confirmModalHeader">
+            <h5 class="modal-title" id="confirmModalLabel">Estimate Confirmation & Audit History</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- General details of the selected estimate -->
+            <div class="card mb-3 bg-light">
+              <div class="card-body">
+                <p class="mb-1"><strong>Customer:</strong> <span id="modalCustomerName"></span></p>
+                <p class="mb-1"><strong>Address:</strong> <span id="modalAddress"></span></p>
+                <p class="mb-1"><strong>Vehicle:</strong> <span id="modalVehicle"></span></p>
+                <p class="mb-0"><strong>Date & Time:</strong> <span id="modalDateTime"></span></p>
+              </div>
+            </div>
+
+            <!-- Form for new action -->
+            <form id="confirmActionForm" action="/call_center/confirm_appointment_modal" method="POST" onsubmit="return confirm('Are you sure you want to proceed with confirmation?');">
+              <input type="hidden" id="modalEstimateId" name="estimate_id">
+              <div class="mb-3">
+                <label for="actionType" class="form-label"><strong>Action / Status</strong></label>
+                <select class="form-select" id="actionType" name="action_type" required>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Called - No Answer">Called - No Answer</option>
+                  <option value="Left Voicemail">Left Voicemail</option>
+                  <option value="Rescheduled">Rescheduled</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="actionMessage" class="form-label"><strong>Comments / Notes</strong></label>
+                <textarea class="form-control" id="actionMessage" name="message" rows="3" placeholder="Type additional call details..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-success w-100">Save and Record in History</button>
+            </form>
+
+            <hr class="my-4">
+
+            <!-- Previous Audit History -->
+            <h6>Call History & Audit Trail</h6>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+              <table class="table table-sm table-striped">
+                <thead>
+                  <tr>
+                    <th>Date / Time</th>
+                    <th>Action</th>
+                    <th>Message</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                  <!-- Records are loaded dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Control Scripts -->
+    <script>
+        function setServiceType(type) {
+            document.getElementById('service_type_input').value = type;
+            document.getElementById('filterForm').submit();
+        }
+
+        function setQuickDate(target) {
+            const d = new Date();
+            
+            if (target === 'yesterday') {
+                d.setDate(d.getDate() - 1);
+            } else if (target === 'tomorrow') {
+                d.setDate(d.getDate() + 1);
+            }
+
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+            document.getElementById("selected_date").value = formattedDate;
+            
+            const form = document.getElementById("filterForm");
+            form.submit();
+        }
+
+        // Update day name dynamically when date input changes
+        document.getElementById("selected_date").addEventListener("change", function () {
+            const dateVal = this.value;
+            if (dateVal) {
+                const [year, month, day] = dateVal.split('-');
+                const d = new Date(year, month - 1, day);
+                const options = { weekday: 'long' };
+                const dayName = d.toLocaleDateString('en-US', options);
+                document.getElementById("dayNameText").textContent = dayName;
+            }
+            const form = document.getElementById("filterForm");
+            form.submit();
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const phoneCells = document.querySelectorAll(".phone-number");
+            phoneCells.forEach(cell => {
+                let rawText = cell.textContent.trim();
+                let cleaned = rawText.replace(/\D/g, "");
+                if (cleaned.length === 10) {
+                    let formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+                    cell.textContent = formatted;
+                } else if (cleaned.length === 11 && cleaned.startsWith("1")) {
+                    let formatted = `(${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7, 11)}`;
+                    cell.textContent = formatted;
+                }
+            });
+        });
+    </script>
+
+    <!-- Draggable Modal Script with fixed initial size preservation -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const modal = document.getElementById('confirmModal');
+            const header = document.getElementById('confirmModalHeader');
+            
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+
+            header.addEventListener('mousedown', function(e) {
+                if (e.target.closest('.btn-close')) return;
+                
+                const dialog = modal.querySelector('.modal-dialog');
+                const rect = dialog.getBoundingClientRect();
+
+                // Lock the current rendered width explicitly before changing positioning to prevent resizing
+                dialog.style.width = rect.width + 'px';
+                dialog.style.maxWidth = 'none';
+                dialog.style.margin = '0';
+                dialog.style.position = 'fixed';
+                dialog.style.left = rect.left + 'px';
+                dialog.style.top = rect.top + 'px';
+
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialX = rect.left;
+                initialY = rect.top;
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            function onMouseMove(e) {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                const dialog = modal.querySelector('.modal-dialog');
+                dialog.style.left = (initialX + dx) + 'px';
+                dialog.style.top = (initialY + dy) + 'px';
+            }
+
+            function onMouseUp() {
+                isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            modal.addEventListener('hidden.bs.modal', function () {
+                const dialog = modal.querySelector('.modal-dialog');
+                dialog.style.position = '';
+                dialog.style.left = '';
+                dialog.style.top = '';
+                dialog.style.margin = '';
+                dialog.style.width = '';
+                dialog.style.maxWidth = '';
+            });
+        });
+    </script>
+
+    <!-- Script to populate and manage the Modal -->
+    <script>
+        const confirmModal = document.getElementById('confirmModal');
+        if (confirmModal) {
+            confirmModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                
+                // Extract data from data-* attributes
+                const estimateId = button.getAttribute('data-estimate-id');
+                const customerName = button.getAttribute('data-customer-name');
+                const vehicle = button.getAttribute('data-vehicle');
+                const address = button.getAttribute('data-address');
+                const dateTime = button.getAttribute('data-datetime');
+
+                // Assign values to modal elements
+                document.getElementById('modalEstimateId').value = estimateId;
+                document.getElementById('modalCustomerName').textContent = customerName;
+                document.getElementById('modalAddress').textContent = address;
+                document.getElementById('modalVehicle').textContent = vehicle;
+                document.getElementById('modalDateTime').textContent = dateTime;
+
+                // Clear notes form and reset select
+                document.getElementById('actionMessage').value = '';
+                document.getElementById('actionType').value = 'Confirmed';
+
+                // Load history via fetch request
+                const historyBody = document.getElementById('historyTableBody');
+                historyBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Loading history...</td></tr>';
+                
+                fetch(`/call_center/estimates/${estimateId}/history`)
+                    .then(response => response.json())
+                    .then(data => {
+                        historyBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No previous records found.</td></tr>';
+                        if (data && data.length > 0) {
+                            historyBody.innerHTML = '';
+                            data.forEach(row => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>${row.created_at}</td>
+                                    <td><span class="badge bg-secondary">${row.action_type}</span></td>
+                                    <td>${row.message || ''}</td>
+                                    <td>${row.created_by || 'System'}</td>
+                                `;
+                                historyBody.appendChild(tr);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading history:', error);
+                        historyBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading history.</td></tr>';
+                    });
+            });
+        }
+    </script>
+
+</body>
+</html>

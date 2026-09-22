@@ -1,0 +1,413 @@
+<!-- /app/templates/invoices/invoices_void.html | CREADO: 2026-09-14 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoices Void - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        html, body { height: 100%; margin: 0; }
+        body { background: #fbeaea; overflow: hidden; }
+
+        .page-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 12px 15px 15px 15px;
+        }
+        .fixed-top-section { flex-shrink: 0; }
+
+        /* Header rojo oscuro */
+        .page-header {
+            background: linear-gradient(90deg, #7f1d1d 0%, #b91c1c 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(127, 29, 29, 0.35);
+        }
+        .page-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+        .page-header .subtitle { font-size: 0.78rem; opacity: 0.9; margin-top: 2px; }
+
+        /* Filtros */
+        .filter-card {
+            background: white;
+            border: 1px solid #f5c2c7;
+            border-left: 4px solid #b91c1c;
+            border-radius: 6px;
+            padding: 8px 15px;
+            margin-bottom: 10px;
+        }
+        .filter-card label { font-weight: 700; font-size: 0.8rem; color: #7f1d1d; }
+
+        /* Resumen — 4 tarjetas */
+        .summary-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .summary-card {
+            flex: 1;
+            min-width: 130px;
+            background: white;
+            border-radius: 6px;
+            padding: 8px 14px;
+            border: 1px solid #f5c2c7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-card .label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6c757d;
+        }
+        .summary-card .value { font-size: 1.15rem; font-weight: 700; }
+        .summary-card.total .value { color: #7f1d1d; }
+        .summary-card.shop .value { color: #0d47a1; }
+        .summary-card.mobile .value { color: #b8860b; }
+        .summary-card.money .value { color: #b91c1c; }
+        .summary-card.money { border-color: #dc3545; background: #fff5f5; }
+
+        /* Contenedor con scroll */
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 6px;
+            border-radius: 6px;
+        }
+        .scroll-area::-webkit-scrollbar { width: 10px; }
+        .scroll-area::-webkit-scrollbar-track { background: #f2d5d5; border-radius: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #b91c1c; border-radius: 6px; }
+        .scroll-area::-webkit-scrollbar-thumb:hover { background: #7f1d1d; }
+
+        /* Grupos por día */
+        .day-group {
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .day-header {
+            background: #7f1d1d;
+            color: white;
+            padding: 8px 15px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        .day-header .count-pill {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        .day-header .day-total {
+            background: #fbbf24;
+            color: #000;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .day-group table { margin: 0; font-size: 0.8rem; }
+        .day-group thead th {
+            background: #fbeaea;
+            color: #7f1d1d;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid #f5c2c7;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+        .day-group tbody td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #f9e3e3;
+            vertical-align: middle;
+        }
+        .day-group tbody tr:last-child td { border-bottom: none; }
+        .day-group tbody tr:hover { background: #fbeaea; }
+
+        .badge-type {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+        .badge-type.shop { background: #e3f2fd; color: #0d47a1; }
+        .badge-type.mobile { background: #fff3e0; color: #b8860b; }
+
+        .void-badge {
+            font-size: 0.68rem;
+            padding: 3px 9px;
+            border-radius: 10px;
+            font-weight: 700;
+            background: #dc3545;
+            color: white;
+            letter-spacing: 0.3px;
+        }
+
+        .invoice-link {
+            color: #b91c1c;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .invoice-link:hover { text-decoration: underline; }
+
+        .tech-cell {
+            font-size: 0.75rem;
+            color: #495057;
+            white-space: nowrap;
+        }
+        .tech-cell i { color: #b91c1c; margin-right: 3px; }
+        .tech-unassigned { color: #adb5bd; font-style: italic; font-size: 0.72rem; }
+
+        .total-amount { font-weight: 700; color: #7f1d1d; white-space: nowrap; }
+
+        .reason-cell {
+            font-size: 0.75rem;
+            color: #495057;
+            max-width: 220px;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+        .reason-empty { color: #adb5bd; font-style: italic; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f1d1d;
+            background: white;
+            border: 2px dashed #f5c2c7;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn-apply {
+            background: #7f1d1d;
+            color: white;
+            border: none;
+            font-weight: 700;
+        }
+        .btn-apply:hover { background: #5b1414; color: white; }
+
+        @media (max-width: 768px) {
+            .page-layout { padding: 8px; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 15px; }
+            .summary-bar { gap: 6px; }
+            .summary-card { min-width: 110px; padding: 6px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-layout">
+
+    <!-- ============ SECCIÓN FIJA ============ -->
+    <div class="fixed-top-section">
+
+        <!-- HEADER -->
+        <div class="page-header">
+            <div>
+                <h3><i class="fas fa-ban me-2"></i> Invoices Void</h3>
+                <div class="subtitle">Voided invoices — with reason for cancellation</div>
+            </div>
+            <a href="/call_center/menu" class="btn btn-light btn-sm fw-bold">
+                <i class="fas fa-arrow-left me-1"></i> Back to Menu
+            </a>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="filter-card">
+            <form method="get" action="/call_center/invoices_void" id="filterForm" class="row align-items-center g-2">
+                <input type="hidden" name="service_type" id="service_type_input" value="{{ service_type | default('all') }}">
+
+                <div class="col-auto"><label for="from_date">From:</label></div>
+                <div class="col-auto">
+                    <input type="date" id="from_date" name="from_date" value="{{ from_date }}"
+                           class="form-control form-control-sm" style="width: 150px;">
+                </div>
+
+                <div class="col-auto"><label for="to_date">To:</label></div>
+                <div class="col-auto">
+                    <input type="date" id="to_date" name="to_date" value="{{ to_date }}"
+                           class="form-control form-control-sm" style="width: 150px;">
+                </div>
+
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-apply px-3">
+                        <i class="fas fa-search me-1"></i> Apply
+                    </button>
+                </div>
+
+                <div class="col-auto ms-auto">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button"
+                            class="btn {% if service_type == 'all' or not service_type %}btn-dark{% else %}btn-outline-dark{% endif %}"
+                            onclick="setServiceType('all')">All</button>
+                        <button type="button"
+                            class="btn {% if service_type == 'shop' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            onclick="setServiceType('shop')"><i class="fas fa-store me-1"></i> Shop</button>
+                        <button type="button"
+                            class="btn {% if service_type == 'movil' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}"
+                            onclick="setServiceType('movil')"><i class="fas fa-truck me-1"></i> Mobile</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- RESUMEN -->
+        <div class="summary-bar">
+            <div class="summary-card total">
+                <span class="label">Total Void</span>
+                <span class="value">{{ total_count }}</span>
+            </div>
+            <div class="summary-card shop">
+                <span class="label">🏪 Shop</span>
+                <span class="value">{{ shop_count }}</span>
+            </div>
+            <div class="summary-card mobile">
+                <span class="label">🚐 Mobile</span>
+                <span class="value">{{ mobile_count }}</span>
+            </div>
+            <div class="summary-card money">
+                <span class="label">💸 Lost Amount</span>
+                <span class="value">${{ "%.2f"|format(grand_total) }}</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============ ÁREA CON SCROLL ============ -->
+    <div class="scroll-area">
+
+        {% if grouped_data %}
+            {% for day, items in grouped_data %}
+                {% set day_total = items | sum(attribute='invoice.total') %}
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>
+                            <i class="far fa-calendar-alt me-2"></i>
+                            {{ day.strftime('%A, %B %d, %Y') }}
+                        </span>
+                        <span>
+                            <span class="count-pill">{{ items|length }} voided</span>
+                            <span class="day-total">${{ "%.2f"|format(day_total or 0) }}</span>
+                        </span>
+                    </div>
+
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Customer</th>
+                                <th>Address</th>
+                                <th>Phone</th>
+                                <th>Vehicle</th>
+                                <th>Assigned Tech</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center">Invoice #</th>
+                                <th>Void Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                                {% set invoice = item.invoice %}
+                                {% set customer = item.customer %}
+                                {% set technician = item.technician %}
+                                {% set addr = invoice.customer_address or (customer.address if customer else '') %}
+                                {% set city = invoice.customer_city or (customer.city if customer else '') %}
+                                {% set state = invoice.customer_state or (customer.state if customer else '') %}
+                                {% set zip_code = invoice.customer_zip or (customer.zip_code if customer else '') %}
+                                {% set full_address = (addr ~ (', ' if addr and city else '') ~ city ~ (', ' if (addr or city) and state else '') ~ state ~ (' ' if state and zip_code else '') ~ zip_code) if (addr or city or state or zip_code) else 'N/A' %}
+                                {% set st = invoice.service_type | default('') | lower %}
+
+                                <tr>
+                                    <td class="fw-bold text-danger text-nowrap">{{ item.formatted_time }}</td>
+                                    <td>
+                                        {% if st in ['mobile', 'movil'] %}
+                                            <span class="badge-type mobile"><i class="fas fa-truck"></i> Mobile</span>
+                                        {% else %}
+                                            <span class="badge-type shop"><i class="fas fa-store"></i> Shop</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if customer %}
+                                            <a href="/call_center/lookup/{{ customer.id }}" class="text-decoration-none fw-bold">
+                                                {{ customer.name }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ full_address }}</td>
+                                    <td class="text-nowrap">{{ customer.phone if customer and customer.phone else 'N/A' }}</td>
+                                    <td>{{ item.vehicle_year.year if item.vehicle_year else '' }} {{ invoice.vehicle_make or '' }} {{ invoice.vehicle_model or '' }}</td>
+                                    <td class="tech-cell">
+                                        {% if technician %}
+                                            <i class="fas fa-user-cog"></i> {{ technician.full_name or technician.username }}
+                                        {% else %}
+                                            <span class="tech-unassigned">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end total-amount">${{ "%.2f"|format(invoice.total or 0) }}</td>
+                                    <td class="text-center">
+                                        <a href="/invoices/view/{{ invoice.id }}?return_url={{ return_url | urlencode }}"
+                                           class="invoice-link" target="_blank">
+                                            INV-{{ invoice.id }}
+                                        </a>
+                                    </td>
+                                    <td class="reason-cell">
+                                        {% if invoice.void_reason %}
+                                            {{ invoice.void_reason }}
+                                        {% else %}
+                                            <span class="reason-empty">No reason recorded</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-check-circle fa-2x mb-2" style="color: #198754;"></i>
+                <div class="fw-bold">No voided invoices in this period.</div>
+                <div class="small mt-1">Nothing has been cancelled in the selected range.</div>
+            </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function setServiceType(type) {
+        document.getElementById('service_type_input').value = type;
+        document.getElementById('filterForm').submit();
+    }
+</script>
+
+</body>
+</html>

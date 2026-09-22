@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{company_name}}</title>
+
+    <style>
+        /* Garantiza un cálculo dimensional uniforme en todos los elementos */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            width: 350px;
+            min-height: 390px; 
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #aaa;
+        }
+
+        /* Estilo visual cuando el input está deshabilitado */
+        input[type="text"]:disabled,
+        input[type="password"]:disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #0078D4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005fa3;
+        }
+
+        /* Estilo visual cuando el botón está deshabilitado */
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        button:disabled:hover {
+            background-color: #a0a0a0;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background-color: #fdecea;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid #ef9a9a;
+        }
+
+        .footer-text {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            line-height: 1.4;
+            width: 350px;
+        }
+
+        /* Estilo para el logo */
+        .logo-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .logo-container img {
+            max-width: 150px;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <!-- Detecta si la cuenta está deshabilitada para bloquear el formulario -->
+        {% set account_disabled = (error == 'User account is disabled') %}
+
+        <form action="/auth/login" method="POST" style="width: 100%;">
+            
+            <!-- Logo -->
+            <div class="logo-container">
+                <img src="{{ url_for('static', path='images/bms.jpg') }}" alt="Logo">
+            </div>
+
+            <h2>{{company_name}}</h2>
+
+            <label>Username</label>
+            <input type="text" name="username" required autocomplete="username" {% if account_disabled %}disabled{% endif %}>
+
+            <label>Password</label>
+            <input type="password" name="password" required autocomplete="current-password" {% if account_disabled %}disabled{% endif %}>
+
+            {% if error %}
+                <div class="error-message">
+                    ⚠️ {{ error }}
+                </div>
+            {% endif %}
+
+            <button type="submit" {% if account_disabled %}disabled{% endif %}>Login</button>
+        </form>
+    </div>
+
+    <!-- CAMBIO 2026-09-13: footer forzado a 3 líneas -->
+    <div class="footer-text">
+        Project Started: 2025-09-29<br>
+        Demo Version — BMS Autoglass<br>
+        Developed by Creative Ideas Marketing<br>
+        Version: 2026.09.20 - 1:30 PM
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!-- /app/templates/company/company_create.html | Updated: 2026-09-14 (layout compacto) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 10px 15px; }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 6px;
+        }
+
+        h2 { margin: 0; font-size: 18px; }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .top-actions button {
+            padding: 5px 12px;
+            cursor: pointer;
+            background-color: #0077cc;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        .top-actions button[type="button"] {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+
+        .top-actions button:hover { opacity: 0.9; }
+
+        .top-link {
+            text-decoration: none;
+            font-size: 13px;
+            color: #0077cc;
+            margin-left: 10px;
+        }
+
+        /* CAMBIO 2026-09-14: bloque Origin Address compacto */
+        .origin-address-box {
+            background: #f0f8ff;
+            border-left: 4px solid #0077cc;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .origin-address-box label {
+            font-weight: bold;
+            color: #0077cc;
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+
+        .origin-address-box input {
+            padding: 5px 8px !important;
+            font-size: 13px;
+        }
+
+        .origin-address-box small {
+            color: #6c757d;
+            font-size: 11px;
+            display: block;
+            margin-top: 3px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 4px;
+            display: block;
+        }
+
+        label:first-child { margin-top: 0; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 4px 6px;
+            box-sizing: border-box;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        textarea {
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        select { background-color: #fff; height: 26px; padding: 2px 6px; }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 4px 0;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+            cursor: pointer;
+        }
+    </style>
+
+    <script>
+        function formatPhone(input) {
+            let value = input.value.replace(/\D/g, "");
+            if (value.length > 10) value = value.slice(0, 10);
+
+            if (value.length >= 6) {
+                input.value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6)}`;
+            } else if (value.length >= 3) {
+                input.value = `(${value.slice(0,3)}) ${value.slice(3)}`;
+            } else {
+                input.value = value;
+            }
+        }
+
+        function confirmCancel() {
+            const isConfirmed = confirm("Are you sure you want to cancel? All entered information will be cleared.");
+            if (isConfirmed) {
+                const form = document.getElementById("companyForm");
+                const elements = form.elements;
+                for (let i = 0; i < elements.length; i++) {
+                    const field = elements[i];
+                    if (field.type === "text" || field.type === "email" || field.tagName === "TEXTAREA") {
+                        field.value = "";
+                    } else if (field.type === "number") {
+                        field.value = "0.00";
+                    } else if (field.tagName === "SELECT") {
+                        field.selectedIndex = 0;
+                    } else if (field.type === "checkbox") {
+                        field.checked = true;
+                    }
+                }
+            }
+        }
+
+        function updateButtonLabel() {
+            const mode = "{{mode}}";
+            const btn = document.getElementById("btnSubmitTop");
+            btn.textContent = mode === "edit" ? "Save" : "Create";
+        }
+
+        function formatInitialPhones() {
+            const phoneFields = ["main_phone", "contact_phone"];
+            phoneFields.forEach(id => {
+                const field = document.getElementsByName(id)[0];
+                if (field && field.value.trim() !== "") {
+                    formatPhone(field);
+                }
+            });
+        }
+
+        window.onload = function() {
+            updateButtonLabel();
+            formatInitialPhones();
+        };
+    </script>
+</head>
+
+<body>
+
+    <form id="companyForm" action="{{form_action}}" method="post">
+
+        <div class="header-container">
+            <h2>{{title}}</h2>
+            <div class="top-actions">
+                <button id="btnSubmitTop" type="submit">Create</button>
+                <button type="button" onclick="confirmCancel()">Cancel</button>
+                <a href="/manager/menu" class="top-link">← Back to Menu</a>
+            </div>
+        </div>
+
+        <!-- CAMBIO 2026-09-14: Origin Address compacto -->
+        <div class="origin-address-box">
+            <label for="origin_address">📍 Origin Address (Route Start Point)</label>
+            <input type="text" id="origin_address" name="origin_address"
+                   value="{{origin_address}}"
+                   placeholder="Ej: 5250 N Pecos St, Denver, CO 80221">
+            <small>Starting point for daily route optimization. Leave blank to disable.</small>
+        </div>
+
+        <div class="grid-container">
+
+            <!-- COLUMNA 1: Company Info -->
+            <div class="col">
+                <label>Trade Name</label>
+                <input type="text" name="trade_name" value="{{trade_name}}" required>
+
+                <label>Legal Name</label>
+                <input type="text" name="legal_name" value="{{legal_name}}" required>
+
+                <label>Tax ID</label>
+                <input type="text" name="tax_id" value="{{tax_id}}">
+
+                <label>Business Line</label>
+                <input type="text" name="business_line" value="{{business_line}}">
+
+                <label>Address</label>
+                <input type="text" name="address" value="{{address}}">
+
+                <label>Neighborhood</label>
+                <input type="text" name="neighborhood" value="{{neighborhood}}">
+
+                <label>City</label>
+                <input type="text" name="city" value="{{city}}">
+            </div>
+
+            <!-- COLUMNA 2: Location + Contact -->
+            <div class="col">
+                <label>State</label>
+                <select name="state">
+                    <option value="">Select State</option>
+                    <option value="AL" {% if state == "AL" %}selected{% endif %}>Alabama (AL)</option>
+                    <option value="AK" {% if state == "AK" %}selected{% endif %}>Alaska (AK)</option>
+                    <option value="AZ" {% if state == "AZ" %}selected{% endif %}>Arizona (AZ)</option>
+                    <option value="AR" {% if state == "AR" %}selected{% endif %}>Arkansas (AR)</option>
+                    <option value="CA" {% if state == "CA" %}selected{% endif %}>California (CA)</option>
+                    <option value="CO" {% if state == "CO" %}selected{% endif %}>Colorado (CO)</option>
+                    <option value="CT" {% if state == "CT" %}selected{% endif %}>Connecticut (CT)</option>
+                    <option value="DE" {% if state == "DE" %}selected{% endif %}>Delaware (DE)</option>
+                    <option value="FL" {% if state == "FL" %}selected{% endif %}>Florida (FL)</option>
+                    <option value="GA" {% if state == "GA" %}selected{% endif %}>Georgia (GA)</option>
+                    <option value="HI" {% if state == "HI" %}selected{% endif %}>Hawaii (HI)</option>
+                    <option value="ID" {% if state == "ID" %}selected{% endif %}>Idaho (ID)</option>
+                    <option value="IL" {% if state == "IL" %}selected{% endif %}>Illinois (IL)</option>
+                    <option value="IN" {% if state == "IN" %}selected{% endif %}>Indiana (IN)</option>
+                    <option value="IA" {% if state == "IA" %}selected{% endif %}>Iowa (IA)</option>
+                    <option value="KS" {% if state == "KS" %}selected{% endif %}>Kansas (KS)</option>
+                    <option value="KY" {% if state == "KY" %}selected{% endif %}>Kentucky (KY)</option>
+                    <option value="LA" {% if state == "LA" %}selected{% endif %}>Louisiana (LA)</option>
+                    <option value="ME" {% if state == "ME" %}selected{% endif %}>Maine (ME)</option>
+                    <option value="MD" {% if state == "MD" %}selected{% endif %}>Maryland (MD)</option>
+                    <option value="MA" {% if state == "MA" %}selected{% endif %}>Massachusetts (MA)</option>
+                    <option value="MI" {% if state == "MI" %}selected{% endif %}>Michigan (MI)</option>
+                    <option value="MN" {% if state == "MN" %}selected{% endif %}>Minnesota (MN)</option>
+                    <option value="MS" {% if state == "MS" %}selected{% endif %}>Mississippi (MS)</option>
+                    <option value="MO" {% if state == "MO" %}selected{% endif %}>Missouri (MO)</option>
+                    <option value="MT" {% if state == "MT" %}selected{% endif %}>Montana (MT)</option>
+                    <option value="NE" {% if state == "NE" %}selected{% endif %}>Nebraska (NE)</option>
+                    <option value="NV" {% if state == "NV" %}selected{% endif %}>Nevada (NV)</option>
+                    <option value="NH" {% if state == "NH" %}selected{% endif %}>New Hampshire (NH)</option>
+                    <option value="NJ" {% if state == "NJ" %}selected{% endif %}>New Jersey (NJ)</option>
+                    <option value="NM" {% if state == "NM" %}selected{% endif %}>New Mexico (NM)</option>
+                    <option value="NY" {% if state == "NY" %}selected{% endif %}>New York (NY)</option>
+                    <option value="NC" {% if state == "NC" %}selected{% endif %}>North Carolina (NC)</option>
+                    <option value="ND" {% if state == "ND" %}selected{% endif %}>North Dakota (ND)</option>
+                    <option value="OH" {% if state == "OH" %}selected{% endif %}>Ohio (OH)</option>
+                    <option value="OK" {% if state == "OK" %}selected{% endif %}>Oklahoma (OK)</option>
+                    <option value="OR" {% if state == "OR" %}selected{% endif %}>Oregon (OR)</option>
+                    <option value="PA" {% if state == "PA" %}selected{% endif %}>Pennsylvania (PA)</option>
+                    <option value="RI" {% if state == "RI" %}selected{% endif %}>Rhode Island (RI)</option>
+                    <option value="SC" {% if state == "SC" %}selected{% endif %}>South Carolina (SC)</option>
+                    <option value="SD" {% if state == "SD" %}selected{% endif %}>South Dakota (SD)</option>
+                    <option value="TN" {% if state == "TN" %}selected{% endif %}>Tennessee (TN)</option>
+                    <option value="TX" {% if state == "TX" %}selected{% endif %}>Texas (TX)</option>
+                    <option value="UT" {% if state == "UT" %}selected{% endif %}>Utah (UT)</option>
+                    <option value="VT" {% if state == "VT" %}selected{% endif %}>Vermont (VT)</option>
+                    <option value="VA" {% if state == "VA" %}selected{% endif %}>Virginia (VA)</option>
+                    <option value="WA" {% if state == "WA" %}selected{% endif %}>Washington (WA)</option>
+                    <option value="WV" {% if state == "WV" %}selected{% endif %}>West Virginia (WV)</option>
+                    <option value="WI" {% if state == "WI" %}selected{% endif %}>Wisconsin (WI)</option>
+                    <option value="WY" {% if state == "WY" %}selected{% endif %}>Wyoming (WY)</option>
+                </select>
+
+                <label>Postal Code</label>
+                <input type="text" name="postal_code" value="{{postal_code}}">
+
+                <label>Main Phone</label>
+                <input type="text" name="main_phone" value="{{main_phone}}" oninput="formatPhone(this)">
+
+                <label>Main Email</label>
+                <input type="email" name="main_email" value="{{main_email}}">
+
+                <label>Contact Name</label>
+                <input type="text" name="contact_name" value="{{contact_name}}">
+
+                <label>Contact Phone</label>
+                <input type="text" name="contact_phone" value="{{contact_phone}}" oninput="formatPhone(this)">
+
+                <label>Contact Email</label>
+                <input type="email" name="contact_email" value="{{contact_email}}">
+            </div>
+
+            <!-- COLUMNA 3: Finances + Notes + Status -->
+            <div class="col">
+                <label>General Sales Tax (%)</label>
+                <input type="number" step="0.01" name="general_sales_tax" value="{{general_sales_tax}}">
+
+                <label>Mobile Fee ($)</label>
+                <input type="number" step="0.01" name="mobile_fee" value="{{mobile_fee}}">
+
+                <label>Default Labor Cost ($)</label>
+                <input type="number" step="0.01" name="labor_cost" value="{{labor_cost}}">
+
+                <label>Default Materials Cost ($)</label>
+                <input type="number" step="0.01" name="materials_cost" value="{{materials_cost}}">
+
+                <label>Default Misc Cost ($)</label>
+                <input type="number" step="0.01" name="misc_cost" value="{{misc_cost}}">
+
+                <label>Notes</label>
+                <textarea name="notes" rows="2">{{notes}}</textarea>
+
+                <label>Invoice Notice</label>
+                <textarea name="invoice_notice" rows="2">{{invoice_notice}}</textarea>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" name="is_active" id="is_active_cb" {{is_active_checked}}>
+                    <label for="is_active_cb"><strong>Active</strong></label>
+                </div>
+            </div>
+
+        </div>
+
+    </form>
+
+</body>
+</html>

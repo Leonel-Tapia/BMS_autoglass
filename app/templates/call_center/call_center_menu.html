@@ -1,0 +1,191 @@
+<!--template:call_center_menu.html | Updated 2026-09-14 (2 nuevos botones Invoices)-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Call Center & Management Menu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px;
+            margin: 0;
+            position: relative;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: nowrap;
+            max-width: 1350px;
+            margin: auto;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 320px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+            text-align: center;
+        }
+        .menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        a.button {
+            display: block;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        a.button:hover {
+            background: #0056b3;
+        }
+        /* Botón verde para "Done" */
+        a.button-done {
+            display: block;
+            padding: 12px;
+            background: #198754;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        a.button-done:hover {
+            background: #146c43;
+        }
+        /* CAMBIO 2026-09-14: botón índigo para "Not Done" (invoices) */
+        a.button-indigo {
+            display: block;
+            padding: 12px;
+            background: #3f51b5;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        a.button-indigo:hover {
+            background: #283593;
+        }
+        /* CAMBIO 2026-09-14: botón rojo para "Void" */
+        a.button-void {
+            display: block;
+            padding: 12px;
+            background: #b91c1c;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        a.button-void:hover {
+            background: #7f1d1d;
+        }
+        /* Botón placeholder (próximamente) */
+        button.button-placeholder {
+            display: block;
+            padding: 12px;
+            background: #e9ecef;
+            color: #6c757d;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            border: 1px dashed #adb5bd;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+        }
+        button.button-placeholder:hover {
+            background: #dee2e6;
+        }
+        .placeholder-text {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        /* Botón flotante general en la esquina inferior derecha */
+        .floating-logout {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+        .floating-logout:hover {
+            background: #a71d2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 1. Call Center Module -->
+        <div class="container">
+            <h2>Call Center Module</h2>
+            <div class="menu-links">
+                <a href="/call_center/search" class="button">Customer Search</a>
+            </div>
+        </div>
+
+        <!-- 2. Estimates Control -->
+        <div class="container">
+            <h2>Estimates Control</h2>
+            <div class="menu-links">
+                <a href="/call_center/daily_estimates" class="button">Daily Appointments Pending Confirmation</a>
+                <a href="/call_center/estimates_not_done" class="button">Estimates Not Done</a>
+                <a href="/call_center/estimates_done" class="button-done">Estimates Done</a>
+            </div>
+        </div>
+
+        <!-- 3. Invoices Control -->
+        <div class="container">
+            <h2>Invoices Control</h2>
+            <div class="menu-links">
+                <a href="/invoices/workshop" class="button">Invoices / Workshop</a>
+                <!-- CAMBIO 2026-09-14: 2 botones nuevos con color distintivo -->
+                <a href="/call_center/invoices_not_done" class="button-indigo">Invoices Not Done</a>
+                <a href="/call_center/invoices_void" class="button-void">Invoices Void</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Floating Sign Out Button -->
+    <a href="/call_center/logout" class="floating-logout">Sign Out</a>
+
+    <script>
+        function showComingSoon(featureName) {
+            alert(featureName + '\n\nThis feature is under development.\nComing soon.');
+        }
+    </script>
+</body>
+</html>

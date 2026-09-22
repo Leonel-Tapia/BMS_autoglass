@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Orders Ledger</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .table-ledger th {
+            background-color: #212529;
+            color: #ffffff;
+            font-size: 0.80rem !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px !important;
+        }
+        .table-ledger td {
+            font-size: 0.85rem !important;
+            padding: 8px !important;
+            vertical-align: middle;
+        }
+        .badge-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .bg-draft { background-color: #eecf6d; color: #7d5a00; }
+        .bg-issued { background-color: #cfe2ff; color: #0a58ca; }
+        .bg-received { background-color: #d1e7dd; color: #0f5132; }
+        .bg-cancelled { background-color: #f8d7da; color: #842029; }
+        .card {
+            border: none;
+            border-radius: 4px;
+        }
+        .card-header {
+            border-top-left-radius: 4px !important;
+            border-top-right-radius: 4px !important;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
+                        <h5 class="mb-0 fw-bold" style="font-size: 1.1rem;">Purchase Orders Ledger</h5>
+                        <a href="/vendors/list" class="btn btn-primary btn-sm fw-bold">+ New Purchase Order</a>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-bordered table-ledger mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 12%;">PO Number</th>
+                                        <th style="width: 12%;">Order Date</th>
+                                        <th style="width: 25%;">Vendor / Provider</th>
+                                        <th style="width: 12%;">Terms</th>
+                                        <th style="width: 12%; text-align: right;">Grand Total</th>
+                                        <th style="width: 12%; text-align: center;">Status</th>
+                                        <th style="width: 15%; text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if purchase_orders %}
+                                        {% for po in purchase_orders %}
+                                        <tr>
+                                            <td class="fw-bold text-secondary">{{ po.po_number }}</td>
+                                            <td>{{ po.order_date }}</td>
+                                            <td class="fw-semibold">[{{ po.vendor_code }}] {{ po.vendor_name }}</td>
+                                            <td>{{ po.payment_terms }}</td>
+                                            <td class="text-end fw-bold text-dark">${{ "{:,.2f}".format(po.grand_total) }}</td>
+                                            <td class="text-center">
+                                                {% if po.status == 'DRAFT' %}
+                                                    <span class="badge-status bg-draft">DRAFT</span>
+                                                {% elif po.status == 'ISSUED' %}
+                                                    <span class="badge-status bg-issued">ISSUED</span>
+                                                {% elif po.status == 'RECEIVED' %}
+                                                    <span class="badge-status bg-received">RECEIVED</span>
+                                                {% else %}
+                                                    <span class="badge-status bg-cancelled">{{ po.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm">
+                                                    {% if po.status == 'DRAFT' %}
+                                                        <a href="/purchases/edit/{{ po.id }}" class="btn btn-outline-primary fw-bold py-0 px-2" style="font-size: 0.75rem;">Edit</a>
+                                                        <button data-id="{{ po.id }}" data-po="{{ po.po_number }}" class="btn btn-outline-danger py-0 px-2 btn-delete-po" style="font-size: 0.75rem;">Delete</button>
+                                                    {% else %}
+                                                        <a href="/purchases/view/{{ po.id }}" class="btn btn-outline-secondary fw-bold py-0 px-2" style="font-size: 0.75rem;">View</a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                No purchase orders found in the database.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.btn-delete-po').forEach(button => {
+            button.addEventListener('click', async function() {
+                const id = this.getAttribute('data-id');
+                const poNumber = this.getAttribute('data-po');
+
+                const confirmDelete = confirm(`⚠️ Are you sure you want to permanently delete Draft Order ${poNumber}?\n\nThis action cannot be undone.`);
+                if (!confirmDelete) return;
+
+                try {
+                    const response = await fetch(`/purchases/delete-draft/${id}`, { method: 'DELETE' });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.status === 'success') {
+                        alert(`Order ${poNumber} successfully deleted.`);
+                        window.location.href = window.location.pathname + "?t=" + Date.now();
+                    } else {
+                        alert(`Error deleting order: ${result.message || "Unknown server response."}`);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Communication failure with the ERP backend service.");
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

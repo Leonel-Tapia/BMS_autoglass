@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Makes, Models & Trims</title>
+    <style>
+        /* Compactación general */
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 10px; font-size: 14px; }
+        .container { width: 1100px; margin: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px #ccc; }
+        
+        .header-controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+        h1 { margin: 0; font-size: 20px; }
+        
+        .forms-wrapper { display: flex; gap: 10px; flex-wrap: wrap; }
+        .add-form { display: flex; align-items: center; gap: 5px; background: #f9f9f9; padding: 5px 10px; border-radius: 4px; border: 1px solid #eee; }
+        .add-form input, .add-form select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .add-form button { padding: 4px 8px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        
+        .btn-make { background-color: #28a745; }
+        .btn-model { background-color: #007bff; }
+        .btn-trim { background-color: #6f42c1; }
+        
+        .columns { display: flex; gap: 15px; margin-top: 10px; }
+        .col { width: 33.33%; }
+        .box { background: #f8f9fa; padding: 10px; border-radius: 6px; }
+        .box h2 { font-size: 16px; margin: 0 0 8px 0; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; background: #fff; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: left; }
+        th { background: #e9ecef; }
+        
+        .scroll-box { max-height: 350px; overflow-y: auto; }
+        .search-input { width: 93%; padding: 5px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .active-row { background-color: #e2e8f0 !important; font-weight: bold; }
+        a { color: #0078d4; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-controls">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <a href="/manager/menu">&laquo; Back</a>
+            <h1 style="margin-left: 10px;">Makes, Models & Trims</h1>
+        </div>
+        
+        <div class="forms-wrapper">
+            <form action="/manager/makesmodels/add_make" method="POST" class="add-form">
+                <input type="text" name="make_name" placeholder="Brand name" required>
+                <button type="submit" class="btn-make">Add</button>
+            </form>
+
+            <form action="/manager/makesmodels/add_model" method="POST" class="add-form">
+                <select name="make_id" required>
+                    <option value="">Make...</option>
+                    {% for m in makes %}<option value="{{ m.id }}" {% if selected_make_id == m.id %}selected{% endif %}>{{ m.make }}</option>{% endfor %}
+                </select>
+                <input type="text" name="model_name" placeholder="Model name" required>
+                <button type="submit" class="btn-model">Add</button>
+            </form>
+
+            <form action="/manager/makesmodels/add_trim" method="POST" class="add-form">
+                <input type="hidden" name="make_id" value="{{ selected_make_id or '' }}">
+                <select name="model_id" required>
+                    <option value="">Model...</option>
+                    {% for mo in models %}<option value="{{ mo.id }}" {% if selected_model_id == mo.id %}selected{% endif %}>{{ mo.model }}</option>{% endfor %}
+                </select>
+                <input type="text" name="trim_name" placeholder="Trim name" required>
+                <button type="submit" class="btn-trim">Add</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="columns">
+        <div class="col"><section class="box">
+            <h2>Makes</h2>
+            <input type="text" id="makeSearch" class="search-input" onkeyup="filterTable('makeSearch', 'makesTable', 'make-row')" placeholder="Search...">
+            <div class="scroll-box"><table id="makesTable">
+                {% for make in makes %}
+                <tr class="make-row {% if selected_make_id == make.id %}active-row{% endif %}">
+                    <td><a href="/manager/makesmodels/list?make_id={{ make.id }}">{{ make.make }}</a></td>
+                </tr>
+                {% endfor %}
+            </table></div>
+        </section></div>
+
+        <div class="col"><section class="box">
+            <h2>Models</h2>
+            <input type="text" id="modelSearch" class="search-input" onkeyup="filterTable('modelSearch', 'modelsTable', 'model-row')" placeholder="Search...">
+            <div class="scroll-box"><table id="modelsTable">
+                {% for model in models %}
+                <tr class="model-row {% if selected_model_id == model.id %}active-row{% endif %}">
+                    <td><a href="/manager/makesmodels/list?make_id={{ selected_make_id }}&model_id={{ model.id }}">{{ model.model }}</a></td>
+                </tr>
+                {% endfor %}
+            </table></div>
+        </section></div>
+
+        <div class="col"><section class="box">
+            <h2>Trims</h2>
+            <input type="text" id="trimSearch" class="search-input" onkeyup="filterTable('trimSearch', 'trimsTable', 'trim-row')" placeholder="Search...">
+            <div class="scroll-box"><table id="trimsTable">
+                {% for trim in trims %}
+                <tr class="trim-row"><td>{{ trim.trim }}</td></tr>
+                {% endfor %}
+            </table></div>
+        </section></div>
+    </div>
+</div>
+
+<script>
+function filterTable(inputId, tableId, rowClass) {
+    let filter = document.getElementById(inputId).value.toLowerCase();
+    let rows = document.getElementById(tableId).getElementsByClassName(rowClass);
+    for (let row of rows) {
+        let cell = row.getElementsByTagName("td")[0];
+        row.style.display = (cell.textContent || cell.innerText).toLowerCase().includes(filter) ? "" : "none";
+    }
+}
+</script>
+</body>
+</html>

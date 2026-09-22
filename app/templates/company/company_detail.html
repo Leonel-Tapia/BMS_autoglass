@@ -1,0 +1,153 @@
+<!-- /app/templates/company/company_detail.html | Updated: 2026-09-14 (origin_address) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Company Detail</title>
+
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px 15px; 
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 6px;
+        }
+
+        h2 { 
+            margin: 0; 
+            font-size: 20px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-actions button {
+            padding: 4px 12px;
+            background-color: #0077cc;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .top-actions button:hover {
+            background-color: #005fa3;
+        }
+
+        .top-link {
+            text-decoration: none;
+            color: #0077cc;
+            font-size: 14px;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .card {
+            border: 2px solid #bbb;
+            padding: 0 10px;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            width: 140px;
+            font-weight: bold;
+            color: #222;
+        }
+
+        .value {
+            flex: 1;
+            color: #444;
+        }
+
+        /* CAMBIO 2026-09-14: fila destacada para origin_address */
+        .row.row-origin {
+            background: #f0f8ff;
+            border-left: 4px solid #0077cc;
+            padding-left: 8px;
+            margin: 4px -10px;
+            border-bottom: none;
+            border-radius: 0 4px 4px 0;
+        }
+        .row.row-origin .label { color: #0077cc; }
+    </style>
+</head>
+
+<body>
+
+    <div class="header-container">
+        <h2>Company Detail</h2>
+        <div class="top-actions">
+            <button onclick="window.location='/company/edit'">Edit</button>
+            <a class="top-link" href="/manager/menu">← Back to Manager Menu</a>
+        </div>
+    </div>
+
+    <div class="grid-2col">
+
+        <!-- LEFT COLUMN -->
+        <div class="card">
+            <div class="row"><div class="label">Trade Name</div><div class="value">{{trade_name}}</div></div>
+            <div class="row"><div class="label">Legal Name</div><div class="value">{{legal_name}}</div></div>
+            <div class="row"><div class="label">Tax ID</div><div class="value">{{tax_id}}</div></div>
+            <div class="row"><div class="label">Business Line</div><div class="value">{{business_line}}</div></div>
+            <div class="row"><div class="label">Address</div><div class="value">{{address}}</div></div>
+            <div class="row"><div class="label">Neighborhood</div><div class="value">{{neighborhood}}</div></div>
+            <div class="row"><div class="label">City</div><div class="value">{{city}}</div></div>
+            <div class="row"><div class="label">State</div><div class="value">{{state}}</div></div>
+            <div class="row"><div class="label">Postal Code</div><div class="value">{{postal_code}}</div></div>
+
+            <!-- CAMBIO 2026-09-14: Origin Address destacado -->
+            <div class="row row-origin">
+                <div class="label">📍 Origin Address</div>
+                <div class="value">{{origin_address}}</div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="card">
+            <div class="row"><div class="label">Main Phone</div><div class="value">{{main_phone}}</div></div>
+            <div class="row"><div class="label">Main Email</div><div class="value">{{main_email}}</div></div>
+            <div class="row"><div class="label">Contact Name</div><div class="value">{{contact_name}}</div></div>
+            <div class="row"><div class="label">Contact Phone</div><div class="value">{{contact_phone}}</div></div>
+            <div class="row"><div class="label">Contact Email</div><div class="value">{{contact_email}}</div></div>
+            <div class="row"><div class="label">Notes</div><div class="value">{{notes}}</div></div>
+            <div class="row"><div class="label">Invoice Notice</div><div class="value">{{invoice_notice}}</div></div>
+            <div class="row"><div class="label">Status</div><div class="value">{{is_active}}</div></div>
+            <div class="row"><div class="label">Sales Tax</div><div class="value">{{general_sales_tax}}</div></div>
+            <div class="row"><div class="label">Mobile Fee</div><div class="value">{{mobile_fee}}</div></div>
+            <div class="row"><div class="label">Labor Cost</div><div class="value">{{labor_cost}}</div></div>
+            <div class="row"><div class="label">Materials Cost</div><div class="value">{{materials_cost}}</div></div>
+            <div class="row"><div class="label">Misc Cost</div><div class="value">{{misc_cost}}</div></div>
+        </div>
+
+    </div>
+
+</body>
+</html>

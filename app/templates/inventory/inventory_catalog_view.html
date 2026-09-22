@@ -1,0 +1,300 @@
+<!-- NORMAL MODE — USER VIEW (Compact Style, Green Theme) -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>BMS Autoglass - Inventory Catalog (User Mode)</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .form-container {
+            max-width: 98%;
+            margin: 0 auto;
+            padding: 12px 18px;
+            background: #ffffff;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* ENCABEZADO VERDE (DISTINTO AL MANAGER) */
+        .header-container {
+            display: flex;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .header-accent {
+            width: 6px;
+            height: 40px;
+            background: #2E7D32; /* VERDE */
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        .header-title {
+            color: #2E7D32;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .btn-back {
+            margin-left: auto;
+            padding: 5px 14px;
+            background: #424242;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-back:hover {
+            background: #000;
+        }
+
+        /* TOOLBAR */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+            padding: 6px 10px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 5px 10px 5px 30px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #666;
+        }
+
+        #counter {
+            margin-left: 12px;
+            padding: 3px 10px;
+            background: #e8f5e9;
+            border: 1px solid #2E7D32;
+            color: #2E7D32;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        /* TABLA COMPACTA */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: #f0f0f0;
+            padding: 6px;
+            text-align: left;
+            border-bottom: 2px solid #ccc;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #424242;
+        }
+
+        td {
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9fbe7;
+        }
+
+        .col-part-number {
+            font-weight: 700;
+            color: #2E7D32;
+        }
+
+        .col-money {
+            text-align: right;
+        }
+
+        .col-stock {
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .status-pill {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #e8f5e9;
+            color: #2E7D32;
+            border: 1px solid #2E7D32;
+        }
+
+        .status-inactive {
+            background: #eeeeee;
+            color: #555;
+            border: 1px solid #999;
+        }
+
+        /* PAGINACIÓN */
+        .pagination-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        .btn-page {
+            padding: 4px 10px;
+            background: #424242;
+            color: white;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-page:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="form-container">
+
+    <div class="header-container">
+        <div class="header-accent"></div>
+        <h2 class="header-title">Inventory Catalog (User Mode)</h2>
+        <a href="/inventory/menu" class="btn-back">← Back</a>
+    </div>
+
+    <div class="toolbar">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search part number or name..." onkeyup="filterData()">
+        </div>
+        <div id="counter">0 items</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 18%;">Part Number</th>
+                <th style="width: 35%;">Name</th>
+                <th style="width: 10%; text-align:center;">Stock</th>
+                <th style="width: 10%; text-align:right;">Cost</th>
+                <th style="width: 10%; text-align:right;">Price</th>
+                <th style="width: 12%; text-align:right;">Total</th>
+                <th style="width: 10%; text-align:center;">Status</th>
+                <th style="width: 5%; text-align:center;"></th>
+            </tr>
+        </thead>
+        <tbody id="inventory-body"></tbody>
+    </table>
+
+    <div class="pagination-container">
+        <button class="btn-page" id="btnPrev" onclick="changePage(-1)">Previous</button>
+        <button class="btn-page" id="btnNext" onclick="changePage(1)">Next</button>
+    </div>
+
+</div>
+
+<script>
+    let allParts = [];
+    let filteredParts = [];
+    let currentPage = 1;
+    const itemsPerPage = 15;
+
+    async function loadCatalog() {
+        const response = await fetch('/inventory/list');
+        allParts = await response.json();
+        filteredParts = [...allParts];
+        renderTable();
+    }
+
+    function renderTable() {
+        const body = document.getElementById('inventory-body');
+        const totalItems = filteredParts.length;
+
+        document.getElementById('counter').innerText = `${totalItems} items`;
+
+        const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageData = filteredParts.slice(start, end);
+
+        body.innerHTML = pageData.map(part => `
+            <tr>
+                <td class="col-part-number">${part.part_number || part.sku}</td>
+                <td>${part.part_name}</td>
+                <td class="col-stock">${part.quantity_on_hand}</td>
+                <td class="col-money">$${parseFloat(part.unit_cost).toFixed(2)}</td>
+                <td class="col-money">$${parseFloat(part.unit_sale).toFixed(2)}</td>
+                <td class="col-money">$${parseFloat(part.total_cost || 0).toFixed(2)}</td>
+                <td style="text-align:center;">
+                    <span class="status-pill ${part.is_active ? 'status-active' : 'status-inactive'}">
+                        ${part.is_active ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
+                </td>
+                <td></td>
+            </tr>
+        `).join('');
+    }
+
+    function changePage(dir) {
+        currentPage += dir;
+        renderTable();
+    }
+
+    function filterData() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        filteredParts = allParts.filter(p =>
+            (p.part_number || "").toLowerCase().includes(q) ||
+            (p.part_name || "").toLowerCase().includes(q) ||
+            (p.sku || "").toLowerCase().includes(q)
+        );
+        currentPage = 1;
+        renderTable();
+    }
+
+    loadCatalog();
+</script>
+
+</body>
+</html>

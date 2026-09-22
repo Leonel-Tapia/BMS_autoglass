@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMS Autoglass - Edit User</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 p-3 font-sans text-[12px]">
+
+    <div class="max-w-7xl mx-auto">
+
+        <!-- HEADER -->
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Edit Panel</h1>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">
+                    Editing Profile: <span class="text-blue-600 font-bold">{{ user.username }}</span>
+                </p>
+            </div>
+
+            <a href="/users/list"
+               class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1 rounded text-[10px] font-bold transition-all">
+                BACK TO USER LIST
+            </a>
+        </div>
+
+        <form action="/users/update/{{ user.id }}" method="POST">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+                <!-- LEFT SIDE -->
+                <div class="md:col-span-2 space-y-3">
+
+                    <!-- PERSONAL INFORMATION + LOCATION -->
+                    <div class="bg-white shadow-sm rounded border border-gray-200 p-3">
+                        <h3 class="text-[10px] font-bold text-blue-600 uppercase mb-2 border-b pb-1">Personal Information</h3>
+
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-400 uppercase">Full Name</label>
+                                <input type="text" name="full_name" value="{{ user.full_name }}" required
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-400 uppercase">Email</label>
+                                <input type="email" name="email" value="{{ user.email }}" required
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-400 uppercase">Username (Locked)</label>
+                                <input type="text" value="{{ user.username }}" readonly
+                                       class="w-full border-b border-transparent py-1 text-gray-400 cursor-not-allowed italic text-xs">
+                            </div>
+                        </div>
+
+                        <h3 class="text-[10px] font-bold text-blue-600 uppercase mb-2 border-b pb-1">Location & Contact</h3>
+
+                        <div class="grid grid-cols-4 gap-3 mb-2">
+                            <div class="col-span-4">
+                                <input type="text" name="address" placeholder="Address" value="{{ user.address or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <input type="text" name="city" placeholder="City" value="{{ user.city or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <input type="text" name="state" placeholder="State" value="{{ user.state or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <input type="text" name="postal_code" placeholder="Postal Code" value="{{ user.postal_code or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <input type="text" name="phone_1" placeholder="Phone 1" value="{{ user.phone_1 or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div class="col-span-2">
+                                <input type="text" name="phone_2" placeholder="Phone 2" value="{{ user.phone_2 or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EMPLOYMENT DETAILS -->
+                    <div class="bg-white border border-gray-200 rounded p-3 shadow-sm">
+                        <h3 class="text-[10px] font-bold text-slate-700 uppercase mb-2 border-b pb-1">Employment Details</h3>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-400 uppercase">Position</label>
+                                <input type="text" name="position" value="{{ user.position or '' }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-bold text-gray-400 uppercase">Salary</label>
+                                <input type="number" step="0.01" name="salary" value="{{ user.salary or 0.00 }}"
+                                       class="w-full border-b border-gray-300 py-1 focus:border-blue-500 outline-none text-xs font-mono text-green-700">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT SIDE -->
+                <div class="space-y-3">
+
+                    <!-- SYSTEM ACCESS -->
+                    <div class="bg-slate-800 rounded p-3 text-white shadow">
+                        <h3 class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">System Access</h3>
+
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-[9px] text-slate-400 uppercase mb-1">Role</label>
+                                <select name="role"
+                                        class="w-full bg-slate-700 border-none rounded px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="ACCOUNTING" {% if user.role == 'ACCOUNTING' %}selected{% endif %}>ACCOUNTING</option>
+                                    <option value="ADMIN" {% if user.role == 'ADMIN' %}selected{% endif %}>ADMIN</option>
+                                    <option value="AUDITOR" {% if user.role == 'AUDITOR' %}selected{% endif %}>AUDITOR</option>
+                                    <option value="HR" {% if user.role == 'HR' %}selected{% endif %}>HR</option>
+                                    <option value="MANAGER" {% if user.role == 'MANAGER' %}selected{% endif %}>MANAGER</option>
+                                    <option value="PURCHASING" {% if user.role == 'PURCHASING' %}selected{% endif %}>PURCHASING</option>
+                                    <option value="SALES" {% if user.role == 'SALES' %}selected{% endif %}>SALES</option>
+                                    <option value="SUPPORT" {% if user.role == 'SUPPORT' %}selected{% endif %}>SUPPORT</option>
+                                    <option value="TECHNICIAN" {% if user.role == 'TECHNICIAN' %}selected{% endif %}>TECHNICIAN</option>
+                                    <option value="USER" {% if user.role == 'USER' %}selected{% endif %}>USER</option>
+                                    <option value="WAREHOUSE" {% if user.role == 'WAREHOUSE' %}selected{% endif %}>WAREHOUSE</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[9px] text-slate-400 uppercase mb-1">Status</label>
+                                <select name="is_active"
+                                        class="w-full bg-slate-700 border-none rounded px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="true" {% if user.is_active %}selected{% endif %}>ACTIVE / ENABLED</option>
+                                    <option value="false" {% if not user.is_active %}selected{% endif %}>INACTIVE / DISABLED</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHANGE PASSWORD -->
+                    <div class="bg-white border border-gray-200 rounded p-3 shadow-sm">
+                        <label class="block text-[9px] font-bold text-red-500 uppercase mb-1">Change Password</label>
+                        <input type="password" name="password" placeholder="Leave blank to keep current"
+                               class="w-full border-b border-gray-300 py-1 focus:border-red-500 outline-none text-xs italic">
+                    </div>
+
+                    <!-- SAVE BUTTON -->
+                    <button type="submit"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow transition-all uppercase text-[10px] tracking-widest">
+                        Save Changes
+                    </button>
+
+                    <!-- CANCEL -->
+                    <div class="text-center">
+                        <a href="/users/list" class="text-[9px] text-gray-400 hover:text-blue-600 italic">
+                            ← Cancel and return to list
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+
+    </div>
+
+</body>
+</html>

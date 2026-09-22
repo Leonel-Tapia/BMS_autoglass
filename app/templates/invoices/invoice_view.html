@@ -1,0 +1,1663 @@
+<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-14 (removed Print Preview) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice #{{ invoice.id }} - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { background: #fffcf5; font-size: 0.75rem; margin-bottom: 140px; }
+        .top-header { background: #0d6e6e; color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .section-box { background: white; padding: 6px 8px 4px 8px; border-radius: 4px; margin-bottom: 4px; border: 1px solid #0d6e6e; }
+        .section-title { color: #0d6e6e; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid #a8d5d5; margin-bottom: 6px; padding-bottom: 2px; }
+
+        #vehicle-details .section-title { margin-bottom: 0; }
+        #vehicle-details label, #vehicle-details input, #vehicle-details .row { margin: 0 !important; padding: 0 !important; height: auto !important; }
+        #vehicle-details .model-row .col-4 { padding-top: 4px !important; padding-bottom: 4px !important; }
+
+        #partsTable { border-collapse: collapse !important; }
+        #partsBody td { padding-top: 0px !important; padding-bottom: 0px !important; }
+        .compact-table input { padding: 2px 5px !important; height: auto !important; font-size: 12px !important; }
+        .invalid-cell { background-color: #ffcccc !important; }
+
+        .highlight-date-box {
+            background-color: #d1f2f2;
+            border: 1px solid #0d6e6e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .time-btn {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+        }
+
+        .time-shop-available { background-color: #4CAF50; color: white; }
+        .time-shop-unavailable { background-color: #d9534f; color: white; }
+        .time-mobile-available { background-color: #0275d8; color: white; }
+        .time-mobile-unavailable { background-color: #5a5a5a; color: white; }
+
+        .badge-status-pending { background-color: #f0ad4e; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; }
+        .badge-status-paid { background-color: #28a745; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; }
+        .badge-status-void { background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; }
+        .badge-status-cancelled { background-color: #6c757d; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; }
+        .badge-status-no-show { background-color: #fd7e14; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; }
+        .badge-readonly { background-color: #ffc107; color: #212529; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border-left: 3px solid #0d6e6e;
+        }
+
+        .info-box label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .info-box .value {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .vehicle-field {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .vehicle-field .field-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #0d6e6e;
+            min-width: 45px;
+            text-transform: uppercase;
+        }
+        .vehicle-field input {
+            font-size: 0.85rem;
+            height: 28px;
+            padding: 2px 5px;
+            flex: 1;
+        }
+        .vehicle-field .field-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+            flex: 1;
+        }
+
+        .info-box select.form-control-sm {
+            font-size: 0.85rem;
+            height: 28px;
+        }
+
+        .info-box .form-control-sm {
+            font-size: 0.85rem;
+            height: 28px;
+        }
+
+        .info-box .value .d-flex .form-control-sm {
+            font-size: 0.85rem;
+            height: 28px;
+        }
+
+        .info-box .value label {
+            font-size: 0.85rem;
+        }
+
+        .payment-status-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        .payment-status-PENDING { background-color: #f0ad4e; color: white; }
+        .payment-status-DEPOSITED { background-color: #28a745; color: white; }
+        .payment-status-BOUNCED { background-color: #dc3545; color: white; }
+        .payment-status-REJECTED { background-color: #dc3545; color: white; }
+        .payment-status-CANCELLED { background-color: #6c757d; color: white; }
+        .payment-status-VOID { background-color: #343a40; color: white; }
+        .payment-status-FAILED { background-color: #dc3545; color: white; }
+        .payment-status-REFUNDED { background-color: #17a2b8; color: white; }
+        
+        .payment-table td { vertical-align: middle; padding: 4px 6px; font-size: 0.75rem; }
+        .payment-table th { font-size: 0.7rem; padding: 4px 6px; }
+        .payment-actions .btn { font-size: 0.65rem; padding: 1px 6px; }
+        
+        .payment-summary-box {
+            background: #e8f5e9;
+            border-radius: 4px;
+            padding: 6px 12px;
+            border-left: 3px solid #28a745;
+        }
+        .payment-summary-box .label { font-size: 0.7rem; color: #6c757d; text-transform: uppercase; }
+        .payment-summary-box .amount { font-size: 1.1rem; font-weight: bold; color: #28a745; }
+        .payment-summary-box .amount.danger { color: #dc3545; }
+        
+        .payment-form-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: bold;
+            margin-right: 4px;
+            display: inline-block;
+        }
+        .payment-form-control {
+            height: 24px !important;
+            font-size: 0.7rem !important;
+            padding: 1px 4px !important;
+            display: inline-block;
+            width: auto !important;
+        }
+        .payment-form-select {
+            height: 24px !important;
+            font-size: 0.7rem !important;
+            padding: 1px 4px !important;
+            display: inline-block;
+            width: auto !important;
+        }
+        .payment-add-btn {
+            height: 24px !important;
+            font-size: 0.7rem !important;
+            padding: 1px 6px !important;
+            line-height: 1.2;
+        }
+        .payment-form-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 8px;
+        }
+        .payment-form-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px 8px;
+            padding: 4px 8px;
+        }
+
+        .activity-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #e9ecef;
+            color: #495057;
+        }
+        .activity-table td {
+            padding: 3px 6px;
+            font-size: 0.7rem;
+        }
+        .activity-table th {
+            font-size: 0.65rem;
+            padding: 3px 6px;
+        }
+        .concept-btn {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            border: 1px solid #0d6e6e;
+            background: white;
+            color: #0d6e6e;
+            cursor: pointer;
+        }
+        .concept-btn:hover {
+            background: #0d6e6e;
+            color: white;
+        }
+        .concept-btn.active {
+            background: #0d6e6e;
+            color: white;
+        }
+
+        /* Modo solo lectura para no-admin en PAID/VOID/CANCELLED/NO_SHOW */
+        .readonly-mode input:disabled,
+        .readonly-mode select:disabled,
+        .readonly-mode textarea:disabled {
+            background-color: #f0f0f0 !important;
+            color: #555 !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-2">
+
+    <!-- Modo solo lectura para no-admin -->
+    {% set readonly = (invoice.status in ['PAID', 'VOID', 'CANCELLED', 'NO_SHOW'] and user_role != 'admin') %}
+
+    <!-- HEADER -->
+    <div class="top-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 d-flex align-items-center" style="gap: 15px; flex-wrap: wrap;">
+                <span>INVOICE # <span id="invoice-id">{{ invoice.id }}</span></span>
+                <span class="badge {% if invoice.status == 'PAID' %}badge-status-paid{% elif invoice.status == 'VOID' %}badge-status-void{% elif invoice.status == 'CANCELLED' %}badge-status-cancelled{% elif invoice.status == 'NO_SHOW' %}badge-status-no-show{% else %}badge-status-pending{% endif %}">
+                    Status: {{ invoice.status or 'PENDING' }}
+                </span>
+                {% if readonly %}
+                    <span class="badge badge-readonly">🔒 Read-Only Mode</span>
+                {% endif %}
+                {% if invoice.estimate_id %}
+                    <span class="badge bg-light text-dark px-2 py-1" style="font-size: 0.7rem;">
+                        Est #: {{ invoice.estimate_id }}
+                    </span>
+                {% endif %}
+            </h4>
+            <small><strong>Created By:</strong> {{ invoice.created_by or request.session.get('user_name', 'admin') }}</small>
+            <small class="ms-3"><strong>Date:</strong> {{ invoice.created_at.strftime('%Y-%m-%d %H:%M') if invoice.created_at else 'N/A' }}</small>
+            <small class="ms-3"><strong>Assigned To:</strong> 
+                {% if invoice.technician_id %}
+                    {% for tech in technicians %}
+                        {% if tech.id == invoice.technician_id %}{{ tech.full_name or tech.username }}{% endif %}
+                    {% endfor %}
+                {% else %}
+                    Unassigned
+                {% endif %}
+            </small>
+        </div>
+
+        <div class="text-end d-flex align-items-center" style="gap: 15px;">
+            <small>Today: <span id="current-date"></span></small>
+        </div>
+    </div>
+
+    <!-- FORMULARIO PRINCIPAL -->
+    <form id="invoice-form" action="/invoices/update/{{ invoice.id }}" method="POST" class="{% if readonly %}readonly-mode{% endif %}">
+        <input type="hidden" name="invoice_id" value="{{ invoice.id }}">
+        <input type="hidden" name="customer_id" value="{{ customer.id if customer else invoice.customer_id }}">
+        {% if return_url and return_url != "None" %}
+            <input type="hidden" name="return_url" value="{{ return_url }}">
+        {% endif %}
+        <input type="hidden" name="selected_date" value="{{ selected_date }}">
+        <input type="hidden" name="subtotal" id="hidden_subtotal" value="0.00">
+        <input type="hidden" name="tax_total" id="hidden_tax_total" value="0.00">
+        <input type="hidden" name="total_amount" id="hidden_total_amount" value="0.00">
+        <input type="hidden" name="alt_full_name" id="alt_full_name" value="{{ invoice.alt_contact_name or '' }}">
+        <input type="hidden" name="alt_phone" id="alt_phone" value="{{ invoice.alt_contact_phone or '' }}">
+        <input type="hidden" name="alt_relationship" id="alt_relationship" value="{{ invoice.alt_contact_relation or '' }}">
+
+        <!-- BARRA DE SELECCIÓN DE TÉCNICO -->
+        <div class="row g-2 mb-2">
+            <div class="col-md-6 offset-md-6">
+                <div class="d-flex align-items-center justify-content-end" style="gap: 10px; background: #f0f8ff; padding: 6px 12px; border-radius: 4px; border: 1px solid #0d6e6e;">
+                    <strong style="font-size:0.8rem;">Assign Technician:</strong>
+                    <select name="technician_id" class="form-select form-select-sm" style="width:auto; min-width:150px; font-size:0.8rem; height:30px;" {% if readonly %}disabled{% endif %}>
+                        <option value="">Unassigned</option>
+                        {% for tech in technicians %}
+                            <option value="{{ tech.id }}" {% if invoice.technician_id == tech.id %}selected{% endif %}>
+                                {{ tech.full_name or tech.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if not readonly %}
+                        <small class="text-muted" style="font-size:0.65rem;">(select and Update)</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN SUPERIOR: DATOS GENERALES -->
+        <div class="section-box">
+            <div class="section-title">Invoice Information</div>
+            <div class="info-grid">
+
+                <div class="info-box">
+                    <label>Customer</label>
+                    <div class="value">
+                        {% if customer %}
+                            <strong>{{ customer.name }}</strong><br>
+                            <span style="font-size: 0.85rem;">{{ customer.address }}</span><br>
+                            <span style="font-size: 0.85rem;">{{ customer.phone }} | {{ customer.language }}</span><br>
+                            <span style="font-size: 0.85rem;">Mood: {{ customer.mood }}</span>
+                            <div class="mt-1">
+                                {% if not readonly %}
+                                    <a href="/customers/edit/{{ customer.id }}?origin=invoice_view&invoice_id={{ invoice.id }}&next={{ next }}" 
+                                       class="btn btn-sm btn-warning text-dark fw-bold" style="font-size: 0.7rem; padding: 2px 8px;">Edit</a>
+                                {% endif %}
+                                <a href="https://www.google.com/maps/search/?api=1&query={{ customer.address | urlencode }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-secondary" style="font-size: 0.7rem; padding: 2px 8px;">Map</a>
+                                {% if not readonly %}
+                                    <button type="button"
+                                            class="btn btn-sm"
+                                            style="background-color:#0d6e6e;color:white;font-size:0.7rem;padding:2px 8px;border:none;"
+                                            onclick="openAltCustomerModal()">ALT</button>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Customer not available</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <label>Vehicle</label>
+                    <div class="value">
+                        <div class="vehicle-field">
+                            <span class="field-label">VIN:</span>
+                            <input type="text" name="vehicle_vin" class="form-control form-control-sm" maxlength="17"
+                                   value="{{ invoice.vehicle_vin or '' }}" placeholder="Enter VIN"
+                                   style="font-size:0.85rem;height:28px;"
+                                   oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
+                                   {% if readonly %}disabled{% endif %}>
+                        </div>
+                        <div class="vehicle-field">
+                            <span class="field-label">Year:</span>
+                            <input list="years-list" id="year_input" class="form-control form-control-sm" placeholder="Select Year"
+                                   style="font-size:0.85rem;height:28px;"
+                                   value="{% if invoice and invoice.vehicle_year_id %}{% for y in years %}{% if y.id == invoice.vehicle_year_id %}{{ y.year }}{% endif %}{% endfor %}{% endif %}"
+                                   {% if readonly %}disabled{% endif %}>
+                            <input type="hidden" name="vehicle_year_id" id="vehicle_year_id" 
+                                   value="{{ invoice.vehicle_year_id or '' }}">
+                            <datalist id="years-list">
+                                {% for y in years %}
+                                <option value="{{ y.year }}" data-id="{{ y.id }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="vehicle-field">
+                            <span class="field-label">Make:</span>
+                            <input list="makes-list" name="vehicle_make" id="make-input" class="form-control form-control-sm"
+                                   placeholder="Select Make" style="font-size:0.85rem;height:28px;"
+                                   value="{{ invoice.vehicle_make or '' }}"
+                                   {% if readonly %}disabled{% endif %}>
+                            <datalist id="makes-list"></datalist>
+                        </div>
+                        <div class="vehicle-field">
+                            <span class="field-label">Model:</span>
+                            <input list="models-list" name="vehicle_model" id="model-input" class="form-control form-control-sm"
+                                   placeholder="Select Model" style="font-size:0.85rem;height:28px;"
+                                   value="{{ invoice.vehicle_model or '' }}"
+                                   {% if readonly %}disabled{% endif %}>
+                            <datalist id="models-list"></datalist>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <label>Appointment</label>
+                    <div class="value">
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="date" id="appointment-date" name="estimated_appointment_date"
+                                   class="form-control form-control-sm border-info" style="height:28px; font-size:0.85rem; background-color: #eafafa;"
+                                   value="{{ invoice.estimated_appointment_date or '' }}"
+                                   onchange="updateDayName()"
+                                   {% if readonly %}disabled{% endif %}>
+                            <span id="day-of-week" class="fw-bold text-dark" style="font-size:0.75rem;"></span>
+                        </div>
+                        <div class="mt-1">
+                            <input id="time-display" class="form-control form-control-sm"
+                                   style="height:28px; font-size:0.85rem;" placeholder="Select time..."
+                                   value="{{ invoice.estimated_appointment_time.strftime('%H:%M') if invoice.estimated_appointment_time else '' }}"
+                                   readonly>
+                            <input type="hidden" id="time-hidden" name="estimated_appointment_time"
+                                   value="{{ invoice.estimated_appointment_time or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <label>Service & Status</label>
+                    <div class="value">
+                        <div class="row g-1">
+                            <div class="col-6">
+                                <select name="service_type" id="service_type" class="form-control form-control-sm" style="height:28px; font-size:0.85rem;" onchange="updateTotals()" {% if readonly %}disabled{% endif %}>
+                                    <option value="">-- Select --</option>
+                                    <option value="SHOP" {% if invoice.service_type == 'SHOP' %}selected{% endif %}>SHOP</option>
+                                    <option value="MOVIL" {% if invoice.service_type == 'MOVIL' %}selected{% endif %}>MOVIL</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select name="status" id="invoice_status" class="form-control form-control-sm" style="height:28px; font-size:0.85rem;" {% if readonly %}disabled{% endif %}>
+                                    <option value="PENDING" {% if invoice.status == 'PENDING' %}selected{% endif %}>PENDING</option>
+                                    <option value="PAID" {% if invoice.status == 'PAID' %}selected{% endif %}>PAID</option>
+                                    <option value="VOID" {% if invoice.status == 'VOID' %}selected{% endif %}>VOID</option>
+                                    {% if user_role == 'admin' or invoice.status == 'CANCELLED' %}
+                                        <option value="CANCELLED" {% if invoice.status == 'CANCELLED' %}selected{% endif %}>CANCELLED</option>
+                                    {% endif %}
+                                    {% if user_role == 'admin' or invoice.status == 'NO_SHOW' %}
+                                        <option value="NO_SHOW" {% if invoice.status == 'NO_SHOW' %}selected{% endif %}>NO_SHOW</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-12 mt-1">
+                                <label style="font-size:0.75rem; color:#6c757d;">Special Client (no mobile fee)</label>
+                                <div class="d-flex gap-2">
+                                    <label style="font-size:0.85rem;">
+                                        <input type="radio" name="mobile_fee_override" value="true"
+                                               {% if invoice.mobile_fee_override %}checked{% endif %}
+                                               onchange="updateTotals()"
+                                               {% if readonly %}disabled{% endif %}> TRUE
+                                    </label>
+                                    <label style="font-size:0.85rem;">
+                                        <input type="radio" name="mobile_fee_override" value="false"
+                                               {% if not invoice.mobile_fee_override %}checked{% endif %}
+                                               onchange="updateTotals()"
+                                               {% if readonly %}disabled{% endif %}> FALSE
+                                    </label>
+                                </div>
+                                <input type="hidden" id="special_discount" name="special_discount"
+                                       value="{{ invoice.special_discount or '0.00' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SECCIÓN INFERIOR: ITEMS -->
+        <div class="section-box">
+            <div class="section-title">
+                Invoice Items — Page <span id="page-number">1</span>
+            </div>
+
+            <table class="table table-sm table-bordered compact-table" id="partsTable">
+                <thead class="table-light">
+                <tr>
+                    <th style="width: 120px;">Part Number</th>
+                    <th style="width: 180px;">Description</th>
+                    <th style="width: 60px;">Qty</th>
+                    <th style="width: 80px;">Cost</th>
+                    <th style="width: 80px;">Price</th>
+                    <th style="width: 60px;">Taxable</th>
+                    <th style="width: 90px;">Tax Value</th>
+                    <th style="width: 40px;">Del</th>
+                </tr>
+                </thead>
+                <tbody id="partsBody">
+                    {% if invoice_items %}
+                        {% for item in invoice_items %}
+                        <tr class="part-row">
+                            <td><input list="parts-list" name="product_name[]" class="form-control form-control-sm part-input" value="{{ item.product_name or '' }}" {% if readonly %}disabled{% endif %}></td>
+                            <td><input type="text" name="description[]" class="form-control form-control-sm" value="{{ item.description or '' }}" {% if readonly %}disabled{% endif %}></td>
+                            <td><input type="number" name="quantity[]" class="form-control form-control-sm" value="{{ item.quantity or 1 }}" min="1" onchange="validateCell(this); updateTotals()" {% if readonly %}disabled{% endif %}></td>
+                            <td><input type="number" name="cost[]" class="form-control form-control-sm" step="0.01" min="0" value="{{ item.cost or 0.00 }}" onchange="validateCell(this); updateTotals()" {% if readonly %}disabled{% endif %}></td>
+                            <td><input type="number" name="price[]" class="form-control form-control-sm" step="0.01" min="0" value="{{ item.price or 0.00 }}" onchange="validateCell(this); recalculateTax(this); updateTotals()" {% if readonly %}disabled{% endif %}></td>
+                            <td class="text-center"><input type="checkbox" name="is_taxable[]" {% if item.is_taxable %}checked{% endif %} onchange="recalculateTax(this); updateTotals();" {% if readonly %}disabled{% endif %}></td>
+                            <td><input type="number" name="tax_amount[]" class="form-control form-control-sm" step="0.01" value="{{ item.tax_amount or 0.00 }}" readonly></td>
+                            <td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)" {% if readonly %}disabled{% endif %}>X</button></td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <button type="button" class="btn btn-sm btn-info text-dark fw-bold mb-2" onclick="addPartRow()" {% if readonly %}disabled{% endif %}>Add Part</button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- SECCIÓN: PAYMENT INFORMATION -->
+        <!-- ============================================================ -->
+        <div class="section-box" id="payment-section">
+            <div class="section-title d-flex justify-content-between align-items-center">
+                <span>💰 Payment Information</span>
+                <div>
+                    <span class="badge bg-secondary" id="payment-count">{{ payments|length if payments else 0 }} payments</span>
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col-md-12">
+                    <div class="d-flex flex-wrap align-items-center" style="gap: 25px; background: #f8f9fa; padding: 6px 12px; border-radius: 4px;">
+                        <div>
+                            <span class="fw-bold text-muted" style="font-size:0.7rem; text-transform:uppercase;">Invoice Total:</span>
+                            <span class="fw-bold" style="font-size:1rem;">${{ "%.2f"|format(invoice.total or 0) }}</span>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-muted" style="font-size:0.7rem; text-transform:uppercase;">Total Paid:</span>
+                            <span class="fw-bold" style="font-size:1rem; color:#28a745;">${{ "%.2f"|format(total_paid or 0) }}</span>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-muted" style="font-size:0.7rem; text-transform:uppercase;">Balance Due:</span>
+                            <span class="fw-bold {% if (invoice.total|float or 0) - (total_paid|float or 0) > 0 %}text-danger{% else %}text-success{% endif %}" style="font-size:1rem;">
+                                ${{ "%.2f"|format(balance_due or 0) }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-muted" style="font-size:0.7rem; text-transform:uppercase;">Payment Status:</span>
+                            <span class="badge {% if invoice.status == 'PAID' %}badge-status-paid{% elif invoice.status == 'PARTIALLY_PAID' %}badge-status-pending{% else %}badge-status-pending{% endif %}" style="font-size:0.75rem;">
+                                {{ invoice.status or 'PENDING' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if not readonly %}
+            <div class="payment-form-row" style="background: #f8f9fa; border-radius: 4px; border: 1px dashed #0d6e6e;">
+                <div class="payment-form-group">
+                    <span class="payment-form-label">Type:</span>
+                    <select id="payment_type" class="form-control payment-form-select" style="width:80px;">
+                        <option value="CASH">Cash</option>
+                        <option value="CREDIT_CARD">Credit Card</option>
+                        <option value="DEBIT_CARD">Debit Card</option>
+                        <option value="CHECK">Check</option>
+                        <option value="TRANSFER">Transfer</option>
+                        <option value="ZELLE">Zelle</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="payment-form-group">
+                    <span class="payment-form-label">Amount:</span>
+                    <input type="number" id="payment_amount" class="form-control payment-form-control" step="0.01" min="0.01" placeholder="0.00" style="width:70px;">
+                </div>
+                <div class="payment-form-group">
+                    <span class="payment-form-label">Ref:</span>
+                    <input type="text" id="payment_reference" class="form-control payment-form-control" placeholder="#" style="width:80px;">
+                </div>
+                <div class="payment-form-group">
+                    <span class="payment-form-label">Date:</span>
+                    <input type="date" id="payment_date" class="form-control payment-form-control" style="width:110px;">
+                </div>
+                <div class="payment-form-group" style="flex:1;">
+                    <span class="payment-form-label">Notes:</span>
+                    <input type="text" id="payment_notes" class="form-control payment-form-control" placeholder="Optional..." style="width:100%; min-width:100px;">
+                </div>
+                <div class="payment-form-group">
+                    <button type="button" class="btn btn-sm btn-success payment-add-btn" onclick="addPayment()">➕ Add</button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="max-height: 250px; overflow-y: auto; margin-top: 4px;">
+                <table class="table table-sm table-bordered payment-table" style="font-size:0.75rem;">
+                    <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th style="width:30px;">#</th>
+                            <th style="width:80px;">Date</th>
+                            <th style="width:80px;">Type</th>
+                            <th style="width:70px;">Amount</th>
+                            <th style="width:90px;">Reference</th>
+                            <th style="width:80px;">Status</th>
+                            <th style="width:60px;">Fee</th>
+                            <th style="width:140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payments-body">
+                        {% if payments %}
+                            {% for payment in payments %}
+                            <tr id="payment-row-{{ payment.id }}">
+                                <td>{{ loop.index }}</td>
+                                <td>{{ payment.payment_date.strftime('%Y-%m-%d') if payment.payment_date else '' }}</td>
+                                <td>{{ payment.payment_type }}</td>
+                                <td class="fw-bold">${{ "%.2f"|format(payment.amount) }}</td>
+                                <td>{{ payment.reference or '-' }}</td>
+                                <td>
+                                    <span class="payment-status-badge payment-status-{{ payment.payment_status }}">
+                                        {{ payment.payment_status }}
+                                    </span>
+                                </td>
+                                <td>{% if payment.fee_amount > 0 %}${{ "%.2f"|format(payment.fee_amount) }}{% else %}-{% endif %}</td>
+                                <td class="payment-actions">
+                                    {% if readonly %}
+                                        <span class="text-muted" style="font-size:0.65rem;">—</span>
+                                    {% else %}
+                                        {% if payment.payment_status in ['PENDING', 'DEPOSITED'] %}
+                                            <button class="btn btn-sm btn-outline-success" onclick="updatePaymentStatus('{{ payment.id }}', 'DEPOSITED')" title="Deposit">Dep</button>
+                                        {% endif %}
+                                        {% if payment.payment_status == 'PENDING' %}
+                                            <button class="btn btn-sm btn-outline-warning" onclick="openRejectModal('{{ payment.id }}', 'REJECTED')" title="Reject">Rej</button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="openRejectModal('{{ payment.id }}', 'BOUNCED')" title="Bounce">Bnc</button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="updatePaymentStatus('{{ payment.id }}', 'CANCELLED')" title="Cancel">X</button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deletePayment('{{ payment.id }}')" title="Delete">🗑</button>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-2">No payments recorded yet</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- FIN SECCIÓN DE PAGOS -->
+
+        <!-- FOOTER FIJO -->
+        <div id="footer-fixed" style="
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #0d6e6e;
+            padding: 8px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            z-index: 900;
+        ">
+            <div class="d-flex justify-content-end align-items-center" style="gap: 10px;">
+                <label class="small fw-bold text-muted">Labor:</label>
+                <input type="number" step="0.01" min="0" id="labor_cost" name="labor" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
+                        value="{{ invoice.labor_cost if invoice.labor_cost is not none else (company.labor_cost if company else '79.99') }}" 
+                        oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()"
+                        {% if readonly %}disabled{% endif %}>
+
+                <label class="small fw-bold text-muted">Mat:</label>
+                <input type="number" step="0.01" min="0" id="materials_cost" name="mat" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
+                        value="{{ invoice.materials_cost if invoice.materials_cost is not none else (company.materials_cost if company else '19.99') }}" 
+                        oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()"
+                        {% if readonly %}disabled{% endif %}>
+
+                <label class="small fw-bold text-muted">Misc:</label>
+                <input type="number" step="0.01" min="0" id="misc_cost" name="misc" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
+                        value="{{ invoice.misc_cost if invoice.misc_cost is not none else (company.misc_cost if company else '0.00') }}" 
+                        oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()"
+                        {% if readonly %}disabled{% endif %}>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center" style="gap: 15px;">
+                <div class="d-flex align-items-center" style="gap: 8px;">
+                    <!-- CAMBIO 2026-09-14: botón Print eliminado -->
+                    <button type="button" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.75rem;" onclick="downloadPDF()">
+                        ⬇️ Download PDF
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 0.75rem;" onclick="openActivityModal()">
+                        📋 Activity
+                    </button>
+                    {% if not readonly %}
+                        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" onclick="openVoidModal()">
+                            Void
+                        </button>
+                    {% endif %}
+                    {% if return_url %}
+                        <a href="{{ return_url }}" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                            Back
+                        </a>
+                    {% else %}
+                        {% if origin == 'call_center' %}
+                            <a href="/call_center/daily_estimates?selected_date={{ selected_date or invoice.estimated_appointment_date }}" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                                Back to Daily Estimates
+                            </a>
+                        {% else %}
+                            {% if customer %}
+                                <a href="/call_center/lookup/{{ customer.id }}?next={{ next }}" 
+                                   class="btn btn-outline-secondary btn-sm py-0 px-2">Back to Customer</a>
+                            {% else %}
+                                <a href="/call_center/lookup/{{ invoice.customer_id }}?next={{ next }}" 
+                                   class="btn btn-outline-secondary btn-sm py-0 px-2">Back to Customer</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <div class="totals d-flex align-items-center" style="gap: 12px; font-size: 0.8rem;">
+                    <span><strong>Subtotal:</strong> $<span id="subtotal">0.00</span></span>
+                    <span><strong>Tax:</strong> $<span id="tax-total">0.00</span></span>
+                    <span><strong>Mobile Fee:</strong> $<span id="mobile-fee">0.00</span></span>
+                    <span class="text-dark"><strong>Total:</strong> $<span id="grand-total">0.00</span></span>
+                </div>
+
+                <div class="d-flex align-items-center" style="gap: 10px;">
+                    {% if return_url %}
+                        <a href="{{ return_url }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
+                    {% else %}
+                        {% if origin == 'call_center' %}
+                            <a href="/call_center/daily_estimates?selected_date={{ selected_date or invoice.estimated_appointment_date }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
+                        {% else %}
+                            {% if customer %}
+                                <a href="/call_center/lookup/{{ customer.id }}?next={{ next }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
+                            {% else %}
+                                <a href="/call_center/lookup/{{ invoice.customer_id }}?next={{ next }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                    <button type="submit" class="btn btn-info text-dark fw-bold btn-sm py-1 px-4" id="save-btn" {% if readonly %}disabled{% endif %}>
+                        Update Invoice
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- DATALISTS -->
+<datalist id="parts-list"></datalist>
+
+<!-- MODAL ALT CUSTOMER -->
+<div id="altCustomerModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 class="mb-3 text-center">Alternate Customer</h3>
+        <label>Full Name</label>
+        <input type="text" id="alt_input_name" class="form-control mb-2" value="{{ invoice.alt_contact_name or '' }}">
+        <label>Phone Number</label>
+        <input type="text" id="alt_input_phone" class="form-control mb-2" maxlength="14" value="{{ invoice.alt_contact_phone or '' }}" oninput="formatPhone(this)">
+        <label>Relationship</label>
+        <input list="relationship-list" type="text" id="alt_input_relationship" class="form-control mb-3" value="{{ invoice.alt_contact_relation or '' }}" placeholder="Select or type...">
+        <datalist id="relationship-list">
+            <option value="Wife"><option value="Husband"><option value="Son"><option value="Daughter"><option value="Father"><option value="Mother"><option value="Brother"><option value="Sister"><option value="Friend"><option value="Neighbor"><option value="Employee"><option value="Employer"><option value="Business Partner"><option value="Fleet Manager"><option value="Assistant"><option value="Other">
+        </datalist>
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary" onclick="closeAltCustomerModal()">Cancel</button>
+            <button type="button" class="btn btn-info text-dark fw-bold" onclick="saveAltCustomer()">Continue</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL APPOINTMENT -->
+<div id="appointmentModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 650px; max-width: 90%;">
+        <div style="text-align:center; margin-bottom: 15px;">
+            <h2 style="margin-bottom: 10px;">Select Appointment Time</h2>
+            <div class="d-flex justify-content-center align-items-center" style="gap: 10px;">
+                <div class="highlight-date-box">
+                    <input type="date" id="modal-appointment-date" class="form-control form-control-sm border-0 bg-transparent p-0" style="width: auto; box-shadow: none;" onchange="onModalDateChange()">
+                    <span id="modal-day-of-week" class="fw-bold text-dark" style="font-size: 0.75rem;"></span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px;">
+            <div style="width: 50%;">
+                <h3 style="text-align:center; font-size:1rem; position:sticky; top:0; background:white; z-index:1; padding:5px 0; margin:0; display:flex; justify-content:space-between; align-items:center; padding-left:5px; padding-right:5px;">
+                    <span>SHOP</span>
+                    <span id="shop-count" class="badge bg-secondary" style="font-size: 0.75rem;">0</span>
+                </h3>
+                <div id="shopTimes" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding-top:5px;"></div>
+            </div>
+            <div style="width: 50%;">
+                <h3 style="text-align:center; font-size:1rem; position:sticky; top:0; background:white; z-index:1; padding:5px 0; margin:0; display:flex; justify-content:space-between; align-items:center; padding-left:5px; padding-right:5px;">
+                    <span>MOBILE</span>
+                    <span id="mobile-count" class="badge bg-secondary" style="font-size: 0.75rem;">0</span>
+                </h3>
+                <div id="mobileTimes" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; padding-top:5px;"></div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <div style="font-size: 1rem;" class="text-muted">
+                Selected: <span id="modal-selected-preview" class="fw-bold text-dark">None</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeAppointmentModalCancel()" class="btn btn-secondary btn-sm px-3">Cancel</button>
+                <button type="button" onclick="closeAppointmentModalSubmit()" class="btn btn-info text-dark fw-bold btn-sm px-3">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA RECHAZO/BOUNCE DE PAGO -->
+<div id="rejectPaymentModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 450px; max-width: 90%;">
+        <h4 class="mb-3 text-danger text-center" id="reject-modal-title">Reject Payment</h4>
+        <input type="hidden" id="reject-payment-id">
+        <input type="hidden" id="reject-action-type">
+        <div class="mb-2">
+            <label class="fw-bold small">Reason <span class="text-danger">*</span></label>
+            <textarea id="reject-reason" class="form-control form-control-sm" rows="3" placeholder="Enter reason for rejection/bounce..."></textarea>
+        </div>
+        <div class="mb-2">
+            <label class="fw-bold small">Fee Amount</label>
+            <input type="number" id="reject-fee" class="form-control form-control-sm" step="0.01" min="0" value="0.00" placeholder="0.00">
+        </div>
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeRejectModal()">Cancel</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="confirmReject()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA MENSAJES -->
+<div id="messageModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 350px; max-width: 90%;">
+        <h5 id="message-title" class="text-center"></h5>
+        <p id="message-text" class="text-center"></p>
+        <div class="text-center mt-2">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeMessageModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA ANULAR (VOID) INVOICE -->
+<div id="voidInvoiceModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 class="mb-3 text-danger text-center">Void Invoice</h3>
+        <form id="voidInvoiceForm" method="POST" action="/invoices/void/{{ invoice.id }}">
+            <input type="hidden" name="return_url" value="{{ return_url }}">
+            <input type="hidden" name="selected_date" value="{{ selected_date }}">
+            <div class="mb-3">
+                <label for="voidReason" class="form-label fw-bold">Void Reason <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="voidReason" name="reason" rows="3" required placeholder="Type the reason for voiding..."></textarea>
+            </div>
+            <div class="d-flex justify-content-between mt-3">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeVoidModal()">Cancel</button>
+                <button type="submit" class="btn btn-danger btn-sm">Confirm Void</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL: ACTIVITY LOG -->
+<!-- ============================================================ -->
+<div id="activityModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 800px; max-width: 95%; background: white; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        
+        <div style="background:#0d6e6e; color:white; padding:12px 20px; border-radius:8px 8px 0 0; display:flex; justify-content:space-between; align-items:center;">
+            <h5 style="margin:0; font-size:1rem;">
+                <span style="margin-right:8px;">📋</span> Activity Log - Invoice #{{ invoice.id }}
+            </h5>
+            <button type="button" onclick="closeActivityModal()" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer; line-height:1;">×</button>
+        </div>
+
+        <div style="padding:15px 20px; max-height: 60vh; overflow-y: auto;">
+            <div style="margin-bottom:10px; font-size:0.8rem; color:#6c757d;">
+                <strong>Customer:</strong> {{ customer.name if customer else 'Unknown' }}
+                {% if customer %}
+                    | <strong>Phone:</strong> {{ customer.phone or 'N/A' }}
+                {% endif %}
+            </div>
+
+            {% if not readonly %}
+            <div style="display:flex; flex-wrap:wrap; gap:8px; padding:12px; background:#f8f9fa; border-radius:4px; border:1px solid #dee2e6; margin-bottom:10px;">
+                <div style="flex:2; min-width:180px;">
+                    <label style="font-size:0.7rem; font-weight:bold; color:#6c757d; display:block; margin-bottom:2px;">Concept</label>
+                    <select id="activity_concept_id" style="width:100%; height:32px; font-size:0.8rem; padding:2px 6px; border:1px solid #ced4da; border-radius:4px;">
+                        <option value="">-- Select Concept --</option>
+                    </select>
+                </div>
+                <div style="flex:3; min-width:200px;">
+                    <label style="font-size:0.7rem; font-weight:bold; color:#6c757d; display:block; margin-bottom:2px;">Description (optional)</label>
+                    <input type="text" id="activity_description" style="width:100%; height:32px; font-size:0.8rem; padding:2px 6px; border:1px solid #ced4da; border-radius:4px;" placeholder="Additional notes...">
+                </div>
+                <div style="flex:0 0 auto; display:flex; align-items:flex-end;">
+                    <button type="button" onclick="addActivity()" style="height:32px; padding:0 20px; background:#28a745; color:white; border:none; border-radius:4px; font-size:0.8rem; font-weight:bold; cursor:pointer;">
+                        ➕ Add
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <span style="font-size:0.75rem; font-weight:bold; color:#6c757d; margin-right:8px;">Quick Select:</span>
+                <div id="quickConceptButtons" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
+            </div>
+            {% endif %}
+
+            <div style="max-height: 250px; overflow-y: auto; border:1px solid #dee2e6; border-radius:4px;">
+                <table style="width:100%; font-size:0.7rem; border-collapse:collapse;">
+                    <thead style="background:#f8f9fa; position:sticky; top:0; z-index:10;">
+                        <tr>
+                            <th style="padding:4px 8px; text-align:left; border-bottom:2px solid #dee2e6; width:30px;">#</th>
+                            <th style="padding:4px 8px; text-align:left; border-bottom:2px solid #dee2e6; width:120px;">Concept</th>
+                            <th style="padding:4px 8px; text-align:left; border-bottom:2px solid #dee2e6;">Description</th>
+                            <th style="padding:4px 8px; text-align:left; border-bottom:2px solid #dee2e6; width:80px;">User</th>
+                            <th style="padding:4px 8px; text-align:left; border-bottom:2px solid #dee2e6; width:130px;">Date/Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activities-body">
+                        {% if activities %}
+                            {% for activity in activities %}
+                            <tr>
+                                <td style="padding:4px 8px; border-bottom:1px solid #dee2e6;">{{ loop.index }}</td>
+                                <td style="padding:4px 8px; border-bottom:1px solid #dee2e6;">
+                                    <span style="font-size:0.65rem; padding:2px 6px; border-radius:4px; background:#e9ecef; color:#495057;">{{ activity.concept.name if activity.concept else 'Unknown' }}</span>
+                                </td>
+                                <td style="padding:4px 8px; border-bottom:1px solid #dee2e6;">{{ activity.description or '-' }}</td>
+                                <td style="padding:4px 8px; border-bottom:1px solid #dee2e6;">{{ activity.created_by or '-' }}</td>
+                                <td style="padding:4px 8px; border-bottom:1px solid #dee2e6;">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') if activity.created_at else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="padding:20px; text-align:center; color:#6c757d;">No activities recorded yet</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="padding:10px 20px; border-top:1px solid #dee2e6; text-align:right; border-radius:0 0 8px 8px;">
+            <button type="button" onclick="closeActivityModal()" style="padding:4px 16px; background:#6c757d; color:white; border:none; border-radius:4px; font-size:0.8rem; cursor:pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCRIPTS -->
+<!-- ============================================================ -->
+
+<script>
+const TAX_RATE = parseFloat("{{ company.general_sales_tax if company and company.general_sales_tax else 1.75 }}") / 100;
+const ROWS_PER_PAGE = 15;
+let currentPage = 1;
+
+const DEFAULT_MOBILE_FEE = parseFloat("{{ company.mobile_fee if company and company.mobile_fee else 25.00 }}");
+
+function getMobileFee() {
+    const serviceType = document.querySelector('select[name="service_type"]').value;
+    const overrideField = document.querySelector('input[name="mobile_fee_override"]:checked');
+    const override = overrideField ? (overrideField.value === "true") : false;
+    if (serviceType !== "MOVIL") return 0;
+    if (override) return 0;
+    return DEFAULT_MOBILE_FEE;
+}
+
+function updateTotals() {
+    let subtotalParts = 0;
+    let taxTotal = 0;
+
+    document.querySelectorAll("#partsBody tr").forEach(row => {
+        const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+        const price = parseFloat(row.querySelector('input[name="price[]"]').value) || 0;
+        const tax = parseFloat(row.querySelector('input[name="tax_amount[]"]').value) || 0;
+
+        subtotalParts += qty * price;
+        taxTotal += qty * tax;
+    });
+
+    const labor = Math.max(0, parseFloat(document.getElementById("labor_cost").value) || 0);
+    const materials = Math.max(0, parseFloat(document.getElementById("materials_cost").value) || 0);
+    const misc = Math.max(0, parseFloat(document.getElementById("misc_cost").value) || 0);
+
+    const subtotalFinal = subtotalParts + labor + materials + misc;
+    const mobileFee = getMobileFee();
+    const total = subtotalFinal + taxTotal + mobileFee;
+
+    document.getElementById("subtotal").innerText = subtotalFinal.toFixed(2);
+    document.getElementById("tax-total").innerText = taxTotal.toFixed(2);
+    document.getElementById("mobile-fee").innerText = mobileFee.toFixed(2);
+    document.getElementById("grand-total").innerText = total.toFixed(2);
+
+    document.getElementById("hidden_subtotal").value = subtotalFinal.toFixed(2);
+    document.getElementById("hidden_tax_total").value = taxTotal.toFixed(2);
+    document.getElementById("hidden_total_amount").value = total.toFixed(2);
+}
+
+function validateCell(input) {
+    const value = parseFloat(input.value) || 0;
+    if (input.name === "quantity[]" && value < 1) input.value = 1;
+    if ((input.name === "cost[]" || input.name === "price[]") && value < 0) input.value = 0;
+    if ((input.name === "cost[]" || input.name === "price[]") && parseFloat(input.value) === 0) {
+        input.classList.add("invalid-cell");
+    } else {
+        input.classList.remove("invalid-cell");
+    }
+}
+
+function addPartRow() {
+    const tbody = document.getElementById("partsBody");
+    const row = document.createElement("tr");
+    row.classList.add("part-row");
+
+    row.innerHTML = `
+        <td><input list="parts-list" name="product_name[]" class="form-control form-control-sm part-input"></td>
+        <td><input type="text" name="description[]" class="form-control form-control-sm"></td>
+        <td><input type="number" name="quantity[]" class="form-control form-control-sm" value="1" min="1" onchange="validateCell(this); updateTotals()"></td>
+        <td><input type="number" name="cost[]" class="form-control form-control-sm" step="0.01" min="0" onchange="validateCell(this); updateTotals()"></td>
+        <td><input type="number" name="price[]" class="form-control form-control-sm" step="0.01" min="0" onchange="validateCell(this); recalculateTax(this); updateTotals()"></td>
+        <td class="text-center"><input type="checkbox" name="is_taxable[]" checked onchange="recalculateTax(this); updateTotals();"></td>
+        <td><input type="number" name="tax_amount[]" class="form-control form-control-sm" step="0.01" readonly></td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)">X</button></td>
+    `;
+
+    tbody.appendChild(row);
+    paginate();
+    updateTotals();
+    const newPartInput = row.querySelector('.part-input');
+    if (newPartInput) {
+        newPartInput.focus();
+    }
+}
+
+function removeRow(btn) {
+    btn.closest("tr").remove();
+    paginate();
+    updateTotals();
+}
+
+function recalculateTax(element) {
+    const row = element.closest("tr");
+    const price = parseFloat(row.querySelector('input[name="price[]"]').value) || 0;
+    const taxable = row.querySelector('input[name="is_taxable[]"]').checked;
+    const taxField = row.querySelector('input[name="tax_amount[]"]');
+
+    if (taxable) {
+        taxField.value = (price * TAX_RATE).toFixed(2);
+    } else {
+        taxField.value = "0.00";
+    }
+}
+
+document.addEventListener("input", function(e) {
+    if (e.target && e.target.name === "product_name[]") {
+        const nags = e.target.value;
+        const row = e.target.closest("tr");
+        if (partsMap && partsMap[nags]) {
+            const part = partsMap[nags];
+            row.querySelector('input[name="description[]"]').value = part.description || "";
+            row.querySelector('input[name="cost[]"]').value = part.cost || 0;
+            row.querySelector('input[name="price[]"]').value = part.price || 0;
+            recalculateTax(row.querySelector('input[name="price[]"]'));
+            updateTotals();
+        }
+    }
+});
+
+function paginate() {
+    const rows = document.querySelectorAll("#partsBody tr");
+    const totalPages = Math.ceil(rows.length / ROWS_PER_PAGE) || 1;
+    rows.forEach((row, index) => {
+        row.style.display = (index >= (currentPage - 1) * ROWS_PER_PAGE && index < currentPage * ROWS_PER_PAGE) ? "" : "none";
+    });
+    document.getElementById("page-number").innerText = currentPage;
+}
+
+function openAltCustomerModal() { document.getElementById("altCustomerModal").style.display = "flex"; }
+function closeAltCustomerModal() { document.getElementById("altCustomerModal").style.display = "none"; }
+
+function formatPhone(el){
+    let d=el.value.replace(/\D/g,'').substring(0,10);
+    let out="";
+    if(d.length){out="("+d.substring(0,3);}
+    if(d.length>=4){out+=") "+d.substring(3,6);}
+    if(d.length>=7){out+="-"+d.substring(6,10);}
+    el.value=out;
+}
+
+function saveAltCustomer() {
+    document.getElementById("alt_full_name").value = document.getElementById("alt_input_name").value;
+    document.getElementById("alt_phone").value = document.getElementById("alt_input_phone").value;
+    document.getElementById("alt_relationship").value = document.getElementById("alt_input_relationship").value;
+    closeAltCustomerModal();
+}
+
+let makeMap = {};
+let partsMap = {};
+
+window.addEventListener('load', function() {
+    fetch('/inventory/makes').then(r => r.json()).then(data => {
+        const list = document.getElementById('makes-list');
+        data.forEach(item => {
+            makeMap[item.name] = item.id;
+            let opt = document.createElement('option');
+            opt.value = item.name;
+            list.appendChild(opt);
+        });
+    });
+    fetch('/inventory/windshield').then(r => r.json()).then(data => {
+        const list = document.getElementById('parts-list');
+        data.forEach(item => {
+            partsMap[item.nags_code] = item;
+            let opt = document.createElement('option');
+            opt.value = item.nags_code;
+            list.appendChild(opt);
+        });
+    });
+    
+    const currentMake = document.getElementById('make-input').value;
+    if (currentMake) {
+        setTimeout(() => triggerModelLoad(currentMake), 300);
+    }
+    
+    loadConcepts();
+});
+
+function triggerModelLoad(makeName) {
+    const makeId = makeMap[makeName];
+    const modelList = document.getElementById('models-list');
+    modelList.innerHTML = '';
+    if (makeId) {
+        fetch(`/inventory/models/${makeId}`).then(r => r.json()).then(data => {
+            data.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = item.name;
+                modelList.appendChild(opt);
+            });
+        });
+    }
+}
+
+document.getElementById('make-input').addEventListener('change', function() {
+    document.getElementById('model-input').value = '';
+    triggerModelLoad(this.value);
+});
+
+function updateDayName() {
+    const input = document.getElementById("appointment-date");
+    const span = document.getElementById("day-of-week");
+    if (!input.value) { span.textContent = ""; return; }
+    const date = new Date(input.value + "T00:00:00");
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    span.textContent = `(${days[date.getUTCDay()]})`;
+}
+
+const timeCatalog = [
+    "07:00:00","07:05:00","07:10:00","07:15:00","07:20:00","07:25:00","07:30:00","07:35:00","07:40:00","07:45:00","07:50:00","07:55:00",
+    "08:00:00","08:05:00","08:10:00","08:15:00","08:20:00","08:25:00","08:30:00","08:35:00","08:40:00","08:45:00","08:50:00","08:55:00",
+    "09:00:00","09:05:00","09:10:00","09:15:00","09:20:00","09:25:00","09:30:00","09:35:00","09:40:00","09:45:00","09:50:00","09:55:00",
+    "10:00:00","10:05:00","10:10:00","10:15:00","10:20:00","10:25:00","10:30:00","10:35:00","10:40:00","10:45:00","10:50:00","10:55:00",
+    "11:00:00","11:05:00","11:10:00","11:15:00","11:20:00","11:25:00","11:30:00","11:35:00","11:40:00","11:45:00","11:50:00","11:55:00",
+    "12:00:00","12:05:00","12:10:00","12:15:00","12:20:00","12:25:00","12:30:00","12:35:00","12:40:00","12:45:00","12:50:00","12:55:00",
+    "13:00:00","13:05:00","13:10:00","13:15:00","13:20:00","13:25:00","13:30:00","13:35:00","13:40:00","13:45:00","13:50:00","13:55:00",
+    "14:00:00","14:05:00","14:10:00","14:15:00","14:20:00","14:25:00","14:30:00","14:35:00","14:40:00","14:45:00","14:50:00","14:55:00",
+    "15:00:00","15:05:00","15:10:00","15:15:00","15:20:00","15:25:00","15:30:00","15:35:00","15:40:00","15:45:00","15:50:00","15:55:00",
+    "16:00:00","16:05:00","16:10:00","16:15:00","16:20:00","16:25:00","16:30:00","16:35:00","16:40:00","16:45:00","16:50:00","16:55:00",
+    "17:00:00","17:05:00","17:10:00","17:15:00","17:20:00","17:25:00","17:30:00","17:35:00","17:40:00","17:45:00","17:50:00","17:55:00",
+    "18:00:00","18:05:00","18:10:00","18:15:00","18:20:00","18:25:00","18:30:00","18:35:00","18:40:00","18:45:00","18:50:00","18:55:00",
+    "19:00:00"
+];
+
+function openAppointmentModal(date) {
+    const mainDate = document.getElementById("appointment-date").value;
+    tempSelectedDate = date || mainDate || new Date().toISOString().split('T')[0];
+    tempSelectedTime = document.getElementById("time-hidden").value;
+    tempSelectedServiceType = document.getElementById("service_type").value;
+
+    document.getElementById("modal-appointment-date").value = tempSelectedDate;
+    updateModalDayName();
+
+    const currentDisplayTime = document.getElementById("time-display").value;
+    if (currentDisplayTime) {
+        document.getElementById("modal-selected-preview").innerText = `${tempSelectedDate} @ ${currentDisplayTime} (${tempSelectedServiceType || 'NONE'})`;
+    } else {
+        document.getElementById("modal-selected-preview").innerText = "None selected";
+    }
+
+    document.getElementById("appointmentModal").style.display = "flex"; 
+    loadTimesForModal(tempSelectedDate);
+}
+
+function updateModalDayName() {
+    const input = document.getElementById("modal-appointment-date");
+    const span = document.getElementById("modal-day-of-week");
+    if (!input.value) { span.textContent = ""; return; }
+    const date = new Date(input.value + "T00:00:00");
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    span.textContent = days[date.getUTCDay()];
+}
+
+function onModalDateChange() {
+    const newDate = document.getElementById("modal-appointment-date").value;
+    if (newDate) {
+        tempSelectedDate = newDate;
+        updateModalDayName();
+        loadTimesForModal(tempSelectedDate);
+    }
+}
+
+async function loadTimesForModal(date) {
+    loadTimes(date, "SHOP", "shopTimes", "shop-count"); 
+    loadTimes(date, "MOVIL", "mobileTimes", "mobile-count");
+}
+
+async function loadTimes(date, serviceType, containerId, countId) {
+    const container = document.getElementById(containerId);
+    const countBadge = document.getElementById(countId);
+    container.innerHTML = "<div class='text-center text-muted small py-3'>Loading hours...</div>";
+    countBadge.innerText = "...";
+
+    const currentSelectedTime = document.getElementById("time-hidden").value;
+    const currentMilitary = convertToMilitary(currentSelectedTime);
+
+    const promises = timeCatalog.map(async (time) => {
+        try {
+            const r = await fetch(`/estimates/invoices/check?date=${date}&time=${encodeURIComponent(time)}&service_type=${serviceType}`);
+            const data = await r.json();
+            return { time, exists: data.exists };
+        } catch (e) {
+            return { time, exists: false };
+        }
+    });
+
+    const results = await Promise.all(promises);
+    container.innerHTML = ""; 
+    
+    let unavailableCount = 0;
+
+    results.forEach(({ time, exists }) => {
+        const btn = document.createElement("button");
+        btn.classList.add("time-btn");
+
+        const display = convertToDisplay(time);
+
+        const isCurrentEstimateTime = (date === document.getElementById("appointment-date").value && time.substring(0,5) === currentMilitary.substring(0,5));
+        const isOccupied = exists || isCurrentEstimateTime;
+
+        if (isOccupied) {
+            unavailableCount++;
+        }
+
+        if (serviceType === "SHOP") { 
+            btn.classList.add(isOccupied ? "time-shop-unavailable" : "time-shop-available"); 
+        } else { 
+            btn.classList.add(isOccupied ? "time-mobile-unavailable" : "time-mobile-available"); 
+        }
+        
+        btn.innerText = isOccupied ? `${display} — No disponible` : `${display} — Disponible`;
+        btn.disabled = isOccupied;
+
+        if (!isOccupied) { 
+            btn.onclick = () => tempSelectTime(date, time, serviceType, display); 
+        }
+        
+        container.appendChild(btn);
+    });
+
+    countBadge.innerText = `${unavailableCount} booked`;
+}
+
+let tempSelectedDate = "";
+let tempSelectedTime = "";
+let tempSelectedServiceType = "";
+
+function tempSelectTime(date, time, serviceType, display) {
+    tempSelectedDate = date;
+    tempSelectedTime = time;
+    tempSelectedServiceType = serviceType;
+    document.getElementById("modal-selected-preview").innerText = `${date} @ ${display} (${serviceType})`;
+}
+
+function closeAppointmentModalSubmit() {
+    if (!tempSelectedTime) {
+        alert("Please select an available time slot first.");
+        return;
+    }
+    document.getElementById("appointment-date").value = tempSelectedDate;
+    updateDayName();
+    document.getElementById("time-hidden").value = tempSelectedTime;
+    document.getElementById("time-display").value = convertToDisplay(tempSelectedTime);
+    document.getElementById("service_type").value = tempSelectedServiceType;
+    updateTotals();
+    document.getElementById("appointmentModal").style.display = "none";
+}
+
+function closeAppointmentModalCancel() {
+    document.getElementById("appointmentModal").style.display = "none";
+}
+
+function convertToDisplay(time) {
+    const [h, m] = time.split(":");
+    let hour = parseInt(h);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour}:${m} ${ampm}`;
+}
+
+function convertToMilitary(time) {
+    if (!time) return "";
+    if (time.includes("AM") || time.includes("PM")) {
+        const [hourMin, ampm] = time.split(" ");
+        let [h, m] = hourMin.split(":");
+        h = parseInt(h);
+        if (ampm === "PM" && h !== 12) h += 12;
+        if (ampm === "AM" && h === 12) h = 0;
+        return `${String(h).padStart(2,"0")}:${m}:00`;
+    }
+    return time;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const hidden = document.getElementById("time-hidden");
+    if (hidden && hidden.value) {
+        hidden.value = convertToMilitary(hidden.value);
+    }
+    
+    const now = new Date();
+    const formatted = (now.getMonth() + 1).toString().padStart(2, '0') + "/" + now.getDate().toString().padStart(2, '0') + "/" + now.getFullYear();
+    document.getElementById("current-date").textContent = formatted;
+    
+    const today = now.toISOString().split('T')[0];
+    const paymentDateInput = document.getElementById('payment_date');
+    if (paymentDateInput) {
+        paymentDateInput.value = today;
+    }
+    
+    updateDayName();
+    updateTotals();
+    validateMainFields();
+
+    const rawTime = document.getElementById("time-hidden").value;
+    if (rawTime) {
+        document.getElementById("time-display").value = convertToDisplay(rawTime);
+    }
+});
+
+document.getElementById("appointment-date").addEventListener("click", function() {
+    const date = this.value;
+    if (date) {
+        updateDayName();
+        openAppointmentModal(date);
+    }
+});
+
+function validateMainFields() {
+    const fields = ["vehicle_year_id", "make-input", "model-input", "appointment-date", "time-hidden", "service_type"];
+    const incomplete = fields.some(id => !document.getElementById(id).value.trim());
+    const hasParts = document.querySelectorAll("#partsBody tr").length > 0;
+    
+    const saveBtn = document.getElementById("save-btn");
+    const isInvalid = incomplete || !hasParts;
+
+    saveBtn.disabled = isInvalid;
+    saveBtn.style.opacity = isInvalid ? "0.5" : "1";
+    saveBtn.style.cursor = isInvalid ? "not-allowed" : "pointer";
+    
+    return !isInvalid;
+}
+
+document.getElementById("invoice-form").addEventListener("submit", function(e) { 
+    if (!validateMainFields()) {
+        e.preventDefault();
+        alert("Please ensure all vehicle details, date, time, and service type are completed, and at least one service/part is added.");
+    }
+});
+
+document.addEventListener("input", validateMainFields);
+document.addEventListener("change", validateMainFields);
+
+function openVoidModal() {
+    document.getElementById("voidInvoiceModal").style.display = "flex";
+}
+
+function closeVoidModal() {
+    document.getElementById("voidInvoiceModal").style.display = "none";
+}
+
+// CAMBIO 2026-09-14: función openPrintPreview() eliminada (Print deprecado)
+
+function openActivityModal() {
+    loadConcepts();
+    document.getElementById('activity_concept_id').value = '';
+    document.getElementById('activity_description').value = '';
+    document.querySelectorAll('.concept-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('activityModal').style.display = 'flex';
+}
+
+function closeActivityModal() {
+    document.getElementById('activityModal').style.display = 'none';
+}
+
+async function loadConcepts() {
+    try {
+        const response = await fetch('/invoices/concepts');
+        const result = await response.json();
+        
+        if (result.success) {
+            const select = document.getElementById('activity_concept_id');
+            const quickContainer = document.getElementById('quickConceptButtons');
+            
+            select.innerHTML = '<option value="">-- Select Concept --</option>';
+            quickContainer.innerHTML = '';
+            
+            result.data.forEach(concept => {
+                const option = document.createElement('option');
+                option.value = concept.id;
+                option.textContent = concept.name;
+                select.appendChild(option);
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'concept-btn';
+                btn.textContent = concept.name;
+                btn.dataset.id = concept.id;
+                btn.onclick = function() {
+                    document.getElementById('activity_concept_id').value = concept.id;
+                    document.querySelectorAll('.concept-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                };
+                quickContainer.appendChild(btn);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading concepts:', error);
+    }
+}
+
+async function addActivity() {
+    const conceptId = document.getElementById('activity_concept_id').value;
+    const description = document.getElementById('activity_description').value;
+    const invoiceId = '{{ invoice.id }}';
+    
+    if (!conceptId) {
+        alert('Please select a concept.');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('concept_id', conceptId);
+    formData.append('description', description);
+    
+    try {
+        const response = await fetch(`/invoices/${invoiceId}/activities`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to add activity.'));
+        }
+    } catch (error) {
+        alert('Network error: ' + error.message);
+    }
+}
+</script>
+
+<!-- ============================================================ -->
+<!-- SCRIPTS PARA PAGOS -->
+<!-- ============================================================ -->
+
+<script>
+const INVOICE_ID = '{{ invoice.id }}';
+const INVOICE_TOTAL = parseFloat('{{ invoice.total or 0 }}');
+
+async function addPayment() {
+    const paymentType = document.getElementById('payment_type').value;
+    const amount = document.getElementById('payment_amount').value;
+    const reference = document.getElementById('payment_reference').value;
+    const paymentDate = document.getElementById('payment_date').value;
+    const notes = document.getElementById('payment_notes').value;
+
+    if (!amount || parseFloat(amount) <= 0) {
+        showMessage('Error', 'Please enter a valid amount greater than 0.');
+        return;
+    }
+
+    if (!paymentDate) {
+        showMessage('Error', 'Please select a payment date.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('payment_type', paymentType);
+    formData.append('amount', amount);
+    formData.append('reference', reference);
+    formData.append('payment_date', paymentDate);
+    formData.append('notes', notes);
+
+    try {
+        const response = await fetch(`/invoices/${INVOICE_ID}/payments`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage('Success', 'Payment added successfully!');
+            location.reload();
+        } else {
+            showMessage('Error', result.error || 'Failed to add payment.');
+        }
+    } catch (error) {
+        showMessage('Error', 'Network error: ' + error.message);
+    }
+}
+
+async function updatePaymentStatus(paymentId, status) {
+    if (!confirm(`Are you sure you want to mark this payment as ${status}?`)) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('payment_status', status);
+
+    try {
+        const response = await fetch(`/invoices/payments/${paymentId}/status`, {
+            method: 'PUT',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage('Success', `Payment status updated to ${status}!`);
+            location.reload();
+        } else {
+            showMessage('Error', result.error || 'Failed to update payment status.');
+        }
+    } catch (error) {
+        showMessage('Error', 'Network error: ' + error.message);
+    }
+}
+
+function openRejectModal(paymentId, actionType) {
+    document.getElementById('reject-payment-id').value = paymentId;
+    document.getElementById('reject-action-type').value = actionType;
+    document.getElementById('reject-reason').value = '';
+    document.getElementById('reject-fee').value = '0.00';
+    
+    const title = actionType === 'REJECTED' ? 'Reject Payment' : 'Bounce Payment (NSF)';
+    document.getElementById('reject-modal-title').textContent = title;
+    
+    document.getElementById('rejectPaymentModal').style.display = 'flex';
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectPaymentModal').style.display = 'none';
+}
+
+async function confirmReject() {
+    const paymentId = document.getElementById('reject-payment-id').value;
+    const actionType = document.getElementById('reject-action-type').value;
+    const reason = document.getElementById('reject-reason').value.trim();
+    const fee = document.getElementById('reject-fee').value || '0.00';
+
+    if (!reason) {
+        showMessage('Error', 'Please enter a reason for the rejection/bounce.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('payment_status', actionType);
+    formData.append('rejection_reason', reason);
+    formData.append('fee_amount', fee);
+
+    try {
+        const response = await fetch(`/invoices/payments/${paymentId}/status`, {
+            method: 'PUT',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            closeRejectModal();
+            showMessage('Success', `Payment ${actionType.toLowerCase()} successfully!`);
+            location.reload();
+        } else {
+            showMessage('Error', result.error || 'Failed to process payment.');
+        }
+    } catch (error) {
+        showMessage('Error', 'Network error: ' + error.message);
+    }
+}
+
+async function deletePayment(paymentId) {
+    if (!confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/invoices/payments/${paymentId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showMessage('Success', 'Payment deleted successfully!');
+            location.reload();
+        } else {
+            showMessage('Error', result.error || 'Failed to delete payment.');
+        }
+    } catch (error) {
+        showMessage('Error', 'Network error: ' + error.message);
+    }
+}
+
+function showMessage(title, text) {
+    document.getElementById('message-title').textContent = title;
+    document.getElementById('message-text').textContent = text;
+    document.getElementById('messageModal').style.display = 'flex';
+}
+
+function closeMessageModal() {
+    document.getElementById('messageModal').style.display = 'none';
+}
+
+// ============================================================
+// DOWNLOAD PDF
+// ============================================================
+function downloadPDF() {
+    const invoiceId = '{{ invoice.id }}';
+    window.location.href = `/invoices/download/${invoiceId}`;
+}
+</script>
+
+</body>
+</html>

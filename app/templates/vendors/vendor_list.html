@@ -1,0 +1,160 @@
+<!-- ============================================================
+     FILE: /app/templates/vendors/vendor_list.html
+     UPDATED: 2026-06-07 09:00 MDT
+     DESCRIPTION: Vendor List - BMS Autoglass
+     ============================================================ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { font-size: 0.9rem; }
+        .table-sm td, .table-sm th { padding: 0.15rem 0.5rem !important; vertical-align: middle; }
+        .table-responsive { overflow: visible !important; }
+        .dropdown-menu { z-index: 1050 !important; font-size: 0.85rem; }
+        .btn-action { padding: 0.1rem 0.4rem; font-size: 0.75rem; }
+        .pagination-footer { margin-top: -12px; }
+    </style>
+</head>
+
+<body class="bg-light">
+
+    <div class="container-fluid mt-3">
+        <div class="card shadow-sm">
+
+            <!-- HEADER -->
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+                <h5 class="mb-0 fw-bold">{{ title }}</h5>
+                <div class="d-flex gap-2">
+                    <a href="/company/main_menu" class="btn btn-secondary btn-sm fw-bold">← Menu</a>
+                    <a href="/vendors/create" class="btn btn-light btn-sm fw-bold">+ Add Vendor</a>
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="card-body p-0 d-flex flex-column" style="min-height: 600px;">
+
+                <!-- SEARCH BAR -->
+                <div class="p-2 bg-white border-bottom">
+                    <input type="text" id="vendorSearchInput" class="form-control form-control-sm" placeholder="🔍 Filter vendors...">
+                </div>
+
+                <!-- TABLE -->
+                <div class="table-responsive">
+                    <table id="vendorTable" class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Vendor Name</th>
+                                <th>Contact Name</th> <!-- 🔥 UPDATED -->
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="vendorTableBody">
+                            {% for vendor in vendors %}
+                            <tr class="vendor-row">
+
+                                <td class="fw-semibold text-truncate" style="max-width: 200px;">
+                                    {{ vendor.vendor_name }}
+                                </td>
+
+                                <td class="text-truncate" style="max-width: 150px;">
+                                    {{ vendor.contact_name or '-' }}
+                                </td>
+
+                                <td>{{ vendor.phone or '-' }}</td>
+
+                                <td class="text-truncate" style="max-width: 150px;">
+                                    {{ vendor.email or '-' }}
+                                </td>
+
+                                <td class="text-center">
+                                    {% if vendor.is_active %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill">Inactive</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/vendors/edit/{{ vendor.id }}" class="btn btn-warning btn-action fw-bold text-dark">Edit</a>
+
+                                        {% if vendor.is_active %}
+                                            <a href="/purchases/create?vendor_id={{ vendor.id }}" class="btn btn-success btn-action">Buy</a>
+                                            <button class="btn btn-outline-primary btn-action dropdown-toggle" data-bs-toggle="dropdown">More</button>
+
+                                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                                <li><h6 class="dropdown-header">MANAGEMENT</h6></li>
+                                                <li><a class="dropdown-item" href="/vendors/po-history/{{ vendor.id }}">PO History</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <button class="dropdown-item text-muted" disabled style="cursor: not-allowed;">
+                                                        Archive Vendor <span class="badge bg-secondary ms-1">In Progress</span>
+                                                    </button>
+                                                </li>
+                                            </ul>
+
+                                        {% else %}
+                                            <button class="btn btn-secondary btn-action" disabled>Buy</button>
+                                            <button class="btn btn-secondary btn-action" disabled>More</button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- PAGINATION -->
+                <nav class="p-2 border-top mt-auto bg-white pagination-footer">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+
+                        {% if page > 1 %}
+                        <li class="page-item"><a class="page-link" href="/vendors/list?page={{ page - 1 }}">«</a></li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">«</span></li>
+                        {% endif %}
+
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="/vendors/list?page={{ p }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+
+                        {% if page < total_pages %}
+                        <li class="page-item"><a class="page-link" href="/vendors/list?page={{ page + 1 }}">»</a></li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">»</span></li>
+                        {% endif %}
+
+                    </ul>
+                </nav>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.getElementById('vendorSearchInput').addEventListener('keyup', function() {
+            const filter = this.value.toLowerCase();
+            document.querySelectorAll('.vendor-row').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+
+</body>
+</html>

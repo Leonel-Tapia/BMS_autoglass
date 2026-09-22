@@ -1,0 +1,938 @@
+<!-- Path: app/templates/estimates_editar.html | Updated: 2026-09-06 (fixed field names & validation) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Estimate #{{ estimate.id }} - BMS Autoglass</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { background: #fffcf5; font-size: 0.75rem; margin-bottom: 140px; }
+        .top-header { background: #b45309; color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .section-box { background: white; padding: 6px 8px 4px 8px; border-radius: 4px; margin-bottom: 4px; border: 1px solid #d97706; }
+        .section-title { color: #b45309; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid #fde68a; margin-bottom: 6px; padding-bottom: 2px; }
+
+        #vehicle-details .section-title { margin-bottom: 0; }
+        #vehicle-details label, #vehicle-details input, #vehicle-details .row { margin: 0 !important; padding: 0 !important; height: auto !important; }
+        #vehicle-details .model-row .col-4 { padding-top: 4px !important; padding-bottom: 4px !important; }
+
+        #partsTable { border-collapse: collapse !important; }
+        #partsBody td { padding-top: 0px !important; padding-bottom: 0px !important; }
+        .compact-table input { padding: 2px 5px !important; height: auto !important; font-size: 12px !important; }
+        .invalid-cell { background-color: #ffcccc !important; }
+
+        .highlight-date-box {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .time-btn {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+        }
+
+        .time-shop-available { background-color: #4CAF50; color: white; }
+        .time-shop-unavailable { background-color: #d9534f; color: white; }
+        .time-mobile-available { background-color: #0275d8; color: white; }
+        .time-mobile-unavailable { background-color: #5a5a5a; color: white; }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-2">
+
+    <div class="top-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-0 d-flex align-items-center" style="gap: 15px;">
+                <span>EDIT ESTIMATE # <span id="estimate-id">{{ estimate.id }}</span></span>
+                <span class="badge bg-light text-dark px-2 py-1" style="font-size: 0.75rem; font-weight: 600;">
+                    Status: {{ estimate.status or 'Estimate' }}
+                </span>
+            </h4>
+            <small><strong>Created By:</strong> {{ estimate.operator_username or request.session.get('user_name', 'admin') }}</small>
+        </div>
+
+        <div class="text-end d-flex align-items-center" style="gap: 15px;">
+            <button type="button" class="btn btn-light btn-sm text-dark fw-bold py-1 px-2" style="font-size: 0.75rem;" onclick="openDuplicateModal()">
+                + New Estimate (Duplicate)
+            </button>
+            <small>Date: <span id="current-date"></span></small>
+        </div>
+    </div>
+
+    <form id="estimate-form" action="/estimates/update/{{ estimate.id }}" method="POST">
+        <input type="hidden" name="customer_id" value="{{ customer.id }}">
+        <input type="hidden" name="estimate_id" value="{{ estimate.id }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="origin" value="{{ origin }}">
+        <input type="hidden" name="selected_date" value="{{ selected_date }}">
+
+        <input type="hidden" name="alt_full_name" id="alt_full_name" value="{{ estimate.alt_full_name or '' }}">
+        <input type="hidden" name="alt_phone" id="alt_phone" value="{{ estimate.alt_phone or '' }}">
+        <input type="hidden" name="alt_relationship" id="alt_relationship" value="{{ estimate.alt_relationship or '' }}">
+
+        <input type="hidden" name="subtotal" id="hidden_subtotal" value="0.00">
+        <input type="hidden" name="tax_total" id="hidden_tax_total" value="0.00">
+        <input type="hidden" name="total_amount" id="hidden_total_amount" value="0.00">
+
+        <div class="row g-2">
+
+            <div class="col-md-4">
+
+                <div class="section-box">
+                    <div class="section-title">Customer Information</div>
+                    <p class="mb-0"><strong>{{ customer.name }}</strong></p>
+                    <small>{{ customer.address }}</small><br>
+                    <small>{{ customer.phone }} | {{ customer.language }} | Mood: {{ customer.mood }}</small><br>
+
+                    <a href="/customers/edit/{{ customer.id }}?origin=estimate_edit&estimate_id={{ estimate.id }}&next={{ next }}" 
+                       class="btn btn-sm btn-warning mt-1 text-dark fw-bold">Edit Customer</a>
+
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ customer.address | urlencode }}"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-secondary mt-1">
+                       View Map
+                    </a>
+
+                    <button type="button"
+                            class="btn btn-sm mt-1"
+                            style="background-color:#78350f;color:white;border:none;"
+                            onclick="openAltCustomerModal()">
+                        ALT Custm.
+                    </button>
+                </div>
+
+                <!-- VEHICLE DETAILS -->
+                <div class="section-box" id="vehicle-details">
+                    <div class="section-title">Vehicle Details</div>
+
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label>VIN</label>
+                            <input type="text" name="vehicle_vin" class="form-control" maxlength="17"
+                            value="{{ estimate.vehicle_vin or '' }}"
+                            oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mt-1 model-row">
+                        <div class="col-4">
+                            <label>Year</label>
+                            <input list="years-list" id="year_input" class="form-control" placeholder="Select..."
+                                   value="{% if estimate and estimate.vehicle_year_id %}{% for y in years %}{% if y.id == estimate.vehicle_year_id %}{{ y.year }}{% endif %}{% endfor %}{% endif %}">
+                            
+                            <input type="hidden" name="vehicle_year_id" id="vehicle_year_id" 
+                                   value="{{ estimate.vehicle_year_id or '' }}">
+
+                            <datalist id="years-list">
+                                {% for y in years %}
+                                <option value="{{ y.year }}" data-id="{{ y.id }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <script>
+                        document.getElementById('year_input').addEventListener('input', function () {
+                            const value = this.value;
+                            const option = document.querySelector(`#years-list option[value="${value}"]`);
+                            const hiddenInput = document.getElementById('vehicle_year_id');
+                            if (option) {
+                                hiddenInput.value = option.dataset.id;
+                            } else {
+                                hiddenInput.value = "";
+                            }
+                            validateMainFields();
+                        });
+                        </script>
+
+                        <div class="col-4">
+                            <label>Make</label>
+                            <input list="makes-list" name="vehicle_make" id="make-input" class="form-control"
+                                   placeholder="Select Make..."
+                                   value="{{ estimate.vehicle_make or '' }}">
+                            <datalist id="makes-list"></datalist>
+                        </div>
+
+                        <div class="col-4">
+                            <label>Model</label>
+                            <input list="models-list" name="vehicle_model" id="model-input" class="form-control"
+                                   placeholder="Select Model..."
+                                   value="{{ estimate.vehicle_model or '' }}">
+                            <datalist id="models-list"></datalist>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCHEDULE APPOINTMENT -->
+                <div class="section-box" style="padding:4px 6px;">
+                    <div class="section-title">Schedule Appointment</div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="mb-0 fw-bold">Date & Day</label>
+                        <div class="highlight-date-box">
+                            <span id="day-of-week" class="fw-bold text-dark" style="font-size: 0.75rem;"></span>
+                        </div>
+                    </div>
+
+                    <input type="date" id="appointment-date" name="estimated_appointment_date"
+                           class="form-control form-control-sm border-warning" style="height:26px; background-color: #fffbeb;"
+                           value="{{ estimate.estimated_appointment_date or '' }}"
+                           onchange="updateDayName(); validateMainFields();">
+                    
+                    <label class="mb-0 mt-1">Time</label>
+
+                    <input id="time-display" class="form-control form-control-sm"
+                           style="height:26px;" placeholder="Select time..."
+                           value="{{ estimate.estimated_appointment_time.strftime('%H:%M') if estimate.estimated_appointment_time else '' }}"
+                           readonly>
+
+                   <input type="hidden" id="time-hidden" name="estimated_appointment_time"
+                          value="{{ estimate.estimated_appointment_time or '' }}">
+                </div>
+
+                <!-- SERVICE TYPE + SPECIAL CLIENT -->
+                <div class="row g-2">
+
+                    <div class="col-6">
+                        <div class="section-box" style="padding:4px 6px;">
+                            <div class="section-title">Service Type</div>
+
+                            <select name="service_type" id="service_type" class="form-control form-control-sm" style="height:26px;" onchange="updateTotals(); validateMainFields();">
+                                <option value="">-- Select --</option>
+                                <option value="SHOP" {% if estimate.service_type == 'SHOP' %}selected{% endif %}>SHOP</option>
+                                <option value="MOVIL" {% if estimate.service_type == 'MOVIL' %}selected{% endif %}>MOVIL</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="section-box" style="padding:4px 6px;">
+                            <div class="section-title">Special Client (no mobile fee)</div>
+
+                            <div class="d-flex align-items-center" style="gap:10px;">
+                                <label class="mb-0">
+                                    <input type="radio" name="mobile_fee_override" value="true"
+                                           {% if estimate.mobile_fee_override %}checked{% endif %}
+                                           onchange="updateTotals()">
+                                    TRUE
+                                </label>
+
+                                <label class="mb-0">
+                                    <input type="radio" name="mobile_fee_override" value="false"
+                                           {% if not estimate.mobile_fee_override %}checked{% endif %}
+                                           onchange="updateTotals()">
+                                    FALSE
+                                </label>
+                            </div>
+
+                            <input type="hidden" id="special_discount" name="special_discount"
+                                   value="{{ estimate.special_discount or '0.00' }}">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: DETAILS & PARTS -->
+            <div class="col-md-8">
+                <div class="section-box">
+                    <div class="section-title">
+                        Edit Estimate Items — Page <span id="page-number">1</span>
+                    </div>
+
+                    <table class="table table-sm table-bordered compact-table" id="partsTable">
+                        <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">Part Number</th>
+                            <th style="width: 180px;">Description</th>
+                            <th style="width: 60px;">Qty</th>
+                            <th style="width: 80px;">Cost</th>
+                            <th style="width: 80px;">Price</th>
+                            <th style="width: 60px;">Taxable</th>
+                            <th style="width: 90px;">Tax Value</th>
+                            <th style="width: 40px;">Del</th>
+                        </tr>
+                        </thead>
+
+                        <tbody id="partsBody">
+                            {% if estimate_details %}
+                                {% for item in estimate_details %}
+                                <tr class="part-row">
+                                    <td><input list="parts-list" name="product_name[]" class="form-control form-control-sm part-input" value="{{ item.product_name or '' }}"></td>
+                                    <td><input type="text" name="description[]" class="form-control form-control-sm" value="{{ item.description or '' }}"></td>
+                                    <td><input type="number" name="quantity[]" class="form-control form-control-sm" value="{{ item.quantity or 1 }}" min="1" onchange="validateCell(this); updateTotals(); validateMainFields();"></td>
+                                    <td><input type="number" name="cost[]" class="form-control form-control-sm" step="0.01" min="0" value="{{ item.cost or 0.00 }}" onchange="validateCell(this); updateTotals();"></td>
+                                    <td><input type="number" name="price[]" class="form-control form-control-sm" step="0.01" min="0" value="{{ item.price or 0.00 }}" onchange="validateCell(this); recalculateTax(this); updateTotals();"></td>
+                                    <td class="text-center"><input type="checkbox" name="is_taxable[]" {% if item.is_taxable %}checked{% endif %} onchange="recalculateTax(this); updateTotals();"></td>
+                                    <td><input type="number" name="tax_amount[]" class="form-control form-control-sm" step="0.01" value="{{ item.tax_amount or 0.00 }}" readonly></td>
+                                    <td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this); validateMainFields();">X</button></td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+
+                    <button type="button" class="btn btn-sm btn-warning text-dark fw-bold mb-2" onclick="addPartRow()">Add Part</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div id="footer-fixed" style="
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 2px solid #d97706;
+            padding: 8px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            z-index: 900;
+        ">
+            <div class="d-flex justify-content-end align-items-center" style="gap: 10px;">
+                <label class="small fw-bold text-muted">Labor:</label>
+                <input type="number" step="0.01" min="0" id="labor_cost" name="labor" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
+                        value="{{ estimate.labor_cost if estimate.labor_cost is not none else (company.labor_cost if company else '79.99') }}" 
+                        oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()">
+
+                <label class="small fw-bold text-muted">Mat:</label>
+                <input type="number" step="0.01" min="0" id="materials_cost" name="mat" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
+                        value="{{ estimate.materials_cost if estimate.materials_cost is not none else (company.materials_cost if company else '19.99') }}" 
+                        oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()">
+
+                <label class="small fw-bold text-muted">Misc:</label>
+                <input type="number" step="0.01" min="0" id="misc_cost" name="misc" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
+                        value="{{ estimate.misc_cost if estimate.misc_cost is not none else (company.misc_cost if company else '0.00') }}" 
+                        oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()">
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center" style="gap: 15px;">
+                <div class="d-flex align-items-center" style="gap: 8px;">
+                    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" onclick="openVoidModal()">Void</button>
+                    
+                    {% if request.query_params.get('origin') == 'call_center' %}
+                        <a href="/call_center/daily_estimates?date={{ request.query_params.get('selected_date') }}" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem;">Back to Daily Estimates</a>
+                    {% else %}
+                        <a href="/call_center/lookup/{{ customer.id }}?next={{ next }}" 
+                           class="btn btn-outline-secondary btn-sm py-0 px-2">Back to Customer</a>
+                    {% endif %}
+                </div>
+
+                <div class="totals d-flex align-items-center" style="gap: 12px; font-size: 0.8rem;">
+                    <span><strong>Subtotal:</strong> $<span id="subtotal">0.00</span></span>
+                    <span><strong>Tax:</strong> $<span id="tax-total">0.00</span></span>
+                    <span><strong>Mobile Fee:</strong> $<span id="mobile-fee">0.00</span></span>
+                    <span class="text-dark"><strong>Total:</strong> $<span id="grand-total">0.00</span></span>
+                </div>
+
+                <div class="d-flex align-items-center" style="gap: 10px;">
+                    {% if request.query_params.get('origin') == 'call_center' %}
+                        <a href="/call_center/daily_estimates?date={{ request.query_params.get('selected_date') }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
+                    {% else %}
+                        <a href="/call_center/lookup/{{ customer.id }}?next={{ next }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
+
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm py-1 px-4" id="save-btn">
+                        Update Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<datalist id="parts-list"></datalist>
+
+<script>
+const TAX_RATE = parseFloat("{{ company.general_sales_tax if company and company.general_sales_tax else 1.75 }}") / 100;
+const ROWS_PER_PAGE = 15;
+let currentPage = 1;
+
+const DEFAULT_MOBILE_FEE = parseFloat("{{ company.mobile_fee if company and company.mobile_fee else 25.00 }}");
+
+function getMobileFee() {
+    const serviceType = document.querySelector('select[name="service_type"]').value;
+    const overrideField = document.querySelector('input[name="mobile_fee_override"]:checked');
+    const override = overrideField ? (overrideField.value === "true") : false;
+    if (serviceType !== "MOVIL") return 0;
+    if (override) return 0;
+    return DEFAULT_MOBILE_FEE;
+}
+
+function updateTotals() {
+    let subtotalParts = 0;
+    let taxTotal = 0;
+
+    document.querySelectorAll("#partsBody tr").forEach(row => {
+        const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+        const price = parseFloat(row.querySelector('input[name="price[]"]').value) || 0;
+        const tax = parseFloat(row.querySelector('input[name="tax_amount[]"]').value) || 0;
+
+        subtotalParts += qty * price;
+        taxTotal += qty * tax;
+    });
+
+    const labor = Math.max(0, parseFloat(document.getElementById("labor_cost").value) || 0);
+    const materials = Math.max(0, parseFloat(document.getElementById("materials_cost").value) || 0);
+    const misc = Math.max(0, parseFloat(document.getElementById("misc_cost").value) || 0);
+
+    const subtotalFinal = subtotalParts + labor + materials + misc;
+    const mobileFee = getMobileFee();
+    const total = subtotalFinal + taxTotal + mobileFee;
+
+    document.getElementById("subtotal").innerText = subtotalFinal.toFixed(2);
+    document.getElementById("tax-total").innerText = taxTotal.toFixed(2);
+    document.getElementById("mobile-fee").innerText = mobileFee.toFixed(2);
+    document.getElementById("grand-total").innerText = total.toFixed(2);
+
+    document.getElementById("hidden_subtotal").value = subtotalFinal.toFixed(2);
+    document.getElementById("hidden_tax_total").value = taxTotal.toFixed(2);
+    document.getElementById("hidden_total_amount").value = total.toFixed(2);
+}
+
+function validateCell(input) {
+    const value = parseFloat(input.value) || 0;
+    if (input.name === "quantity[]" && value < 1) input.value = 1;
+    if ((input.name === "cost[]" || input.name === "price[]") && value < 0) input.value = 0;
+    if ((input.name === "cost[]" || input.name === "price[]") && parseFloat(input.value) === 0) {
+        input.classList.add("invalid-cell");
+    } else {
+        input.classList.remove("invalid-cell");
+    }
+}
+
+function addPartRow() {
+    const tbody = document.getElementById("partsBody");
+    const row = document.createElement("tr");
+    row.classList.add("part-row");
+
+    row.innerHTML = `
+        <td><input list="parts-list" name="product_name[]" class="form-control form-control-sm part-input"></td>
+        <td><input type="text" name="description[]" class="form-control form-control-sm"></td>
+        <td><input type="number" name="quantity[]" class="form-control form-control-sm" value="1" min="1" onchange="validateCell(this); updateTotals(); validateMainFields();"></td>
+        <td><input type="number" name="cost[]" class="form-control form-control-sm" step="0.01" min="0" onchange="validateCell(this); updateTotals();"></td>
+        <td><input type="number" name="price[]" class="form-control form-control-sm" step="0.01" min="0" onchange="validateCell(this); recalculateTax(this); updateTotals();"></td>
+        <td class="text-center"><input type="checkbox" name="is_taxable[]" checked onchange="recalculateTax(this); updateTotals();"></td>
+        <td><input type="number" name="tax_amount[]" class="form-control form-control-sm" step="0.01" readonly></td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this); validateMainFields();">X</button></td>
+    `;
+
+    tbody.appendChild(row);
+    paginate();
+    updateTotals();
+    validateMainFields();
+    const newPartInput = row.querySelector('.part-input');
+    if (newPartInput) {
+        newPartInput.focus();
+    }
+}
+
+function removeRow(btn) {
+    btn.closest("tr").remove();
+    paginate();
+    updateTotals();
+    validateMainFields();
+}
+
+function recalculateTax(element) {
+    const row = element.closest("tr");
+    const price = parseFloat(row.querySelector('input[name="price[]"]').value) || 0;
+    const taxable = row.querySelector('input[name="is_taxable[]"]').checked;
+    const taxField = row.querySelector('input[name="tax_amount[]"]');
+
+    if (taxable) {
+        taxField.value = (price * TAX_RATE).toFixed(2);
+    } else {
+        taxField.value = "0.00";
+    }
+}
+
+document.addEventListener("input", function(e) {
+    if (e.target && e.target.name === "product_name[]") {
+        const nags = e.target.value;
+        const row = e.target.closest("tr");
+        if (partsMap && partsMap[nags]) {
+            const part = partsMap[nags];
+            row.querySelector('input[name="description[]"]').value = part.description || "";
+            row.querySelector('input[name="cost[]"]').value = part.cost || 0;
+            row.querySelector('input[name="price[]"]').value = part.price || 0;
+            recalculateTax(row.querySelector('input[name="price[]"]'));
+            updateTotals();
+            validateMainFields();
+        }
+    }
+});
+
+function paginate() {
+    const rows = document.querySelectorAll("#partsBody tr");
+    const totalPages = Math.ceil(rows.length / ROWS_PER_PAGE) || 1;
+    rows.forEach((row, index) => {
+        row.style.display = (index >= (currentPage - 1) * ROWS_PER_PAGE && index < currentPage * ROWS_PER_PAGE) ? "" : "none";
+    });
+    document.getElementById("page-number").innerText = currentPage;
+}
+</script>
+
+<!-- MODAL ALT CUSTOMER -->
+<div id="altCustomerModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 class="mb-3 text-center">Alternate Customer</h3>
+        <label>Full Name</label>
+        <input type="text" id="alt_input_name" class="form-control mb-2" value="{{ estimate.alt_full_name or '' }}">
+        <label>Phone Number</label>
+        <input type="text" id="alt_input_phone" class="form-control mb-2" maxlength="14" value="{{ estimate.alt_phone or '' }}" oninput="formatPhone(this)">
+        <label>Relationship</label>
+        <input list="relationship-list" type="text" id="alt_input_relationship" class="form-control mb-3" value="{{ estimate.alt_relationship or '' }}" placeholder="Select or type...">
+        <datalist id="relationship-list">
+            <option value="Wife"><option value="Husband"><option value="Son"><option value="Daughter"><option value="Father"><option value="Mother"><option value="Brother"><option value="Sister"><option value="Friend"><option value="Neighbor"><option value="Employee"><option value="Employer"><option value="Business Partner"><option value="Fleet Manager"><option value="Assistant"><option value="Other">
+        </datalist>
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary" onclick="closeAltCustomerModal()">Cancel</button>
+            <button type="button" class="btn btn-warning text-dark fw-bold" onclick="saveAltCustomer()">Continue</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openAltCustomerModal() { document.getElementById("altCustomerModal").style.display = "flex"; }
+function closeAltCustomerModal() { document.getElementById("altCustomerModal").style.display = "none"; }
+function formatPhone(el){
+    let d=el.value.replace(/\D/g,'').substring(0,10);
+    let out="";
+    if(d.length){out="("+d.substring(0,3);}
+    if(d.length>=4){out+=") "+d.substring(3,6);}
+    if(d.length>=7){out+="-"+d.substring(6,10);}
+    el.value=out;
+}
+function saveAltCustomer() {
+    document.getElementById("alt_full_name").value = document.getElementById("alt_input_name").value;
+    document.getElementById("alt_phone").value = document.getElementById("alt_input_phone").value;
+    document.getElementById("alt_relationship").value = document.getElementById("alt_input_relationship").value;
+    closeAltCustomerModal();
+}
+</script>
+
+<script>
+let makeMap = {};
+let partsMap = {};
+window.addEventListener('load', function() {
+    fetch('/inventory/makes').then(r => r.json()).then(data => {
+        const list = document.getElementById('makes-list');
+        data.forEach(item => {
+            makeMap[item.name] = item.id;
+            let opt = document.createElement('option');
+            opt.value = item.name;
+            list.appendChild(opt);
+        });
+    });
+    fetch('/inventory/windshield').then(r => r.json()).then(data => {
+        const list = document.getElementById('parts-list');
+        data.forEach(item => {
+            partsMap[item.nags_code] = item;
+            let opt = document.createElement('option');
+            opt.value = item.nags_code;
+            list.appendChild(opt);
+        });
+    });
+    
+    const currentMake = document.getElementById('make-input').value;
+    if (currentMake) {
+        setTimeout(() => triggerModelLoad(currentMake), 300);
+    }
+});
+
+function triggerModelLoad(makeName) {
+    const makeId = makeMap[makeName];
+    const modelList = document.getElementById('models-list');
+    modelList.innerHTML = '';
+    if (makeId) {
+        fetch(`/inventory/models/${makeId}`).then(r => r.json()).then(data => {
+            data.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = item.name;
+                modelList.appendChild(opt);
+            });
+        });
+    }
+}
+
+document.getElementById('make-input').addEventListener('change', function() {
+    document.getElementById('model-input').value = '';
+    triggerModelLoad(this.value);
+    validateMainFields();
+});
+</script>
+
+<!-- MODAL APPOINTMENT -->
+<div id="appointmentModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 650px; max-width: 90%;">
+
+        <div style="text-align:center; margin-bottom: 15px;">
+            <h2 style="margin-bottom: 10px;">Select Appointment Time</h2>
+            <div class="d-flex justify-content-center align-items-center" style="gap: 10px;">
+                <div class="highlight-date-box">
+                    <input type="date" id="modal-appointment-date" class="form-control form-control-sm border-0 bg-transparent p-0" style="width: auto; box-shadow: none;" onchange="onModalDateChange()">
+                    <span id="modal-day-of-week" class="fw-bold text-dark" style="font-size: 0.75rem;"></span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px;">
+            <div style="width: 50%;">
+                <h3 style="text-align:center; font-size: 1rem; position: sticky; top: 0; background: white; z-index: 1; padding: 5px 0; margin: 0; display: flex; justify-content: space-between; align-items: center; padding-left: 5px; padding-right: 5px;">
+                    <span>SHOP</span>
+                    <span id="shop-count" class="badge bg-secondary" style="font-size: 0.75rem;">0</span>
+                </h3>
+                <div id="shopTimes" style="display:flex; flex-direction:column; gap:8px; max-height: 300px; overflow-y: auto; padding-top: 5px;"></div>
+            </div>
+            <div style="width: 50%;">
+                <h3 style="text-align:center; font-size: 1rem; position: sticky; top: 0; background: white; z-index: 1; padding: 5px 0; margin: 0; display: flex; justify-content: space-between; align-items: center; padding-left: 5px; padding-right: 5px;">
+                    <span>MOBILE</span>
+                    <span id="mobile-count" class="badge bg-secondary" style="font-size: 0.75rem;">0</span>
+                </h3>
+                <div id="mobileTimes" style="display:flex; flex-direction:column; gap:8px; max-height: 300px; overflow-y: auto; padding-top: 5px;"></div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <div style="font-size: 1rem;" class="text-muted">
+                Selected: <span id="modal-selected-preview" class="fw-bold text-dark">None</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeAppointmentModalCancel()" class="btn btn-secondary btn-sm px-3">Cancel</button>
+                <button type="button" onclick="closeAppointmentModalSubmit()" class="btn btn-warning text-dark fw-bold btn-sm px-3">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let tempSelectedDate = "";
+let tempSelectedTime = "";
+let tempSelectedServiceType = "";
+
+function updateDayName() {
+    const input = document.getElementById("appointment-date");
+    const span = document.getElementById("day-of-week");
+    if (!input.value) { span.textContent = ""; return; }
+    const date = new Date(input.value + "T00:00:00");
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    span.textContent = `(${days[date.getUTCDay()]})`;
+}
+
+const timeCatalog = [
+    "07:00:00","07:05:00","07:10:00","07:15:00","07:20:00","07:25:00","07:30:00","07:35:00","07:40:00","07:45:00","07:50:00","07:55:00",
+    "08:00:00","08:05:00","08:10:00","08:15:00","08:20:00","08:25:00","08:30:00","08:35:00","08:40:00","08:45:00","08:50:00","08:55:00",
+    "09:00:00","09:05:00","09:10:00","09:15:00","09:20:00","09:25:00","09:30:00","09:35:00","09:40:00","09:45:00","09:50:00","09:55:00",
+    "10:00:00","10:05:00","10:10:00","10:15:00","10:20:00","10:25:00","10:30:00","10:35:00","10:40:00","10:45:00","10:50:00","10:55:00",
+    "11:00:00","11:05:00","11:10:00","11:15:00","11:20:00","11:25:00","11:30:00","11:35:00","11:40:00","11:45:00","11:50:00","11:55:00",
+    "12:00:00","12:05:00","12:10:00","12:15:00","12:20:00","12:25:00","12:30:00","12:35:00","12:40:00","12:45:00","12:50:00","12:55:00",
+    "13:00:00","13:05:00","13:10:00","13:15:00","13:20:00","13:25:00","13:30:00","13:35:00","13:40:00","13:45:00","13:50:00","13:55:00",
+    "14:00:00","14:05:00","14:10:00","14:15:00","14:20:00","14:25:00","14:30:00","14:35:00","14:40:00","14:45:00","14:50:00","14:55:00",
+    "15:00:00","15:05:00","15:10:00","15:15:00","15:20:00","15:25:00","15:30:00","15:35:00","15:40:00","15:45:00","15:50:00","15:55:00",
+    "16:00:00","16:05:00","16:10:00","16:15:00","16:20:00","16:25:00","16:30:00","16:35:00","16:40:00","16:45:00","16:50:00","16:55:00",
+    "17:00:00","17:05:00","17:10:00","17:15:00","17:20:00","17:25:00","17:30:00","17:35:00","17:40:00","17:45:00","17:50:00","17:55:00",
+    "18:00:00","18:05:00","18:10:00","18:15:00","18:20:00","18:25:00","18:30:00","18:35:00","18:40:00","18:45:00","18:50:00","18:55:00",
+    "19:00:00"
+];
+
+function openAppointmentModal(date) {
+    const mainDate = document.getElementById("appointment-date").value;
+    tempSelectedDate = date || mainDate || new Date().toISOString().split('T')[0];
+    tempSelectedTime = document.getElementById("time-hidden").value;
+    tempSelectedServiceType = document.getElementById("service_type").value;
+
+    document.getElementById("modal-appointment-date").value = tempSelectedDate;
+    updateModalDayName();
+
+    const currentDisplayTime = document.getElementById("time-display").value;
+    if (currentDisplayTime) {
+        document.getElementById("modal-selected-preview").innerText = `${tempSelectedDate} @ ${currentDisplayTime} (${tempSelectedServiceType || 'NONE'})`;
+    } else {
+        document.getElementById("modal-selected-preview").innerText = "None selected";
+    }
+
+    document.getElementById("appointmentModal").style.display = "flex"; 
+    loadTimesForModal(tempSelectedDate);
+}
+
+function updateModalDayName() {
+    const input = document.getElementById("modal-appointment-date");
+    const span = document.getElementById("modal-day-of-week");
+    if (!input.value) { span.textContent = ""; return; }
+    const date = new Date(input.value + "T00:00:00");
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    span.textContent = days[date.getUTCDay()];
+}
+
+function onModalDateChange() {
+    const newDate = document.getElementById("modal-appointment-date").value;
+    if (newDate) {
+        tempSelectedDate = newDate;
+        updateModalDayName();
+        loadTimesForModal(tempSelectedDate);
+    }
+}
+
+async function loadTimesForModal(date) {
+    loadTimes(date, "SHOP", "shopTimes", "shop-count"); 
+    loadTimes(date, "MOVIL", "mobileTimes", "mobile-count");
+}
+
+async function loadTimes(date, serviceType, containerId, countId) {
+    const container = document.getElementById(containerId);
+    const countBadge = document.getElementById(countId);
+    container.innerHTML = "<div class='text-center text-muted small py-3'>Loading hours...</div>";
+    countBadge.innerText = "...";
+
+    const currentSelectedTime = document.getElementById("time-hidden").value;
+    const currentMilitary = convertToMilitary(currentSelectedTime);
+
+    const promises = timeCatalog.map(async (time) => {
+        try {
+            const r = await fetch(`/estimates/invoices/check?date=${date}&time=${encodeURIComponent(time)}&service_type=${serviceType}`);
+            const data = await r.json();
+            return { time, exists: data.exists };
+        } catch (e) {
+            return { time, exists: false };
+        }
+    });
+
+    const results = await Promise.all(promises);
+    container.innerHTML = ""; 
+    
+    let unavailableCount = 0;
+
+    results.forEach(({ time, exists }) => {
+        const btn = document.createElement("button");
+        btn.classList.add("time-btn");
+
+        const display = convertToDisplay(time);
+
+        const isCurrentEstimateTime = (date === document.getElementById("appointment-date").value && time.substring(0,5) === currentMilitary.substring(0,5));
+        const isOccupied = exists || isCurrentEstimateTime;
+
+        if (isOccupied) {
+            unavailableCount++;
+        }
+
+        if (serviceType === "SHOP") { 
+            btn.classList.add(isOccupied ? "time-shop-unavailable" : "time-shop-available"); 
+        } else { 
+            btn.classList.add(isOccupied ? "time-mobile-unavailable" : "time-mobile-available"); 
+        }
+        
+        btn.innerText = isOccupied ? `${display} — Occupied` : `${display} — Available`;
+        btn.disabled = isOccupied;
+
+        if (!isOccupied) { 
+            btn.onclick = () => tempSelectTime(date, time, serviceType, display); 
+        }
+        
+        container.appendChild(btn);
+    });
+
+    countBadge.innerText = `${unavailableCount} booked`;
+}
+
+function tempSelectTime(date, time, serviceType, display) {
+    tempSelectedDate = date;
+    tempSelectedTime = time;
+    tempSelectedServiceType = serviceType;
+    document.getElementById("modal-selected-preview").innerText = `${date} @ ${display} (${serviceType})`;
+}
+
+function closeAppointmentModalSubmit() {
+    if (!tempSelectedTime) {
+        alert("Please select an available time slot first.");
+        return;
+    }
+    document.getElementById("appointment-date").value = tempSelectedDate;
+    updateDayName();
+    document.getElementById("time-hidden").value = tempSelectedTime;
+    document.getElementById("time-display").value = convertToDisplay(tempSelectedTime);
+    document.getElementById("service_type").value = tempSelectedServiceType;
+    updateTotals();
+    validateMainFields();
+    document.getElementById("appointmentModal").style.display = "none";
+}
+
+function closeAppointmentModalCancel() {
+    document.getElementById("appointmentModal").style.display = "none";
+}
+
+function convertToDisplay(time) {
+    const [h, m] = time.split(":");
+    let hour = parseInt(h);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour}:${m} ${ampm}`;
+}
+
+function convertToMilitary(time) {
+    if (!time) return "";
+    if (time.includes("AM") || time.includes("PM")) {
+        const [hourMin, ampm] = time.split(" ");
+        let [h, m] = hourMin.split(":");
+        h = parseInt(h);
+        if (ampm === "PM" && h !== 12) h += 12;
+        if (ampm === "AM" && h === 12) h = 0;
+        return `${String(h).padStart(2,"0")}:${m}:00`;
+    }
+    return time;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const hidden = document.getElementById("time-hidden");
+    if (hidden && hidden.value) {
+        hidden.value = convertToMilitary(hidden.value);
+    }
+});
+
+document.getElementById("appointment-date").addEventListener("click", function() {
+    const date = this.value;
+    if (date) {
+        updateDayName();
+        openAppointmentModal(date);
+    } else {
+        openAppointmentModal();
+    }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const now = new Date();
+    const formatted = (now.getMonth() + 1).toString().padStart(2, '0') + "/" + now.getDate().toString().padStart(2, '0') + "/" + now.getFullYear();
+    document.getElementById("current-date").textContent = formatted;
+    updateDayName();
+    updateTotals();
+    validateMainFields();
+
+    const rawTime = document.getElementById("time-hidden").value;
+    if (rawTime) {
+        document.getElementById("time-display").value = convertToDisplay(rawTime);
+    }
+});
+</script>
+
+<script>
+function validateMainFields() {
+    const fields = ["vehicle_year_id", "make-input", "model-input", "appointment-date", "time-hidden", "service_type"];
+    const incomplete = fields.some(id => {
+        const el = document.getElementById(id);
+        return !el || !el.value.trim();
+    });
+    
+    const hasParts = document.querySelectorAll("#partsBody tr").length > 0;
+    const saveBtn = document.getElementById("save-btn");
+    const isInvalid = incomplete || !hasParts;
+
+    saveBtn.disabled = isInvalid;
+    saveBtn.style.opacity = isInvalid ? "0.5" : "1";
+    saveBtn.style.cursor = isInvalid ? "not-allowed" : "pointer";
+    
+    return !isInvalid;
+}
+
+document.getElementById("estimate-form").addEventListener("input", validateMainFields);
+document.getElementById("estimate-form").addEventListener("change", validateMainFields);
+
+document.getElementById("estimate-form").addEventListener("submit", function(e) { 
+    if (!validateMainFields()) {
+        e.preventDefault();
+        alert("Please ensure all vehicle details, date, time, and service type are completed, and at least one service/part is added.");
+    }
+});
+</script>
+
+<!-- MODAL PARA ANULAR (VOID) ESTIMADO -->
+<div id="voidEstimateModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 class="mb-3 text-danger text-center">Void Estimate</h3>
+        <form id="voidEstimateForm" method="POST" action="/estimates/void/{{ estimate.id }}">
+            <div class="mb-3">
+                <label for="voidReason" class="form-label fw-bold">Void Reason <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="voidReason" name="reason" rows="3" required placeholder="Type the reason for voiding..."></textarea>
+            </div>
+            <div class="d-flex justify-content-between mt-3">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeVoidModal()">Cancel</button>
+                <button type="submit" class="btn btn-danger btn-sm">Confirm Void</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openVoidModal() {
+    document.getElementById("voidEstimateModal").style.display = "flex";
+}
+function closeVoidModal() {
+    document.getElementById("voidEstimateModal").style.display = "none";
+}
+</script>
+
+<!-- MODAL PARA DUPLICAR ESTIMADO -->
+<div id="duplicateEstimateModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 400px; max-width: 90%;">
+        <h3 class="mb-3 text-center text-warning fw-bold">Duplicate Estimate</h3>
+        <p class="text-center text-muted small mb-3">Are you sure you want to create a new estimate by duplicating this one?</p>
+        
+        <div class="d-flex justify-content-between mt-3">
+            <button type="button" class="btn btn-secondary btn-sm px-3" onclick="closeDuplicateModal()">Cancel</button>
+            <button type="button" class="btn btn-warning text-dark fw-bold btn-sm px-3" onclick="confirmDuplicateEstimate()">Yes, Duplicate</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDuplicateModal() {
+    document.getElementById("duplicateEstimateModal").style.display = "flex";
+}
+
+function closeDuplicateModal() {
+    document.getElementById("duplicateEstimateModal").style.display = "none";
+}
+
+function confirmDuplicateEstimate() {
+    window.location.href = "/estimates/duplicate/{{ estimate.id }}?next={{ next }}";
+}
+</script>
+
+</body>
+</html>

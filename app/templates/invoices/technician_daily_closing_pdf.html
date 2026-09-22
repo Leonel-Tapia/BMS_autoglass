@@ -1,0 +1,185 @@
+<!-- RUTA: app/templates/invoices/technician_daily_closing_pdf.html | CREADO: 2026-09-13 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Closing Report</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        .header {
+            border-bottom: 2px solid #0078D4;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            color: #0078D4;
+            font-size: 18pt;
+            margin: 0 0 5px 0;
+        }
+        .header .meta {
+            font-size: 9pt;
+            color: #555;
+        }
+        .header .meta strong {
+            color: #0078D4;
+        }
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #0078D4;
+            border-bottom: 1px solid #d0e0f0;
+            padding-bottom: 3px;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        table thead th {
+            background-color: #0078D4;
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #005fa3;
+        }
+        table tbody td {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #f7f9fc;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+            border: 1px solid #ccc;
+        }
+        .totals-box {
+            margin-top: 15px;
+            border: 2px solid #0078D4;
+            padding: 10px 15px;
+        }
+        .totals-box h3 {
+            font-size: 11pt;
+            color: #0078D4;
+            margin: 0 0 8px 0;
+        }
+        .totals-table {
+            width: 100%;
+            font-size: 9pt;
+        }
+        .totals-table td {
+            padding: 3px 6px;
+            border: none;
+        }
+        .totals-table td.label {
+            color: #555;
+        }
+        .totals-table td.value {
+            text-align: right;
+            font-weight: bold;
+            color: #333;
+        }
+        .grand-total {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid #0078D4;
+            font-size: 13pt;
+            font-weight: bold;
+            color: #0078D4;
+            text-align: right;
+        }
+        .footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 8pt;
+            color: #888;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>Daily Closing Report</h1>
+        <div class="meta">
+            <strong>Technician:</strong> {{ technician_name }}
+            &nbsp;|&nbsp;
+            <strong>Date:</strong> {{ target_date.strftime('%m/%d/%Y') }}
+            &nbsp;|&nbsp;
+            <strong>Service:</strong> {{ service_type }}
+        </div>
+    </div>
+
+    <!-- TABLA DE PAGOS -->
+    <div class="section-title">Payments Received ({{ payments|length }})</div>
+
+    {% if payments %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Method</th>
+                    <th style="text-align:right;">Amount</th>
+                    <th>Status</th>
+                    <th>Reference</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                    <tr>
+                        <td>#{{ p.invoice_id }}</td>
+                        <td>{{ p.customer_name or 'N/A' }}</td>
+                        <td>{{ method_labels.get((p.payment_type or 'OTHER')|upper, p.payment_type) }}</td>
+                        <td style="text-align:right;">${{ "%.2f"|format(p.amount or 0) }}</td>
+                        <td>{{ p.payment_status }}</td>
+                        <td>{{ p.reference or '—' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            No payments recorded for this date.
+        </div>
+    {% endif %}
+
+    <!-- TOTALES POR MÉTODO -->
+    <div class="totals-box">
+        <h3>Totals by Payment Method</h3>
+        <table class="totals-table">
+            {% for method in method_order %}
+                <tr>
+                    <td class="label">{{ method_labels.get(method, method) }}:</td>
+                    <td class="value">${{ "%.2f"|format(totals_by_method.get(method, 0)) }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="grand-total">
+            GRAND TOTAL: ${{ "%.2f"|format(grand_total) }}
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        BMS Autoglass — Generated on {{ now.strftime('%m/%d/%Y %I:%M %p') }}
+    </div>
+
+</body>
+</html>
