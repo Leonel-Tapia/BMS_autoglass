@@ -1,164 +1,113 @@
+<!-- /app/templates/users/login.html | Updated: 2026-09-22 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{company_name}}</title>
+    <title>BMS Autoglass | Login</title>
 
     <style>
-        /* Garantiza un cálculo dimensional uniforme en todos los elementos */
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0a192f;
+            margin: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            flex-direction: column;
+            min-height: 100vh;
         }
 
-        .login-container {
+        .login-card {
             background-color: white;
-            padding: 30px;
-            width: 350px;
-            min-height: 390px; 
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.15);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            padding: 40px;
+            width: 380px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
         }
 
-        h2 {
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #333;
+        /* ✅ Logo reducido para que se vea equilibrado */
+        .logo {
+            display: block;
+            width: 100%;
+            max-width: 180px;    /* Antes 280px — ahora más pequeño */
+            height: auto;
+            margin: 0 auto 25px auto;
+            object-fit: contain;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
         }
 
         label {
-            font-weight: bold;
             display: block;
-            margin-top: 12px;
-            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
         }
 
-        input[type="text"],
-        input[type="password"] {
+        input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border-radius: 5px;
-            border: 1px solid #aaa;
-        }
-
-        /* Estilo visual cuando el input está deshabilitado */
-        input[type="text"]:disabled,
-        input[type="password"]:disabled {
-            background-color: #f0f0f0;
-            cursor: not-allowed;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
         }
 
         button {
             width: 100%;
-            padding: 12px;
-            margin-top: 20px;
-            background-color: #0078D4;
+            padding: 15px;
+            background-color: #0a192f;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 15px;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 500;
             cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
         }
 
         button:hover {
-            background-color: #005fa3;
-        }
-
-        /* Estilo visual cuando el botón está deshabilitado */
-        button:disabled {
-            background-color: #a0a0a0;
-            cursor: not-allowed;
-        }
-
-        button:disabled:hover {
-            background-color: #a0a0a0;
-        }
-
-        .error-message {
-            color: #d32f2f;
-            background-color: #fdecea;
-            padding: 8px;
-            border-radius: 4px;
-            margin-top: 12px;
-            text-align: center;
-            font-size: 13px;
-            font-weight: bold;
-            border: 1px solid #ef9a9a;
+            background-color: #4a90e2;
+            transform: translateY(-2px);
         }
 
         .footer-text {
-            margin-top: 25px;
+            margin-top: 30px;
+            color: #a0aec0;
+            font-size: 13px;
             text-align: center;
-            font-size: 11px;
-            color: #555;
-            line-height: 1.4;
-            width: 350px;
-        }
-
-        /* Estilo para el logo */
-        .logo-container {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .logo-container img {
-            max-width: 150px;
-            height: auto;
+            line-height: 1.6;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="login-container">
-        <!-- Detecta si la cuenta está deshabilitada para bloquear el formulario -->
-        {% set account_disabled = (error == 'User account is disabled') %}
+    <div class="login-card">
+        <img src="{{ url_for('static', path='images/bms.jpg') }}" alt="BMS Autoglass Logo" class="logo">
 
-        <form action="/auth/login" method="POST" style="width: 100%;">
-            
-            <!-- Logo -->
-            <div class="logo-container">
-                <img src="{{ url_for('static', path='images/bms.jpg') }}" alt="Logo">
+        <form action="/auth/login" method="post">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
             </div>
 
-            <h2>{{company_name}}</h2>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
 
-            <label>Username</label>
-            <input type="text" name="username" required autocomplete="username" {% if account_disabled %}disabled{% endif %}>
-
-            <label>Password</label>
-            <input type="password" name="password" required autocomplete="current-password" {% if account_disabled %}disabled{% endif %}>
-
-            {% if error %}
-                <div class="error-message">
-                    ⚠️ {{ error }}
-                </div>
-            {% endif %}
-
-            <button type="submit" {% if account_disabled %}disabled{% endif %}>Login</button>
+            <button type="submit">Login</button>
         </form>
     </div>
 
-    <!-- CAMBIO 2026-09-13: footer forzado a 3 líneas -->
     <div class="footer-text">
         Project Started: 2026-09-22<br>
-        Demo Version — BMS Autoglass<br>
         Developed by Creative Ideas Marketing<br>
         Version: 2026.09.22 - 10:07 AM
     </div>
