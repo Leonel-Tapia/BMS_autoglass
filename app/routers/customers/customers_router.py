@@ -1,4 +1,4 @@
-# PATH: app/routers/customers/customers_router.py | UPDATED: 2026-09-11 (auto-geocoding + status)
+# PATH: app/routers/customers/customers_router.py | UPDATED: 2026-09-22 (total in context)
 import re
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
@@ -82,6 +82,7 @@ def customers_list(
             "customers": customers,
             "page": page,
             "total_pages": total_pages,
+            "total": total,
             "search": search
         }
     )
