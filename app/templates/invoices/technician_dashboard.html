@@ -1,4 +1,4 @@
-<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-19 (badge usa status) -->
+<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-22 (payment modal) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -312,6 +312,27 @@
         .badge-cancelled { background-color: #e2e3e5; color: #383d41; }
         .badge-noshow { background-color: #ffe0b2; color: #e65100; }
 
+        /* ===== PAYMENT BUTTON ===== */
+        .btn-payment {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.1s ease, box-shadow 0.15s ease;
+            box-shadow: 0 1px 3px rgba(40, 167, 69, 0.3);
+        }
+        .btn-payment:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(40, 167, 69, 0.45);
+        }
+        .btn-payment:active { transform: translateY(0); }
+        .btn-payment:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+
         .empty-section {
             text-align: center;
             padding: 12px;
@@ -337,7 +358,7 @@
         }
         .invoice-link:hover { text-decoration: underline; }
 
-        /* MODAL: GLASS PICKUP LIST */
+        /* MODAL BASE */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -462,6 +483,133 @@
         }
         .modal-footer .btn-close-modal:hover { background: #5a6268; }
 
+        /* ===== PAYMENT MODAL SPECIFIC ===== */
+        .pay-summary {
+            background: linear-gradient(135deg, #f0f8ff 0%, #e7f1fb 100%);
+            border: 1px solid #b6d4fe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pay-summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pay-summary-item .label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .pay-summary-item .value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .pay-summary-item .value.balance {
+            color: #d32f2f;
+            font-size: 16px;
+        }
+
+        .pay-summary-item .value.paid { color: #28a745; }
+
+        .pay-form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .pay-form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .pay-form-group.full { flex-basis: 100%; }
+
+        .pay-form-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0d6e6e;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .pay-form-group input,
+        .pay-form-group select,
+        .pay-form-group textarea {
+            padding: 8px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .pay-form-group input:focus,
+        .pay-form-group select:focus,
+        .pay-form-group textarea:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+        }
+
+        .pay-full-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #28a745;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .pay-full-check input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #28a745;
+        }
+
+        .btn-submit-payment {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            border: none;
+            padding: 8px 22px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.15s ease;
+            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.35);
+        }
+
+        .btn-submit-payment:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.45);
+        }
+
+        .btn-submit-payment:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .glass-empty {
             text-align: center;
             padding: 30px 15px;
@@ -510,6 +658,7 @@
             .daily-closing-bar, .glass-pickup-bar { font-size: 14px; padding: 8px 15px; }
             .action-bars { flex-direction: column; }
             .action-bars > * { min-width: 0; }
+            .pay-form-group { min-width: 100%; }
         }
 
         @media (max-width: 480px) {
@@ -519,6 +668,7 @@
             .header h1 { font-size: 16px; }
             .table-wrapper tbody td.address-cell { max-width: 100px; }
             .section-title { font-size: 13px; }
+            .btn-payment { font-size: 10px; padding: 3px 7px; }
         }
     </style>
 </head>
@@ -609,6 +759,7 @@
                             <th>Paid</th>
                             <th>Balance</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -679,6 +830,22 @@
                                         <span class="badge badge-pending">{{ st }}</span>
                                     {% endif %}
                                 </td>
+                                <td>
+                                    {% set paid_amt = (invoice.payment_amount1 or 0) + (invoice.payment_amount2 or 0) %}
+                                    {% set bal = (invoice.total or 0) - paid_amt %}
+                                    {% set st_action = (invoice.status or 'PENDING')|upper %}
+                                    {% if bal > 0 and st_action in ['PENDING', 'PARTIALLY_PAID'] %}
+                                        <button type="button" class="btn-payment"
+                                                data-invoice-id="{{ invoice.id }}"
+                                                data-customer-name="{{ invoice.customer_name or 'N/A' }}"
+                                                data-total="{{ '%.2f'|format(invoice.total or 0) }}"
+                                                data-paid="{{ '%.2f'|format(paid_amt) }}"
+                                                data-balance="{{ '%.2f'|format(bal) }}"
+                                                onclick="openPaymentModal(this)">💵 Pay</button>
+                                    {% else %}
+                                        <span style="color:#ccc; font-size:11px;">—</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -713,6 +880,7 @@
                             <th>Paid</th>
                             <th>Balance</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -781,6 +949,22 @@
                                         <span class="badge badge-noshow">🚷 No Show</span>
                                     {% else %}
                                         <span class="badge badge-pending">{{ st }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set paid_amt = (invoice.payment_amount1 or 0) + (invoice.payment_amount2 or 0) %}
+                                    {% set bal = (invoice.total or 0) - paid_amt %}
+                                    {% set st_action = (invoice.status or 'PENDING')|upper %}
+                                    {% if bal > 0 and st_action in ['PENDING', 'PARTIALLY_PAID'] %}
+                                        <button type="button" class="btn-payment"
+                                                data-invoice-id="{{ invoice.id }}"
+                                                data-customer-name="{{ invoice.customer_name or 'N/A' }}"
+                                                data-total="{{ '%.2f'|format(invoice.total or 0) }}"
+                                                data-paid="{{ '%.2f'|format(paid_amt) }}"
+                                                data-balance="{{ '%.2f'|format(bal) }}"
+                                                onclick="openPaymentModal(this)">💵 Pay</button>
+                                    {% else %}
+                                        <span style="color:#ccc; font-size:11px;">—</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -856,6 +1040,74 @@
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- MODAL: REGISTER PAYMENT (sin abrir el invoice) -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal-box" style="max-width: 560px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);">
+                <h3>💵 Register Payment</h3>
+                <button type="button" class="close-btn" onclick="closePaymentModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Invoice summary (filled by JS) -->
+                <div class="pay-summary" id="payModalSummary">
+                    <!-- populated by openPaymentModal() -->
+                </div>
+
+                <!-- Payment form -->
+                <div class="pay-form-row">
+                    <div class="pay-form-group">
+                        <label for="payModal_type">Type</label>
+                        <select id="payModal_type">
+                            <option value="CASH">Cash</option>
+                            <option value="CREDIT_CARD">Credit Card</option>
+                            <option value="DEBIT_CARD">Debit Card</option>
+                            <option value="CHECK">Check</option>
+                            <option value="TRANSFER">Transfer</option>
+                            <option value="ZELLE">Zelle</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="pay-form-group">
+                        <label for="payModal_amount">Amount</label>
+                        <input type="number" id="payModal_amount" step="0.01" min="0.01" placeholder="0.00">
+                    </div>
+                    <div class="pay-form-group">
+                        <label for="payModal_date">Date</label>
+                        <input type="date" id="payModal_date">
+                    </div>
+                </div>
+
+                <div class="pay-form-row">
+                    <div class="pay-form-group full">
+                        <label for="payModal_ref">Reference</label>
+                        <input type="text" id="payModal_ref" placeholder="Check #, Confirmation #, etc.">
+                    </div>
+                </div>
+
+                <div class="pay-form-row">
+                    <div class="pay-form-group full">
+                        <label for="payModal_notes">Notes</label>
+                        <input type="text" id="payModal_notes" placeholder="Optional...">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <label class="pay-full-check">
+                    <input type="checkbox" id="payModal_fullAmount">
+                    Pay full balance
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-close-modal" onclick="closePaymentModal()">Cancel</button>
+                    <button type="button" id="payModal_submit" class="btn-submit-payment" onclick="submitPayment()">
+                        💵 Register Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -888,7 +1140,9 @@
             }
         })();
 
+        // ============================
         // GLASS PICKUP MODAL
+        // ============================
         function openGlassPickupModal() {
             document.getElementById('glassPickupModal').classList.add('active');
         }
@@ -957,6 +1211,152 @@
             }
         }
 
+        // ============================
+        // REGISTER PAYMENT MODAL
+        // ============================
+        let payModalInvoiceId = null;
+        let payModalBalance = 0;
+
+        function openPaymentModal(btn) {
+            payModalInvoiceId = btn.dataset.invoiceId;
+            payModalBalance = parseFloat(btn.dataset.balance) || 0;
+            const customerName = btn.dataset.customerName || 'N/A';
+            const total = btn.dataset.total || '0.00';
+            const paid = btn.dataset.paid || '0.00';
+            const balance = btn.dataset.balance || '0.00';
+
+            // Build the summary
+            document.getElementById('payModalSummary').innerHTML = `
+                <div class="pay-summary-item">
+                    <span class="label">Invoice</span>
+                    <span class="value" style="color:#0078D4;">#${payModalInvoiceId}</span>
+                </div>
+                <div class="pay-summary-item">
+                    <span class="label">Customer</span>
+                    <span class="value">${customerName}</span>
+                </div>
+                <div class="pay-summary-item">
+                    <span class="label">Total</span>
+                    <span class="value">$${total}</span>
+                </div>
+                <div class="pay-summary-item">
+                    <span class="label">Paid</span>
+                    <span class="value paid">$${paid}</span>
+                </div>
+                <div class="pay-summary-item">
+                    <span class="label">Balance Due</span>
+                    <span class="value balance">$${balance}</span>
+                </div>
+            `;
+
+            // Reset form
+            document.getElementById('payModal_type').value = 'CASH';
+            document.getElementById('payModal_amount').value = '';
+            document.getElementById('payModal_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('payModal_ref').value = '';
+            document.getElementById('payModal_notes').value = '';
+            document.getElementById('payModal_fullAmount').checked = false;
+
+            // Restore submit button state
+            const submitBtn = document.getElementById('payModal_submit');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '💵 Register Payment';
+
+            // Show modal
+            document.getElementById('paymentModal').classList.add('active');
+
+            // Focus on amount
+            setTimeout(() => document.getElementById('payModal_amount').focus(), 100);
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.remove('active');
+        }
+
+        // Outside click + full balance checkbox
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('paymentModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) closePaymentModal();
+                });
+            }
+
+            const fullCheck = document.getElementById('payModal_fullAmount');
+            if (fullCheck) {
+                fullCheck.addEventListener('change', function() {
+                    const amountInput = document.getElementById('payModal_amount');
+                    if (this.checked) {
+                        amountInput.value = payModalBalance.toFixed(2);
+                    } else {
+                        amountInput.value = '';
+                    }
+                });
+            }
+
+            // ESC key to close
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (modal && modal.classList.contains('active')) closePaymentModal();
+                }
+            });
+        });
+
+        async function submitPayment() {
+            const paymentType = document.getElementById('payModal_type').value;
+            const amount = document.getElementById('payModal_amount').value;
+            const paymentDate = document.getElementById('payModal_date').value;
+            const reference = document.getElementById('payModal_ref').value;
+            const notes = document.getElementById('payModal_notes').value;
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showToast('Please enter a valid amount greater than 0.', true);
+                return;
+            }
+
+            if (!paymentDate) {
+                showToast('Please select a payment date.', true);
+                return;
+            }
+
+            const submitBtn = document.getElementById('payModal_submit');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '...';
+
+            const formData = new FormData();
+            formData.append('payment_type', paymentType);
+            formData.append('amount', amount);
+            formData.append('reference', reference);
+            formData.append('payment_date', paymentDate);
+            formData.append('notes', notes);
+
+            try {
+                const response = await fetch(`/invoices/${payModalInvoiceId}/payments`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('✓ Payment registered successfully!');
+                    closePaymentModal();
+                    setTimeout(() => location.reload(), 900);
+                } else {
+                    showToast(data.error || 'Failed to add payment.', true);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '💵 Register Payment';
+                }
+            } catch (err) {
+                showToast('Network error: ' + err.message, true);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '💵 Register Payment';
+            }
+        }
+
+        // ============================
+        // TOAST
+        // ============================
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = message;

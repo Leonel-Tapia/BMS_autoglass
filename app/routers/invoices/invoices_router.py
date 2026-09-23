@@ -1,4 +1,4 @@
-# /app/routers/invoices/invoices_router.py | Updated: 2026-09-19 (fix: no sobreescribir con NULL)
+# /app/routers/invoices/invoices_router.py | Updated: 2026-09-22 (PDF redesign: labor/materials/misc/mobile_fee breakdown)
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Path, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from sqlalchemy.orm import Session, joinedload
@@ -999,12 +999,57 @@ async def download_invoice_pdf(
     invoice_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice_id).all()
     company = db.query(Company).first()
 
+    # Vehicle year (lookup desde Year table)
+    vehicle_year = None
+    if invoice.vehicle_year_id:
+        year_record = db.query(Year).filter(Year.id == invoice.vehicle_year_id).first()
+        if year_record:
+            vehicle_year = year_record.year
+
+    # Payments
+    payments = db.query(InvoicePayment).filter(
+        InvoicePayment.invoice_id == invoice_id
+    ).order_by(asc(InvoicePayment.payment_date)).all()
+
+    total_paid = sum(
+        float(p.amount) for p in payments
+        if p.payment_status in ["DEPOSITED", "PENDING"]
+    )
+
+    balance_due = float(invoice.total or 0) - total_paid
+
+    # ===== DESGLOSE PARA EL PDF =====
+    items_total = sum(
+        float(it.price or 0) * float(it.quantity or 1) for it in invoice_items
+    )
+    labor = float(invoice.labor_cost or 0)
+    materials = float(invoice.materials_cost or 0)
+    misc = float(invoice.misc_cost or 0)
+    tax = float(invoice.tax or 0)
+    subtotal = float(invoice.subtotal or 0)
+    total = float(invoice.total or 0)
+
+    # Mobile fee = total - subtotal - tax (el resto es mobile fee)
+    mobile_fee = total - subtotal - tax
+    if mobile_fee < 0:
+        mobile_fee = 0.0
+
     html = templates.get_template("invoices/invoice_pdf.html").render(
         {
             "invoice": invoice,
             "customer": customer,
             "invoice_items": invoice_items,
             "company": company,
+            "vehicle_year": vehicle_year,
+            "payments": payments,
+            "total_paid": total_paid,
+            "balance_due": balance_due,
+            "items_total": items_total,
+            "labor": labor,
+            "materials": materials,
+            "misc": misc,
+            "tax": tax,
+            "mobile_fee": mobile_fee,
             "now": datetime.now(),
         }
     )

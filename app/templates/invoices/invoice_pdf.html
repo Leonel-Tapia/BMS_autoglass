@@ -4,314 +4,356 @@
     <meta charset="UTF-8">
     <title>Invoice #{{ invoice.id }}</title>
     <style>
+        @page {
+            size: letter;
+            margin: 1.5cm 1.2cm 1.5cm 1.2cm;
+        }
+
         body {
             font-family: Helvetica, Arial, sans-serif;
-            font-size: 10px;
-            color: #333;
+            font-size: 9pt;
+            color: #000;
             margin: 0;
             padding: 0;
         }
 
-        /* ============ HEADER ============ */
-        .header-table { width: 100%; margin-bottom: 10px; }
-        .header-table td { vertical-align: top; }
-
-        .logo-box {
-            width: 65px;
-            height: 65px;
-            border: 2px dashed #0d6e6e;
-            text-align: center;
-            color: #0d6e6e;
-            font-size: 8px;
-            font-weight: bold;
-            padding-top: 22px;
+        .cream {
+            background-color: #f7ead4;
         }
 
-        .company-name {
-            font-size: 17px;
+        .big-service {
+            font-size: 22pt;
             font-weight: bold;
-            color: #0d6e6e;
-            margin-bottom: 2px;
-        }
-
-        .invoice-title {
-            font-size: 26px;
-            font-weight: bold;
-            color: #0d6e6e;
+            color: #000;
             text-align: right;
-            letter-spacing: 2px;
-            margin: 0;
         }
 
-        .invoice-number {
-            text-align: right;
-            font-size: 10px;
-            color: #666;
-            line-height: 1.4;
-        }
-
-        /* ============ INFO BOXES ============ */
-        .info-table { width: 100%; margin-bottom: 10px; }
-        .info-table td { vertical-align: top; padding: 0 3px; }
-
-        .info-box {
-            background: #f8f9fa;
-            border-left: 3px solid #0d6e6e;
-            padding: 5px 8px;
-        }
-
-        .info-box .label {
-            font-size: 8px;
-            text-transform: uppercase;
-            color: #0d6e6e;
+        .vin-big {
+            font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 2px;
+            color: #000;
         }
 
-        .info-box .value {
-            font-size: 10px;
+        .items-header {
+            background-color: #f0f0f0;
+            font-size: 8pt;
+            font-weight: bold;
             color: #333;
-            line-height: 1.4;
         }
 
-        /* ============ ITEMS TABLE ============ */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-
-        .items-table th {
-            background: #0d6e6e;
-            color: white;
-            padding: 5px 6px;
-            text-align: left;
-            font-size: 9px;
-            text-transform: uppercase;
-        }
-
-        .items-table td {
-            padding: 5px 6px;
+        .items-row td {
+            font-size: 9pt;
+            padding: 4px 4px;
             border-bottom: 1px solid #e0e0e0;
-            font-size: 10px;
         }
-
-        .text-right { text-align: right; }
-
-        /* ============ TOTALS ============ */
-        .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-
-        .totals-table td { padding: 3px 8px; }
 
         .totals-label {
             text-align: right;
-            color: #666;
-            font-size: 10px;
+            color: #555;
+            font-size: 9pt;
+            padding: 3px 8px;
         }
 
         .totals-value {
             text-align: right;
             font-weight: bold;
-            width: 90px;
-            font-size: 10px;
+            font-size: 9pt;
+            padding: 3px 8px;
+            width: 85px;
         }
 
-        .subtotal-row td {
-            border-top: 1px solid #ccc;
-            padding-top: 5px !important;
-        }
-
-        .total-final {
-            background: #0d6e6e;
-            color: white;
+        .totals-grand {
             text-align: right;
-            padding: 6px 8px !important;
-            font-size: 12px;
             font-weight: bold;
+            font-size: 11pt;
+            padding: 5px 8px;
+            width: 85px;
+            border-top: 1px solid #000;
         }
 
-        .total-final-value {
-            background: #0d6e6e;
-            color: white;
+        .totals-grand-label {
             text-align: right;
-            padding: 6px 8px !important;
-            font-size: 12px;
             font-weight: bold;
-            width: 90px;
+            font-size: 11pt;
+            padding: 5px 8px;
+            border-top: 1px solid #000;
         }
 
-        /* ============ FOOTER ============ */
-        .footer {
-            margin-top: 20px;
-            padding-top: 8px;
-            border-top: 2px solid #0d6e6e;
-            text-align: center;
-            color: #666;
-            font-size: 9px;
+        .warranty-text {
+            font-size: 8pt;
+            color: #333;
+            line-height: 1.35;
         }
 
-        .thank-you {
-            font-size: 11px;
-            color: #0d6e6e;
+        .thanks-text {
+            font-size: 10pt;
             font-weight: bold;
-            margin-bottom: 3px;
+            color: #000;
+        }
+
+        .accepted-label {
+            font-size: 8pt;
+            color: #333;
+            font-style: italic;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #000;
+            width: 180px;
+            height: 1px;
         }
     </style>
 </head>
 <body>
 
-    <!-- ============ HEADER ============ -->
-    <table class="header-table">
+    <!-- ============ HEADER: COMPANY (LEFT) + SERVICE# / BILL TO (RIGHT) ============ -->
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="width: 60%;">
-                <table>
+            <!-- LEFT COLUMN -->
+            <td style="width: 48%; vertical-align: top; padding-right: 10px;">
+
+                <!-- Company info block (cream background) -->
+                <table class="cream" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="width: 75px; padding-right: 10px;">
-                            <div class="logo-box">LOGO</div>
+                        <td style="padding: 6px 8px 2px 8px; font-size: 12pt; font-weight: bold; color: #000;">
+                            {{ company.trade_name if company and company.trade_name else 'BMS Autoglass' }}
                         </td>
-                        <td>
-                            <div class="company-name">
-                                {{ company.trade_name if company and company.trade_name else 'BMS AUTOGLASS' }}
-                            </div>
-                            <div style="font-size: 9px; color: #555; line-height: 1.4;">
-                                {% if company %}
-                                    {% if company.address %}{{ company.address }}<br>{% endif %}
-                                    {% if company.city or company.state or company.postal_code %}
-                                        {{ company.city or '' }}{% if company.city and company.state %}, {% endif %}{{ company.state or '' }} {{ company.postal_code or '' }}<br>
-                                    {% endif %}
-                                    {% if company.main_phone %}Phone: {{ company.main_phone }}<br>{% endif %}
-                                    {% if company.main_email %}Email: {{ company.main_email }}{% endif %}
-                                    {% if company.tax_id %}<br>Tax ID: {{ company.tax_id }}{% endif %}
-                                {% endif %}
-                            </div>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0 8px; font-size: 9pt; color: #000;">
+                            {% if company %}
+                                {{ company.address or '' }}{% if company.city %}, {{ company.city }}{% endif %}{% if company.state %} {{ company.state }}{% endif %}{% if company.postal_code %} {{ company.postal_code }}{% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0 8px 6px 8px; font-size: 9pt; color: #000;">
+                            {% if company and company.main_phone %}Phone {{ company.main_phone }}{% endif %}{% if company and company.main_email %} | {{ company.main_email }}{% endif %}
                         </td>
                     </tr>
                 </table>
+
+                <div style="height: 12px;"></div>
+
+                <!-- Service # and Install Date -->
+                <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="width: 90px; padding: 3px 0; color: #000; font-size: 9pt;">Service #</td>
+                        <td style="padding: 3px 0; color: #000; font-size: 9pt; font-weight: bold;">{{ invoice.id }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 3px 0; color: #000; font-size: 9pt;">Install Date</td>
+                        <td style="padding: 3px 0; color: #000; font-size: 9pt;">
+                            {% if invoice.estimated_appointment_date %}
+                                {{ invoice.estimated_appointment_date.strftime('%m/%d/%Y') if invoice.estimated_appointment_date.strftime else invoice.estimated_appointment_date }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
             </td>
-            <td style="width: 40%;">
-                <div class="invoice-title">INVOICE</div>
-                <div class="invoice-number">
-                    <strong>#{{ invoice.id }}</strong><br>
-                    {% if invoice.estimated_appointment_date %}
-                        Date: {{ invoice.estimated_appointment_date }}<br>
-                    {% endif %}
-                    Status: {{ invoice.status or 'PENDING' }}
-                </div>
+
+            <!-- RIGHT COLUMN -->
+            <td style="width: 52%; vertical-align: top; padding-left: 10px;">
+
+                <div class="big-service">SERVICE #{{ invoice.id }}</div>
+
+                <div style="height: 8px;"></div>
+
+                <!-- VIN short + Bill To -->
+                <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="width: 90px; padding: 2px 0; color: #666; font-size: 8pt;">Vin Number</td>
+                        <td style="padding: 2px 0; font-size: 10pt; font-weight: bold; color: #000;">
+                            {% if invoice.vehicle_vin and invoice.vehicle_vin|length >= 6 %}
+                                {{ invoice.vehicle_vin[-6:] }}
+                            {% else %}
+                                {{ invoice.vehicle_vin or 'N/A' }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 0 0 0; color: #666; font-size: 8pt; vertical-align: top;">Bill To:</td>
+                        <td style="padding: 4px 0 0 0; font-size: 10pt; color: #000;">
+                            {{ customer.name if customer else 'N/A' }}
+                            {% if customer and customer.business_name %} {{ customer.business_name }}{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 1px 0 0 0; color: #666; font-size: 8pt; vertical-align: top;">Address</td>
+                        <td style="padding: 1px 0 0 0; font-size: 9pt; color: #000; line-height: 1.3;">
+                            {% if customer %}
+                                {% if customer.address %}{{ customer.address }}<br>{% endif %}
+                                {{ customer.city or '' }}{% if customer.city and customer.state %} {% endif %}{{ customer.state or '' }} {{ customer.zip_code or '' }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
             </td>
         </tr>
     </table>
 
-    <!-- ============ BILL TO + VEHICLE ============ -->
-    <table class="info-table">
+    <!-- ============ VIN FULL ============ -->
+    <div style="height: 14px;"></div>
+
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="width: 50%;">
-                <div class="info-box">
-                    <div class="label">Bill To</div>
-                    <div class="value">
-                        <strong>{{ customer.name if customer else 'N/A' }}</strong><br>
-                        {% if customer and customer.address %}{{ customer.address }}<br>{% endif %}
-                        {% if customer and customer.phone %}Phone: {{ customer.phone }}{% endif %}
-                    </div>
-                </div>
-            </td>
-            <td style="width: 50%;">
-                <div class="info-box">
-                    <div class="label">Vehicle / Service</div>
-                    <div class="value">
-                        {{ invoice.vehicle_make or '' }} {{ invoice.vehicle_model or '' }}<br>
-                        VIN: {{ invoice.vehicle_vin or 'N/A' }}<br>
-                        {% if invoice.service_type %}Service: {{ invoice.service_type }}{% endif %}
-                    </div>
-                </div>
-            </td>
+            <td style="width: 90px; color: #666; font-size: 8pt; padding: 2px 0;">Vin Number</td>
+            <td class="vin-big" style="padding: 2px 0;">{{ invoice.vehicle_vin or 'N/A' }}</td>
         </tr>
     </table>
 
-    <!-- ============ ITEMS ============ -->
-    <table class="items-table">
+    <!-- ============ YEAR / MAKE / MODEL ============ -->
+    <div style="height: 10px;"></div>
+
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width: 50px; color: #666; font-size: 8pt; padding: 3px 0;">Year</td>
+            <td style="width: 120px; font-weight: bold; font-size: 10pt; padding: 3px 0;">{{ vehicle_year or '' }}</td>
+            <td style="width: 50px; color: #666; font-size: 8pt; padding: 3px 0;">Make</td>
+            <td style="width: 140px; font-weight: bold; font-size: 10pt; padding: 3px 0;">{{ invoice.vehicle_make or '' }}</td>
+            <td style="width: 55px; color: #666; font-size: 8pt; padding: 3px 0;">Model</td>
+            <td style="font-weight: bold; font-size: 10pt; padding: 3px 0;">{{ invoice.vehicle_model or '' }}</td>
+        </tr>
+    </table>
+
+    <!-- ============ ITEMS TABLE ============ -->
+    <div style="height: 18px;"></div>
+
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <thead>
-            <tr>
-                <th style="width: 50%;">Description</th>
-                <th style="width: 10%;">Qty</th>
-                <th style="width: 20%; text-align: right;">Rate</th>
-                <th style="width: 20%; text-align: right;">Amount</th>
+            <tr class="items-header">
+                <td style="padding: 5px 4px; width: 80px;">Code</td>
+                <td style="padding: 5px 4px;">Description</td>
+                <td style="padding: 5px 4px; width: 50px; text-align: center;">Qty</td>
+                <td style="padding: 5px 4px; width: 80px; text-align: right;">Price/Labor</td>
+                <td style="padding: 5px 4px; width: 85px; text-align: right;">Amount</td>
             </tr>
         </thead>
         <tbody>
             {% for item in invoice_items %}
-            <tr>
-                <td>
-                    <strong>{{ item.product_name or '-' }}</strong>
-                    {% if item.description %}
-                        <br><span style="font-size: 9px; color: #666;">{{ item.description }}</span>
-                    {% endif %}
+            <tr class="items-row">
+                <td style="padding: 5px 4px; font-weight: bold; color: #000; font-size: 9pt;">
+                    {{ item.product_name or '' }}
                 </td>
-                <td>{{ item.quantity or 1 }}</td>
-                <td class="text-right">${{ "%.2f"|format(item.price or 0) }}</td>
-                <td class="text-right">${{ "%.2f"|format((item.price or 0) * (item.quantity or 1)) }}</td>
+                <td style="padding: 5px 4px; color: #333; font-size: 9pt;">
+                    {{ item.description or '' }}
+                </td>
+                <td style="padding: 5px 4px; text-align: center; font-size: 9pt;">
+                    {{ item.quantity or 1 }}
+                </td>
+                <td style="padding: 5px 4px; text-align: right; font-size: 9pt;">
+                    ${{ "%.2f"|format(item.price or 0) }}
+                </td>
+                <td style="padding: 5px 4px; text-align: right; font-size: 9pt; font-weight: bold;">
+                    ${{ "%.2f"|format((item.price or 0) * (item.quantity or 1)) }}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- ============ TOTALS (con Labor/Materials/Misc a la derecha) ============ -->
-    <table class="totals-table">
+    <!-- ============ TOTALS DESGLOSADOS ============ -->
+    <div style="height: 10px;"></div>
+
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="width: 55%;"></td>
-            <td class="totals-label" style="width: 25%;">Subtotal Items:</td>
-            <td class="totals-value">${{ "%.2f"|format(invoice.subtotal or 0) }}</td>
+            <td style="width: 60%;"></td>
+            <td class="totals-label">Subtotal Items</td>
+            <td class="totals-value">${{ "%.2f"|format(items_total or 0) }}</td>
         </tr>
 
-        {% if invoice.labor_cost and invoice.labor_cost > 0 %}
+        {% if labor and labor > 0 %}
         <tr>
             <td></td>
-            <td class="totals-label">Labor:</td>
-            <td class="totals-value">${{ "%.2f"|format(invoice.labor_cost) }}</td>
-        </tr>
-        {% endif %}
-
-        {% if invoice.materials_cost and invoice.materials_cost > 0 %}
-        <tr>
-            <td></td>
-            <td class="totals-label">Materials:</td>
-            <td class="totals-value">${{ "%.2f"|format(invoice.materials_cost) }}</td>
+            <td class="totals-label">Labor</td>
+            <td class="totals-value">${{ "%.2f"|format(labor) }}</td>
         </tr>
         {% endif %}
 
-        {% if invoice.misc_cost and invoice.misc_cost > 0 %}
+        {% if materials and materials > 0 %}
         <tr>
             <td></td>
-            <td class="totals-label">Miscellaneous:</td>
-            <td class="totals-value">${{ "%.2f"|format(invoice.misc_cost) }}</td>
+            <td class="totals-label">Materials</td>
+            <td class="totals-value">${{ "%.2f"|format(materials) }}</td>
         </tr>
         {% endif %}
 
-        <tr class="subtotal-row">
+        {% if misc and misc > 0 %}
+        <tr>
             <td></td>
-            <td class="totals-label">Tax:</td>
-            <td class="totals-value">${{ "%.2f"|format(invoice.tax or 0) }}</td>
+            <td class="totals-label">Miscellaneous</td>
+            <td class="totals-value">${{ "%.2f"|format(misc) }}</td>
+        </tr>
+        {% endif %}
+
+        {% if mobile_fee and mobile_fee > 0 %}
+        <tr>
+            <td></td>
+            <td class="totals-label">Mobile Fee</td>
+            <td class="totals-value">${{ "%.2f"|format(mobile_fee) }}</td>
+        </tr>
+        {% endif %}
+
+        <tr>
+            <td></td>
+            <td class="totals-label">Tax</td>
+            <td class="totals-value">${{ "%.2f"|format(tax or 0) }}</td>
         </tr>
 
         <tr>
             <td></td>
-            <td class="total-final">TOTAL:</td>
-            <td class="total-final-value">${{ "%.2f"|format(invoice.total or 0) }}</td>
+            <td class="totals-grand-label">TOTAL</td>
+            <td class="totals-grand">${{ "%.2f"|format(invoice.total or 0) }}</td>
         </tr>
     </table>
 
-    <!-- ============ FOOTER ============ -->
-    <div class="footer">
-        <div class="thank-you">Thank you for your business!</div>
-        {% if company and company.invoice_notice %}
-            <div style="font-style: italic; margin-bottom: 3px;">{{ company.invoice_notice }}</div>
-        {% else %}
-            <div style="font-style: italic; margin-bottom: 3px;">Payment due upon receipt.</div>
-        {% endif %}
-    </div>
+    <!-- ============ PAYMENTS / BALANCE ============ -->
+    {% if total_paid and total_paid > 0 %}
+    <div style="height: 12px;"></div>
+
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+            <td style="width: 60%;"></td>
+            <td class="totals-label">Payments</td>
+            <td class="totals-value" style="color: #1a7a1a;">-${{ "%.2f"|format(total_paid) }}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td class="totals-grand-label">BALANCE DUE</td>
+            <td class="totals-grand">${{ "%.2f"|format(balance_due or 0) }}</td>
+        </tr>
+    </table>
+    {% endif %}
+
+    <!-- ============ WARRANTY (cream) ============ -->
+    <div style="height: 22px;"></div>
+
+    <table class="cream" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="warranty-text" style="padding: 8px 10px;">
+                We stand by the quality of our work. This invoice includes a One Year Warranty on workmanship, effective from the date of completion. This warranty covers defects resulting from our workmanship under normal use and conditions.
+            </td>
+        </tr>
+    </table>
+
+    <!-- ============ THANK YOU + SIGNATURE ============ -->
+    <div style="height: 4px;"></div>
+
+    <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="cream" style="width: 65%; padding: 8px 10px;">
+                <span class="thanks-text">THANK YOU for choosing {{ company.trade_name if company and company.trade_name else 'BMS AUTOGLASS' }}</span>
+            </td>
+            <td style="width: 35%; vertical-align: bottom; padding-left: 15px; padding-bottom: 8px;">
+                <div class="signature-line">&nbsp;</div>
+                <div class="accepted-label" style="text-align: right; padding-top: 3px;">ACCEPTED BY :</div>
+            </td>
+        </tr>
+    </table>
 
 </body>
 </html>
