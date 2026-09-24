@@ -1,4 +1,4 @@
-# /app/routers/invoices/invoices_router.py | Updated: 2026-09-22 (PDF redesign: labor/materials/misc/mobile_fee breakdown)
+# /app/routers/invoices/invoices_router.py | Updated: 2026-09-24 (logo base64 en PDF)
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Path, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from sqlalchemy.orm import Session, joinedload
@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, desc, asc
 from datetime import datetime, date, timedelta
 from typing import List, Optional
 from decimal import Decimal
+import base64
 from app.database.database import get_db
 from app.core.template_loader import jinja as templates
 
@@ -1034,6 +1035,15 @@ async def download_invoice_pdf(
     if mobile_fee < 0:
         mobile_fee = 0.0
 
+    # ===== LOGO EN BASE64 PARA EL PDF =====
+    logo_base64 = ""
+    try:
+        logo_path = os.path.join("app", "static", "images", "bms.jpg")
+        with open(logo_path, "rb") as f:
+            logo_base64 = base64.b64encode(f.read()).decode("utf-8")
+    except Exception as e:
+        print(f"[PDF] Logo error: {e}")
+
     html = templates.get_template("invoices/invoice_pdf.html").render(
         {
             "invoice": invoice,
@@ -1050,6 +1060,7 @@ async def download_invoice_pdf(
             "misc": misc,
             "tax": tax,
             "mobile_fee": mobile_fee,
+            "logo_base64": logo_base64,
             "now": datetime.now(),
         }
     )

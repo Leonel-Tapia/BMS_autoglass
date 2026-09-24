@@ -107,29 +107,43 @@
 </head>
 <body>
 
-    <!-- ============ HEADER: COMPANY (LEFT) + SERVICE# / BILL TO (RIGHT) ============ -->
+    <!-- ============ HEADER: LOGO + COMPANY (LEFT) + SERVICE# / BILL TO (RIGHT) ============ -->
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
             <!-- LEFT COLUMN -->
             <td style="width: 48%; vertical-align: top; padding-right: 10px;">
 
-                <!-- Company info block (cream background) -->
-                <table class="cream" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                <!-- LOGO + Company info -->
+                <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="padding: 4px 8px 2px 8px; font-size: 12pt; font-weight: bold; color: #000;">
-                            {{ company.trade_name if company and company.trade_name else 'BMS Autoglass' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0 8px; font-size: 9pt; color: #000;">
-                            {% if company %}
-                                {{ company.address or '' }}{% if company.city %}, {{ company.city }}{% endif %}{% if company.state %} {{ company.state }}{% endif %}{% if company.postal_code %} {{ company.postal_code }}{% endif %}
+                        <!-- LOGO -->
+                        <td style="width: 75px; vertical-align: top; padding-right: 8px;">
+                            {% if logo_base64 %}
+                                <img src="data:image/jpeg;base64,{{ logo_base64 }}"
+                                     style="width: 65px; height: auto;" alt="Logo" />
                             {% endif %}
                         </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0 8px 4px 8px; font-size: 9pt; color: #000;">
-                            {% if company and company.main_phone %}Phone {{ company.main_phone }}{% endif %}{% if company and company.main_email %} | {{ company.main_email }}{% endif %}
+                        <!-- COMPANY INFO BLOCK (cream) -->
+                        <td style="vertical-align: top;">
+                            <table class="cream" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding: 4px 8px 2px 8px; font-size: 12pt; font-weight: bold; color: #000;">
+                                        {{ company.trade_name if company and company.trade_name else 'BMS Autoglass' }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 8px; font-size: 9pt; color: #000;">
+                                        {% if company %}
+                                            {{ company.address or '' }}{% if company.city %}, {{ company.city }}{% endif %}{% if company.state %} {{ company.state }}{% endif %}{% if company.postal_code %} {{ company.postal_code }}{% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 8px 4px 8px; font-size: 9pt; color: #000;">
+                                        {% if company and company.main_phone %}Phone {{ company.main_phone }}{% endif %}{% if company and company.main_email %} | {{ company.main_email }}{% endif %}
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
