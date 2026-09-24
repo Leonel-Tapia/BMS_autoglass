@@ -6,7 +6,7 @@
     <style>
         @page {
             size: letter;
-            margin: 1.5cm 1.2cm 1.5cm 1.2cm;
+            margin: 1.2cm 1cm 1.2cm 1cm;
         }
 
         body {
@@ -15,6 +15,7 @@
             color: #000;
             margin: 0;
             padding: 0;
+            line-height: 1.15;
         }
 
         .cream {
@@ -43,7 +44,7 @@
 
         .items-row td {
             font-size: 9pt;
-            padding: 4px 4px;
+            padding: 2px 4px;
             border-bottom: 1px solid #e0e0e0;
         }
 
@@ -51,14 +52,14 @@
             text-align: right;
             color: #555;
             font-size: 9pt;
-            padding: 3px 8px;
+            padding: 1px 8px;
         }
 
         .totals-value {
             text-align: right;
             font-weight: bold;
             font-size: 9pt;
-            padding: 3px 8px;
+            padding: 1px 8px;
             width: 85px;
         }
 
@@ -66,7 +67,7 @@
             text-align: right;
             font-weight: bold;
             font-size: 11pt;
-            padding: 5px 8px;
+            padding: 3px 8px;
             width: 85px;
             border-top: 1px solid #000;
         }
@@ -75,7 +76,7 @@
             text-align: right;
             font-weight: bold;
             font-size: 11pt;
-            padding: 5px 8px;
+            padding: 3px 8px;
             border-top: 1px solid #000;
         }
 
@@ -115,7 +116,7 @@
                 <!-- Company info block (cream background) -->
                 <table class="cream" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="padding: 6px 8px 2px 8px; font-size: 12pt; font-weight: bold; color: #000;">
+                        <td style="padding: 4px 8px 2px 8px; font-size: 12pt; font-weight: bold; color: #000;">
                             {{ company.trade_name if company and company.trade_name else 'BMS Autoglass' }}
                         </td>
                     </tr>
@@ -127,23 +128,23 @@
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding: 0 8px 6px 8px; font-size: 9pt; color: #000;">
+                        <td style="padding: 0 8px 4px 8px; font-size: 9pt; color: #000;">
                             {% if company and company.main_phone %}Phone {{ company.main_phone }}{% endif %}{% if company and company.main_email %} | {{ company.main_email }}{% endif %}
                         </td>
                     </tr>
                 </table>
 
-                <div style="height: 12px;"></div>
+                <div style="height: 6px; line-height: 0; font-size: 0;">&nbsp;</div>
 
                 <!-- Service # and Install Date -->
                 <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="width: 90px; padding: 3px 0; color: #000; font-size: 9pt;">Service #</td>
-                        <td style="padding: 3px 0; color: #000; font-size: 9pt; font-weight: bold;">{{ invoice.id }}</td>
+                        <td style="width: 90px; padding: 1px 0; color: #000; font-size: 9pt;">Service #</td>
+                        <td style="padding: 1px 0; color: #000; font-size: 9pt; font-weight: bold;">{{ invoice.id }}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 3px 0; color: #000; font-size: 9pt;">Install Date</td>
-                        <td style="padding: 3px 0; color: #000; font-size: 9pt;">
+                        <td style="padding: 1px 0; color: #000; font-size: 9pt;">Install Date</td>
+                        <td style="padding: 1px 0; color: #000; font-size: 9pt;">
                             {% if invoice.estimated_appointment_date %}
                                 {{ invoice.estimated_appointment_date.strftime('%m/%d/%Y') if invoice.estimated_appointment_date.strftime else invoice.estimated_appointment_date }}
                             {% else %}
@@ -160,13 +161,13 @@
 
                 <div class="big-service">SERVICE #{{ invoice.id }}</div>
 
-                <div style="height: 8px;"></div>
+                <div style="height: 6px; line-height: 0; font-size: 0;">&nbsp;</div>
 
                 <!-- VIN short + Bill To -->
                 <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="width: 90px; padding: 2px 0; color: #666; font-size: 8pt;">Vin Number</td>
-                        <td style="padding: 2px 0; font-size: 10pt; font-weight: bold; color: #000;">
+                        <td style="width: 90px; padding: 1px 0; color: #666; font-size: 8pt;">Vin Number</td>
+                        <td style="padding: 1px 0; font-size: 10pt; font-weight: bold; color: #000;">
                             {% if invoice.vehicle_vin and invoice.vehicle_vin|length >= 6 %}
                                 {{ invoice.vehicle_vin[-6:] }}
                             {% else %}
@@ -175,15 +176,15 @@
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding: 4px 0 0 0; color: #666; font-size: 8pt; vertical-align: top;">Bill To:</td>
-                        <td style="padding: 4px 0 0 0; font-size: 10pt; color: #000;">
+                        <td style="padding: 2px 0 0 0; color: #666; font-size: 8pt; vertical-align: top;">Bill To:</td>
+                        <td style="padding: 2px 0 0 0; font-size: 10pt; color: #000;">
                             {{ customer.name if customer else 'N/A' }}
                             {% if customer and customer.business_name %} {{ customer.business_name }}{% endif %}
                         </td>
                     </tr>
                     <tr>
                         <td style="padding: 1px 0 0 0; color: #666; font-size: 8pt; vertical-align: top;">Address</td>
-                        <td style="padding: 1px 0 0 0; font-size: 9pt; color: #000; line-height: 1.3;">
+                        <td style="padding: 1px 0 0 0; font-size: 9pt; color: #000; line-height: 1.25;">
                             {% if customer %}
                                 {% if customer.address %}{{ customer.address }}<br>{% endif %}
                                 {{ customer.city or '' }}{% if customer.city and customer.state %} {% endif %}{{ customer.state or '' }} {{ customer.zip_code or '' }}
@@ -197,58 +198,58 @@
     </table>
 
     <!-- ============ VIN FULL ============ -->
-    <div style="height: 14px;"></div>
+    <div style="height: 8px; line-height: 0; font-size: 0;">&nbsp;</div>
 
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="width: 90px; color: #666; font-size: 8pt; padding: 2px 0;">Vin Number</td>
-            <td class="vin-big" style="padding: 2px 0;">{{ invoice.vehicle_vin or 'N/A' }}</td>
+            <td style="width: 90px; color: #666; font-size: 8pt; padding: 1px 0;">Vin Number</td>
+            <td class="vin-big" style="padding: 1px 0;">{{ invoice.vehicle_vin or 'N/A' }}</td>
         </tr>
     </table>
 
     <!-- ============ YEAR / MAKE / MODEL ============ -->
-    <div style="height: 10px;"></div>
+    <div style="height: 6px; line-height: 0; font-size: 0;">&nbsp;</div>
 
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="width: 50px; color: #666; font-size: 8pt; padding: 3px 0;">Year</td>
-            <td style="width: 120px; font-weight: bold; font-size: 10pt; padding: 3px 0;">{{ vehicle_year or '' }}</td>
-            <td style="width: 50px; color: #666; font-size: 8pt; padding: 3px 0;">Make</td>
-            <td style="width: 140px; font-weight: bold; font-size: 10pt; padding: 3px 0;">{{ invoice.vehicle_make or '' }}</td>
-            <td style="width: 55px; color: #666; font-size: 8pt; padding: 3px 0;">Model</td>
-            <td style="font-weight: bold; font-size: 10pt; padding: 3px 0;">{{ invoice.vehicle_model or '' }}</td>
+            <td style="width: 50px; color: #666; font-size: 8pt; padding: 1px 0;">Year</td>
+            <td style="width: 120px; font-weight: bold; font-size: 10pt; padding: 1px 0;">{{ vehicle_year or '' }}</td>
+            <td style="width: 50px; color: #666; font-size: 8pt; padding: 1px 0;">Make</td>
+            <td style="width: 140px; font-weight: bold; font-size: 10pt; padding: 1px 0;">{{ invoice.vehicle_make or '' }}</td>
+            <td style="width: 55px; color: #666; font-size: 8pt; padding: 1px 0;">Model</td>
+            <td style="font-weight: bold; font-size: 10pt; padding: 1px 0;">{{ invoice.vehicle_model or '' }}</td>
         </tr>
     </table>
 
     <!-- ============ ITEMS TABLE ============ -->
-    <div style="height: 18px;"></div>
+    <div style="height: 8px; line-height: 0; font-size: 0;">&nbsp;</div>
 
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <thead>
             <tr class="items-header">
-                <td style="padding: 5px 4px; width: 80px;">Code</td>
-                <td style="padding: 5px 4px;">Description</td>
-                <td style="padding: 5px 4px; width: 50px; text-align: center;">Qty</td>
-                <td style="padding: 5px 4px; width: 80px; text-align: right;">Price/Labor</td>
-                <td style="padding: 5px 4px; width: 85px; text-align: right;">Amount</td>
+                <td style="padding: 3px 4px; width: 80px;">Code</td>
+                <td style="padding: 3px 4px;">Description</td>
+                <td style="padding: 3px 4px; width: 50px; text-align: center;">Qty</td>
+                <td style="padding: 3px 4px; width: 80px; text-align: right;">Price/Labor</td>
+                <td style="padding: 3px 4px; width: 85px; text-align: right;">Amount</td>
             </tr>
         </thead>
         <tbody>
             {% for item in invoice_items %}
             <tr class="items-row">
-                <td style="padding: 5px 4px; font-weight: bold; color: #000; font-size: 9pt;">
+                <td style="padding: 2px 4px; font-weight: bold; color: #000; font-size: 9pt;">
                     {{ item.product_name or '' }}
                 </td>
-                <td style="padding: 5px 4px; color: #333; font-size: 9pt;">
+                <td style="padding: 2px 4px; color: #333; font-size: 9pt;">
                     {{ item.description or '' }}
                 </td>
-                <td style="padding: 5px 4px; text-align: center; font-size: 9pt;">
+                <td style="padding: 2px 4px; text-align: center; font-size: 9pt;">
                     {{ item.quantity or 1 }}
                 </td>
-                <td style="padding: 5px 4px; text-align: right; font-size: 9pt;">
+                <td style="padding: 2px 4px; text-align: right; font-size: 9pt;">
                     ${{ "%.2f"|format(item.price or 0) }}
                 </td>
-                <td style="padding: 5px 4px; text-align: right; font-size: 9pt; font-weight: bold;">
+                <td style="padding: 2px 4px; text-align: right; font-size: 9pt; font-weight: bold;">
                     ${{ "%.2f"|format((item.price or 0) * (item.quantity or 1)) }}
                 </td>
             </tr>
@@ -256,9 +257,7 @@
         </tbody>
     </table>
 
-    <!-- ============ TOTALS DESGLOSADOS ============ -->
-    <div style="height: 10px;"></div>
-
+    <!-- ============ TOTALS DESGLOSADOS (sin espacio previo) ============ -->
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
             <td style="width: 60%;"></td>
@@ -313,8 +312,6 @@
 
     <!-- ============ PAYMENTS / BALANCE ============ -->
     {% if total_paid and total_paid > 0 %}
-    <div style="height: 12px;"></div>
-
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
             <td style="width: 60%;"></td>
@@ -330,27 +327,27 @@
     {% endif %}
 
     <!-- ============ WARRANTY (cream) ============ -->
-    <div style="height: 22px;"></div>
+    <div style="height: 14px; line-height: 0; font-size: 0;">&nbsp;</div>
 
     <table class="cream" style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td class="warranty-text" style="padding: 8px 10px;">
+            <td class="warranty-text" style="padding: 5px 8px;">
                 We stand by the quality of our work. This invoice includes a One Year Warranty on workmanship, effective from the date of completion. This warranty covers defects resulting from our workmanship under normal use and conditions.
             </td>
         </tr>
     </table>
 
     <!-- ============ THANK YOU + SIGNATURE ============ -->
-    <div style="height: 4px;"></div>
+    <div style="height: 2px; line-height: 0; font-size: 0;">&nbsp;</div>
 
     <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
         <tr>
-            <td class="cream" style="width: 65%; padding: 8px 10px;">
+            <td class="cream" style="width: 65%; padding: 5px 8px;">
                 <span class="thanks-text">THANK YOU for choosing {{ company.trade_name if company and company.trade_name else 'BMS AUTOGLASS' }}</span>
             </td>
-            <td style="width: 35%; vertical-align: bottom; padding-left: 15px; padding-bottom: 8px;">
+            <td style="width: 35%; vertical-align: bottom; padding-left: 12px; padding-bottom: 5px;">
                 <div class="signature-line">&nbsp;</div>
-                <div class="accepted-label" style="text-align: right; padding-top: 3px;">ACCEPTED BY :</div>
+                <div class="accepted-label" style="text-align: right; padding-top: 2px;">ACCEPTED BY :</div>
             </td>
         </tr>
     </table>

@@ -1,4 +1,4 @@
-<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-22 (payment modal) -->
+<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-24 (map + pdf buttons) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -312,19 +312,48 @@
         .badge-cancelled { background-color: #e2e3e5; color: #383d41; }
         .badge-noshow { background-color: #ffe0b2; color: #e65100; }
 
-        /* ===== PAYMENT BUTTON ===== */
+        /* ===== ACTION BUTTONS (Map / PDF / Pay) ===== */
+        .btn-icon-action {
+            display: inline-block;
+            padding: 3px 7px;
+            margin: 0 1px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s ease, color 0.15s ease;
+            vertical-align: middle;
+        }
+
+        .btn-map {
+            background: #e7f1fb;
+            color: #0078D4;
+        }
+        .btn-map:hover { background: #0078D4; color: white; }
+
+        .btn-pdf {
+            background: #fdecef;
+            color: #c62828;
+        }
+        .btn-pdf:hover { background: #c62828; color: white; }
+
         .btn-payment {
             background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
             color: white;
             border: none;
-            padding: 4px 10px;
-            border-radius: 4px;
+            padding: 3px 8px;
+            margin: 0 1px;
+            border-radius: 3px;
             font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
             transition: transform 0.1s ease, box-shadow 0.15s ease;
             box-shadow: 0 1px 3px rgba(40, 167, 69, 0.3);
+            vertical-align: middle;
         }
         .btn-payment:hover {
             transform: translateY(-1px);
@@ -659,6 +688,8 @@
             .action-bars { flex-direction: column; }
             .action-bars > * { min-width: 0; }
             .pay-form-group { min-width: 100%; }
+            .btn-icon-action { font-size: 10px; padding: 2px 5px; }
+            .btn-payment { font-size: 10px; padding: 2px 6px; }
         }
 
         @media (max-width: 480px) {
@@ -668,7 +699,6 @@
             .header h1 { font-size: 16px; }
             .table-wrapper tbody td.address-cell { max-width: 100px; }
             .section-title { font-size: 13px; }
-            .btn-payment { font-size: 10px; padding: 3px 7px; }
         }
     </style>
 </head>
@@ -830,10 +860,19 @@
                                         <span class="badge badge-pending">{{ st }}</span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td style="white-space: nowrap;">
                                     {% set paid_amt = (invoice.payment_amount1 or 0) + (invoice.payment_amount2 or 0) %}
                                     {% set bal = (invoice.total or 0) - paid_amt %}
                                     {% set st_action = (invoice.status or 'PENDING')|upper %}
+
+                                    {% if invoice.customer_address %}
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ (invoice.customer_address ~ ', ' ~ (invoice.customer_city or '') ~ ', ' ~ (invoice.customer_state or '') ~ ' ' ~ (invoice.customer_zip or '')) | urlencode }}"
+                                       target="_blank" class="btn-icon-action btn-map" title="Open in Google Maps">📍 Map</a>
+                                    {% endif %}
+
+                                    <a href="/invoices/download/{{ invoice.id }}"
+                                       target="_blank" class="btn-icon-action btn-pdf" title="Download PDF">📄 PDF</a>
+
                                     {% if bal > 0 and st_action in ['PENDING', 'PARTIALLY_PAID'] %}
                                         <button type="button" class="btn-payment"
                                                 data-invoice-id="{{ invoice.id }}"
@@ -842,8 +881,6 @@
                                                 data-paid="{{ '%.2f'|format(paid_amt) }}"
                                                 data-balance="{{ '%.2f'|format(bal) }}"
                                                 onclick="openPaymentModal(this)">💵 Pay</button>
-                                    {% else %}
-                                        <span style="color:#ccc; font-size:11px;">—</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -951,10 +988,19 @@
                                         <span class="badge badge-pending">{{ st }}</span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td style="white-space: nowrap;">
                                     {% set paid_amt = (invoice.payment_amount1 or 0) + (invoice.payment_amount2 or 0) %}
                                     {% set bal = (invoice.total or 0) - paid_amt %}
                                     {% set st_action = (invoice.status or 'PENDING')|upper %}
+
+                                    {% if invoice.customer_address %}
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ (invoice.customer_address ~ ', ' ~ (invoice.customer_city or '') ~ ', ' ~ (invoice.customer_state or '') ~ ' ' ~ (invoice.customer_zip or '')) | urlencode }}"
+                                       target="_blank" class="btn-icon-action btn-map" title="Open in Google Maps">📍 Map</a>
+                                    {% endif %}
+
+                                    <a href="/invoices/download/{{ invoice.id }}"
+                                       target="_blank" class="btn-icon-action btn-pdf" title="Download PDF">📄 PDF</a>
+
                                     {% if bal > 0 and st_action in ['PENDING', 'PARTIALLY_PAID'] %}
                                         <button type="button" class="btn-payment"
                                                 data-invoice-id="{{ invoice.id }}"
@@ -963,8 +1009,6 @@
                                                 data-paid="{{ '%.2f'|format(paid_amt) }}"
                                                 data-balance="{{ '%.2f'|format(bal) }}"
                                                 onclick="openPaymentModal(this)">💵 Pay</button>
-                                    {% else %}
-                                        <span style="color:#ccc; font-size:11px;">—</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -1225,7 +1269,6 @@
             const paid = btn.dataset.paid || '0.00';
             const balance = btn.dataset.balance || '0.00';
 
-            // Build the summary
             document.getElementById('payModalSummary').innerHTML = `
                 <div class="pay-summary-item">
                     <span class="label">Invoice</span>
@@ -1249,7 +1292,6 @@
                 </div>
             `;
 
-            // Reset form
             document.getElementById('payModal_type').value = 'CASH';
             document.getElementById('payModal_amount').value = '';
             document.getElementById('payModal_date').value = new Date().toISOString().split('T')[0];
@@ -1257,15 +1299,11 @@
             document.getElementById('payModal_notes').value = '';
             document.getElementById('payModal_fullAmount').checked = false;
 
-            // Restore submit button state
             const submitBtn = document.getElementById('payModal_submit');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '💵 Register Payment';
 
-            // Show modal
             document.getElementById('paymentModal').classList.add('active');
-
-            // Focus on amount
             setTimeout(() => document.getElementById('payModal_amount').focus(), 100);
         }
 
@@ -1273,7 +1311,6 @@
             document.getElementById('paymentModal').classList.remove('active');
         }
 
-        // Outside click + full balance checkbox
         document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('paymentModal');
             if (modal) {
@@ -1294,7 +1331,6 @@
                 });
             }
 
-            // ESC key to close
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     if (modal && modal.classList.contains('active')) closePaymentModal();
