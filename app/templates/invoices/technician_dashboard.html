@@ -1,4 +1,4 @@
-<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-25 (email button) -->
+<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-25 (invoice # link disabled for testing) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -392,6 +392,15 @@
             font-weight: 500;
         }
         .invoice-link:hover { text-decoration: underline; }
+
+        /* ===== LINK DESACTIVADO TEMPORALMENTE ===== */
+        .invoice-link-disabled {
+            color: #0078D4;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: default;
+        }
+        .invoice-link-disabled:hover { text-decoration: none; }
 
         /* MODAL BASE */
         .modal-overlay {
@@ -803,9 +812,9 @@
                             <tr>
                                 <td>{{ invoice.estimated_appointment_time.strftime('%I:%M %p') if invoice.estimated_appointment_time else 'N/A' }}</td>
                                 <td>
-                                    <a href="/invoices/view/{{ invoice.id }}?return_url=/technician/dashboard" class="invoice-link" target="_blank">
-                                        #{{ invoice.id }}
-                                    </a>
+                                    {# ===== LINK DESACTIVADO TEMPORALMENTE (2026-09-25) — Reactivar cambiando span por <a> ===== #}
+                                    {# ORIGINAL: <a href="/invoices/view/{{ invoice.id }}?return_url=/technician/dashboard" class="invoice-link" target="_blank">#{{ invoice.id }}</a> #}
+                                    <span class="invoice-link-disabled" title="Link disabled for testing">#{{ invoice.id }}</span>
                                 </td>
                                 <td>{{ invoice.customer_name if invoice.customer_name else 'N/A' }}</td>
                                 <td class="phone-cell">
@@ -935,9 +944,9 @@
                             <tr>
                                 <td>{{ invoice.estimated_appointment_time.strftime('%I:%M %p') if invoice.estimated_appointment_time else 'N/A' }}</td>
                                 <td>
-                                    <a href="/invoices/view/{{ invoice.id }}?return_url=/technician/dashboard" class="invoice-link" target="_blank">
-                                        #{{ invoice.id }}
-                                    </a>
+                                    {# ===== LINK DESACTIVADO TEMPORALMENTE (2026-09-25) — Reactivar cambiando span por <a> ===== #}
+                                    {# ORIGINAL: <a href="/invoices/view/{{ invoice.id }}?return_url=/technician/dashboard" class="invoice-link" target="_blank">#{{ invoice.id }}</a> #}
+                                    <span class="invoice-link-disabled" title="Link disabled for testing">#{{ invoice.id }}</span>
                                 </td>
                                 <td>{{ invoice.customer_name if invoice.customer_name else 'N/A' }}</td>
                                 <td class="phone-cell">
