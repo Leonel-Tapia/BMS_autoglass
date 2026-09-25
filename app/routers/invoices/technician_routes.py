@@ -1,6 +1,6 @@
 # RUTA: app/routers/invoices/technician_routes.py
 # CREADO: 2026-09-04
-# ACTUALIZADO: 2026-09-19 - Agregado Invoice.status al query (badge usa status, no payment_status)
+# ACTUALIZADO: 2026-09-25 - Agregado Customer.email al query (para botón Email)
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
@@ -115,7 +115,7 @@ def technician_dashboard(
         target_date = date.today()
 
     # Filtrado por estimated_appointment_date
-    # Incluye customer_phone + city/state/zip + status (para el badge)
+    # Incluye customer_phone + customer_email + city/state/zip + status (para el badge)
     invoices = (
         db.query(
             Invoice.id,
@@ -123,6 +123,7 @@ def technician_dashboard(
             Invoice.service_type,
             Customer.name.label("customer_name"),
             Customer.phone.label("customer_phone"),
+            Customer.email.label("customer_email"),
             Customer.address.label("customer_address"),
             Customer.city.label("customer_city"),
             Customer.state.label("customer_state"),

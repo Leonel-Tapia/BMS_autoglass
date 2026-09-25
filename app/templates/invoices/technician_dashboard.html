@@ -1,4 +1,4 @@
-<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-24 (map + pdf buttons) -->
+<!-- RUTA: app/templates/invoices/technician_dashboard.html | ACTUALIZADO: 2026-09-25 (email button) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -312,7 +312,7 @@
         .badge-cancelled { background-color: #e2e3e5; color: #383d41; }
         .badge-noshow { background-color: #ffe0b2; color: #e65100; }
 
-        /* ===== ACTION BUTTONS (Map / PDF / Pay) ===== */
+        /* ===== ACTION BUTTONS (Map / Email / PDF / Pay) ===== */
         .btn-icon-action {
             display: inline-block;
             padding: 3px 7px;
@@ -333,6 +333,12 @@
             color: #0078D4;
         }
         .btn-map:hover { background: #0078D4; color: white; }
+
+        .btn-email {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .btn-email:hover { background: #92400e; color: white; }
 
         .btn-pdf {
             background: #fdecef;
@@ -870,6 +876,10 @@
                                        target="_blank" class="btn-icon-action btn-map" title="Open in Google Maps">📍 Map</a>
                                     {% endif %}
 
+                                    <a href="#" class="btn-icon-action btn-email"
+                                       title="Send by Email"
+                                       onclick="openEmailModal(event, '{{ invoice.id }}', '{{ (invoice.customer_name or '') | e }}', '{{ (invoice.customer_email or '') | e }}')">📧 Email</a>
+
                                     <a href="/invoices/download/{{ invoice.id }}"
                                        target="_blank" class="btn-icon-action btn-pdf" title="Download PDF">📄 PDF</a>
 
@@ -998,6 +1008,10 @@
                                        target="_blank" class="btn-icon-action btn-map" title="Open in Google Maps">📍 Map</a>
                                     {% endif %}
 
+                                    <a href="#" class="btn-icon-action btn-email"
+                                       title="Send by Email"
+                                       onclick="openEmailModal(event, '{{ invoice.id }}', '{{ (invoice.customer_name or '') | e }}', '{{ (invoice.customer_email or '') | e }}')">📧 Email</a>
+
                                     <a href="/invoices/download/{{ invoice.id }}"
                                        target="_blank" class="btn-icon-action btn-pdf" title="Download PDF">📄 PDF</a>
 
@@ -1094,12 +1108,8 @@
                 <button type="button" class="close-btn" onclick="closePaymentModal()">✕</button>
             </div>
             <div class="modal-body">
-                <!-- Invoice summary (filled by JS) -->
-                <div class="pay-summary" id="payModalSummary">
-                    <!-- populated by openPaymentModal() -->
-                </div>
+                <div class="pay-summary" id="payModalSummary"></div>
 
-                <!-- Payment form -->
                 <div class="pay-form-row">
                     <div class="pay-form-group">
                         <label for="payModal_type">Type</label>
@@ -1146,6 +1156,46 @@
                     <button type="button" class="btn-close-modal" onclick="closePaymentModal()">Cancel</button>
                     <button type="button" id="payModal_submit" class="btn-submit-payment" onclick="submitPayment()">
                         💵 Register Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL: SEND INVOICE BY EMAIL -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #92400e 0%, #b45309 100%);">
+                <h3>📧 Send Invoice by Email</h3>
+                <button type="button" class="close-btn" onclick="closeEmailModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="pay-summary" id="emailModalSummary"></div>
+
+                <div class="pay-form-row">
+                    <div class="pay-form-group full">
+                        <label for="emailModal_to">To (Email)</label>
+                        <input type="email" id="emailModal_to" placeholder="customer@example.com">
+                    </div>
+                </div>
+
+                <div class="pay-form-row">
+                    <div class="pay-form-group full">
+                        <label for="emailModal_subject">Subject</label>
+                        <input type="text" id="emailModal_subject" readonly>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div style="font-size:12px; color:#666;">PDF will be attached automatically.</div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-close-modal" onclick="closeEmailModal()">Cancel</button>
+                    <button type="button" id="emailModal_submit" class="btn-submit-payment"
+                            style="background: linear-gradient(135deg, #92400e 0%, #b45309 100%);"
+                            onclick="submitEmail()">
+                        📧 Send Email
                     </button>
                 </div>
             </div>
@@ -1387,6 +1437,88 @@
                 showToast('Network error: ' + err.message, true);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '💵 Register Payment';
+            }
+        }
+
+        // ============================
+        // SEND EMAIL MODAL
+        // ============================
+        let emailModalInvoiceId = null;
+
+        function openEmailModal(event, invoiceId, customerName, customerEmail) {
+            event.preventDefault();
+            emailModalInvoiceId = invoiceId;
+
+            document.getElementById('emailModalSummary').innerHTML = `
+                <div class="pay-summary-item">
+                    <span class="label">Invoice</span>
+                    <span class="value" style="color:#0078D4;">#${invoiceId}</span>
+                </div>
+                <div class="pay-summary-item">
+                    <span class="label">Customer</span>
+                    <span class="value">${customerName || 'N/A'}</span>
+                </div>
+            `;
+
+            document.getElementById('emailModal_to').value = customerEmail || '';
+            document.getElementById('emailModal_subject').value = `Invoice #${invoiceId} - BMS Autoglass`;
+
+            const submitBtn = document.getElementById('emailModal_submit');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '📧 Send Email';
+
+            document.getElementById('emailModal').classList.add('active');
+            setTimeout(() => document.getElementById('emailModal_to').focus(), 100);
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('emailModal');
+            if (modal) {
+                modal.addEventListener('click', function (e) {
+                    if (e.target === this) closeEmailModal();
+                });
+            }
+        });
+
+        async function submitEmail() {
+            const toEmail = document.getElementById('emailModal_to').value.trim();
+
+            if (!toEmail) {
+                showToast('Please enter an email address.', true);
+                return;
+            }
+
+            const submitBtn = document.getElementById('emailModal_submit');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '...';
+
+            const formData = new FormData();
+            formData.append('email', toEmail);
+
+            try {
+                const response = await fetch(`/invoices/${emailModalInvoiceId}/send-email`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('✓ Email sent successfully!');
+                    closeEmailModal();
+                } else {
+                    showToast(data.error || 'Failed to send email.', true);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '📧 Send Email';
+                }
+            } catch (err) {
+                showToast('Network error: ' + err.message, true);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '📧 Send Email';
             }
         }
 

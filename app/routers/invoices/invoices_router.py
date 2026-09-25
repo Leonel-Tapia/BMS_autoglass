@@ -1,4 +1,4 @@
-# /app/routers/invoices/invoices_router.py | Updated: 2026-09-24 (logo base64 en PDF)
+# /app/routers/invoices/invoices_router.py | Updated: 2026-09-25 (send invoice by email)
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Path, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from sqlalchemy.orm import Session, joinedload
@@ -29,6 +29,7 @@ from xhtml2pdf import pisa
 import os
 from app.utils.geocoding import geocode_address
 from app.utils.routing import optimize_route
+from app.utils.email_sender import send_invoice_email
 # =================================================
 
 router = APIRouter(
@@ -984,14 +985,9 @@ async def create_invoice_activity(
 
 
 # ============================================================
-# 10. DOWNLOAD INVOICE PDF (sin guardar en disco)
+# 10. HELPER: genera el PDF y devuelve bytes (reutilizable)
 # ============================================================
-@router.get("/download/{invoice_id}")
-async def download_invoice_pdf(
-    invoice_id: int,
-    request: Request,
-    db: Session = Depends(get_db)
-):
+def _build_invoice_pdf(invoice_id: int, db: Session) -> bytes:
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
@@ -1068,14 +1064,84 @@ async def download_invoice_pdf(
     pdf_buffer = BytesIO()
     pisa.CreatePDF(BytesIO(html.encode("utf-8")), pdf_buffer)
     pdf_buffer.seek(0)
+    return pdf_buffer.getvalue()
 
+
+# ============================================================
+# 10.1 DOWNLOAD INVOICE PDF
+# ============================================================
+@router.get("/download/{invoice_id}")
+async def download_invoice_pdf(
+    invoice_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    pdf_bytes = _build_invoice_pdf(invoice_id, db)
     return Response(
-        content=pdf_buffer.getvalue(),
+        content=pdf_bytes,
         media_type="application/pdf",
         headers={
             "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.pdf"
         }
     )
+
+
+# ============================================================
+# 10.2 SEND INVOICE PDF BY EMAIL
+# ============================================================
+@router.post("/{invoice_id}/send-email")
+async def send_invoice_pdf_email(
+    request: Request,
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+        if not invoice:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "error": "Invoice not found"}
+            )
+
+        customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
+        if not customer:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "error": "Customer not found"}
+            )
+
+        form_data = await request.form()
+        to_email = (form_data.get("email") or "").strip() or (customer.email or "")
+
+        if not to_email:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "No email address provided"}
+            )
+
+        pdf_bytes = _build_invoice_pdf(invoice_id, db)
+
+        company = db.query(Company).first()
+        company_name = (company.trade_name if company and company.trade_name else "BMS Autoglass")
+
+        send_invoice_email(
+            to_email=to_email,
+            customer_name=customer.name or "Customer",
+            invoice_id=invoice.id,
+            pdf_bytes=pdf_bytes,
+            company_name=company_name,
+        )
+
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "message": f"Email sent to {to_email}"}
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
 
 
 # ============================================================
