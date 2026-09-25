@@ -1,4 +1,4 @@
-<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-14 (removed Print Preview) -->
+<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-25 (part not found warning) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1080,6 +1080,32 @@ document.addEventListener("input", function(e) {
             row.querySelector('input[name="price[]"]').value = part.price || 0;
             recalculateTax(row.querySelector('input[name="price[]"]'));
             updateTotals();
+            // Si la parte existe, limpiamos cualquier marca de error previa
+            e.target.classList.remove("invalid-cell");
+        }
+    }
+});
+
+// Validación al salir del campo (blur): si la parte no existe, avisar sin romper
+document.addEventListener("focusout", function(e) {
+    if (e.target && e.target.name === "product_name[]") {
+        const nags = (e.target.value || "").trim();
+
+        // Si está vacío, no hacemos nada (el usuario está agregando otro row)
+        if (!nags) {
+            e.target.classList.remove("invalid-cell");
+            return;
+        }
+
+        // Si no existe en el catálogo, marcar en rojo y avisar
+        if (!partsMap || !partsMap[nags]) {
+            e.target.classList.add("invalid-cell");
+            showMessage(
+                "⚠️ Part Not Found",
+                'Part "' + nags + '" is not in the catalog. Please ask a Supervisor or Manager to add it before continuing. You can also remove this row or try a different part number.'
+            );
+        } else {
+            e.target.classList.remove("invalid-cell");
         }
     }
 });

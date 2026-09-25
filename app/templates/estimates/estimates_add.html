@@ -1,4 +1,4 @@
-<!-- Path: app>templates>estimates>estimates_add.html | Updated: 2026-08-06 (fixed field names) -->
+<!-- Path: app>templates>estimates>estimates_add.html | Updated: 2026-09-25 (auto-delete invalid part rows) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -306,19 +306,16 @@
             <div class="d-flex justify-content-end align-items-center mb-2" style="gap: 10px;">
                 
                 <label class="small fw-bold text-muted">Labor:</label>
-                <!-- CAMBIADO: name="labor" en lugar de "labor_cost" -->
                 <input type="number" step="0.01" min="0" id="labor_cost" name="labor" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
                         value="{{ estimate.labor_cost if (estimate and estimate.labor_cost is not none) else (company.labor_cost if company else '79.99') }}" 
                         oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()">
 
                 <label class="small fw-bold text-muted">Mat:</label>
-                <!-- CAMBIADO: name="mat" en lugar de "materials_cost" -->
                 <input type="number" step="0.01" min="0" id="materials_cost" name="mat" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
                         value="{{ estimate.materials_cost if (estimate and estimate.materials_cost is not none) else (company.materials_cost if company else '19.99') }}" 
                         oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()">
 
                 <label class="small fw-bold text-muted">Misc:</label>
-                <!-- CAMBIADO: name="misc" en lugar de "misc_cost" -->
                 <input type="number" step="0.01" min="0" id="misc_cost" name="misc" class="form-control form-control-sm text-end" style="width:75px; height:26px; padding:2px 5px;" 
                         value="{{ estimate.misc_cost if (estimate and estimate.misc_cost is not none) else (company.misc_cost if company else '0.00') }}" 
                         oninput="if(this.value < 0) this.value = 0;" onchange="updateTotals()">
@@ -481,9 +478,51 @@ document.addEventListener("input", function(e) {
             recalculateTax(row.querySelector('input[name="price[]"]'));
             updateTotals();
             validateMainFields();
+            e.target.classList.remove("invalid-cell");
         }
     }
 });
+
+// Validación al salir del campo: si la parte no existe → borra la fila automáticamente
+document.addEventListener("focusout", function(e) {
+    if (e.target && e.target.name === "product_name[]") {
+        const nags = (e.target.value || "").trim();
+
+        if (!nags) {
+            e.target.classList.remove("invalid-cell");
+            return;
+        }
+
+        if (!partsMap || !partsMap[nags]) {
+            e.target.classList.add("invalid-cell");
+            showPartNotFound(nags);
+
+            const row = e.target.closest("tr");
+            setTimeout(() => {
+                if (row && row.parentNode) {
+                    row.remove();
+                    paginate();
+                    updateTotals();
+                    validateMainFields();
+                }
+            }, 1500);
+        } else {
+            e.target.classList.remove("invalid-cell");
+        }
+    }
+});
+
+function showPartNotFound(nags) {
+    document.getElementById("partNotFoundMessage").innerHTML =
+        'Part <strong>"' + nags + '"</strong> is not in the catalog.<br>' +
+        'Please ask a <strong>Supervisor or Manager</strong> to add it before continuing.<br><br>' +
+        '<em style="color:#666; font-size:0.8rem;">This row will be removed automatically.</em>';
+    document.getElementById("partNotFoundModal").style.display = "flex";
+}
+
+function closePartNotFoundModal() {
+    document.getElementById("partNotFoundModal").style.display = "none";
+}
 
 function paginate() {
     const rows = document.querySelectorAll("#partsBody tr");
@@ -576,7 +615,6 @@ document.getElementById('model-input').addEventListener('input', function() {
 });
 </script>
 
-<!-- MODAL APPOINTMENT (COMPACTO Y VISIBLE) -->
 <div id="appointmentModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 550px; max-width: 90%;">
 
@@ -851,13 +889,55 @@ function validateMainFields() {
 document.getElementById("estimate-form").addEventListener("input", validateMainFields);
 document.getElementById("estimate-form").addEventListener("change", validateMainFields);
 
-document.getElementById("estimate-form").addEventListener("submit", function(e) { 
+document.getElementById("estimate-form").addEventListener("submit", function(e) {
     if (!validateMainFields()) {
         e.preventDefault();
         alert("Please ensure all vehicle details, date, time, and service type are completed, and at least one service/part is added.");
+        return;
+    }
+
+    // Respaldo: eliminar filas con partes que no existen antes de enviar
+    const partInputs = document.querySelectorAll('input[name="product_name[]"]');
+    let removedCount = 0;
+
+    for (const inp of partInputs) {
+        const nags = (inp.value || "").trim();
+        if (!nags) continue;
+
+        if (!partsMap || !partsMap[nags]) {
+            const row = inp.closest("tr");
+            if (row && row.parentNode) {
+                row.remove();
+                removedCount++;
+            }
+        }
+    }
+
+    if (removedCount > 0) {
+        paginate();
+        updateTotals();
+
+        const remainingRows = document.querySelectorAll("#partsBody tr").length;
+        if (remainingRows === 0) {
+            e.preventDefault();
+            alert("No valid parts left. Please add at least one valid part before saving.");
+            validateMainFields();
+            return;
+        }
     }
 });
 </script>
+
+<!-- MODAL: PART NOT FOUND -->
+<div id="partNotFoundModal" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 480px; max-width: 90%; text-align: center;">
+        <h4 style="margin-bottom: 10px; color: #c0392b;">⚠️ Part Not Found</h4>
+        <p id="partNotFoundMessage" style="font-size: 0.85rem; color: #333; line-height: 1.5; margin-bottom: 15px;"></p>
+        <div style="display: flex; justify-content: center; gap: 10px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closePartNotFoundModal()">OK</button>
+        </div>
+    </div>
+</div>
 
 <div id="voidEstimateModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 400px; max-width: 90%;">
@@ -882,6 +962,12 @@ function openVoidModal() {
 function closeVoidModal() {
     document.getElementById("voidEstimateModal").style.display = "none";
 }
+
+document.getElementById("partNotFoundModal").addEventListener("click", function(e) {
+    if (e.target === this) {
+        closePartNotFoundModal();
+    }
+});
 </script>
 
 </body>

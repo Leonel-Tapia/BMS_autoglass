@@ -1,4 +1,4 @@
-# /app/routers/estimates/estimates_router.py | Updated: 2026-09-05
+# /app/routers/estimates/estimates_router.py | Updated: 2026-09-25 (safe numeric parsing)
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Path, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -18,6 +18,43 @@ router = APIRouter(
     prefix="/estimates",
     tags=["estimates"]
 )
+
+
+# ============================================================
+# HELPERS: convertir de forma segura strings vacios / invalidos
+# ============================================================
+def _safe_float(v, default: float = 0.0) -> float:
+    """Convierte a float sin romper si el valor viene vacio o invalido."""
+    try:
+        if v is None:
+            return default
+        s = str(v).strip()
+        if s == "":
+            return default
+        return float(s)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_int(v, default: int = 0) -> int:
+    """Convierte a int sin romper si el valor viene vacio o invalido."""
+    try:
+        if v is None:
+            return default
+        s = str(v).strip()
+        if s == "":
+            return default
+        return int(float(s))
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_str(v, default: str = "") -> str:
+    """Devuelve string limpio, sin None."""
+    if v is None:
+        return default
+    return str(v).strip()
+
 
 # ============================================================
 # 0. CHECK AVAILABILITY ENDPOINT (AJAX / MODAL)
@@ -155,52 +192,62 @@ def after_save_view(
 @router.post("/save")
 def save_estimate(
     request: Request,
-    customer_id: int = Form(...),
-    estimate_id: str = Form(...),
-    service_type: str = Form(...),
-    vehicle_year_id: int = Form(...),
+    customer_id: str = Form(...),
+    estimate_id: str = Form(""),
+    service_type: str = Form(""),
+    vehicle_year_id: str = Form(""),
     vehicle_vin: Optional[str] = Form(None),
     vehicle_make: Optional[str] = Form(None),
     vehicle_model: Optional[str] = Form(None),
     estimated_appointment_date: Optional[str] = Form(None),
     estimated_appointment_time: Optional[str] = Form(None),
-    labor: float = Form(0.0),
-    mat: float = Form(0.0),
-    misc: float = Form(0.0),
-    subtotal: float = Form(0.0),
-    tax_total: float = Form(0.0),
-    total_amount: float = Form(0.0),
+    labor: str = Form("0"),
+    mat: str = Form("0"),
+    misc: str = Form("0"),
+    subtotal: str = Form("0"),
+    tax_total: str = Form("0"),
+    total_amount: str = Form("0"),
     alt_full_name: Optional[str] = Form(None),
     alt_phone: Optional[str] = Form(None),
     alt_relationship: Optional[str] = Form(None),
     mobile_fee_override: Optional[str] = Form(None),
     origin: Optional[str] = Form(None),
     product_name: List[str] = Form(..., alias="product_name[]"),
-    description: List[str] = Form(..., alias="description[]"),
-    quantity: List[int] = Form(..., alias="quantity[]"),
-    cost: List[float] = Form(..., alias="cost[]"),
-    price: List[float] = Form(..., alias="price[]"),
+    description: List[str] = Form([], alias="description[]"),
+    quantity: List[str] = Form([], alias="quantity[]"),
+    cost: List[str] = Form([], alias="cost[]"),
+    price: List[str] = Form([], alias="price[]"),
     is_taxable: List[str] = Form(None, alias="is_taxable[]"),
-    tax_amount: List[float] = Form([], alias="tax_amount[]"),
+    tax_amount: List[str] = Form([], alias="tax_amount[]"),
     db: Session = Depends(get_db)
 ):
     current_username = request.session.get("username")
-    
+
+    # ===== Convertir campos numéricos de forma segura =====
+    customer_id_int = _safe_int(customer_id)
+    vehicle_year_id_int = _safe_int(vehicle_year_id)
+    labor_f = _safe_float(labor)
+    mat_f = _safe_float(mat)
+    misc_f = _safe_float(misc)
+    subtotal_f = _safe_float(subtotal)
+    tax_total_f = _safe_float(tax_total)
+    total_amount_f = _safe_float(total_amount)
+
     new_estimate = Estimate(
-        customer_id=customer_id,
-        service_type=service_type,
-        vehicle_year_id=vehicle_year_id,
+        customer_id=customer_id_int,
+        service_type=service_type or "Mobile",
+        vehicle_year_id=vehicle_year_id_int,
         vehicle_vin=vehicle_vin,
         vehicle_make=vehicle_make,
         vehicle_model=vehicle_model,
         estimated_appointment_date=estimated_appointment_date,
         estimated_appointment_time=estimated_appointment_time,
-        labor_cost=labor,
-        materials_cost=mat,
-        misc_cost=misc,
-        subtotal=subtotal,
-        tax=tax_total,
-        total=total_amount,
+        labor_cost=labor_f,
+        materials_cost=mat_f,
+        misc_cost=misc_f,
+        subtotal=subtotal_f,
+        tax=tax_total_f,
+        total=total_amount_f,
         alt_contact_name=alt_full_name,
         alt_contact_phone=alt_phone,
         alt_contact_relation=alt_relationship,
@@ -216,36 +263,38 @@ def save_estimate(
     tax_list = is_taxable if is_taxable else []
     
     # ============================================================
-    # NUEVO: FILTRAR FILAS VACÍAS - Ignorar filas sin product_name
+    # FILTRAR FILAS VACÍAS - Ignorar filas sin product_name
     # ============================================================
     for i in range(len(product_name)):
+        pname = _safe_str(product_name[i]) if i < len(product_name) else ""
+
         # Si el nombre del producto está vacío, saltar esta fila
-        if not product_name[i] or not product_name[i].strip():
+        if not pname:
             continue
-        
-        # Si no tiene precio o cantidad válida, saltar
-        if i >= len(price) or price[i] <= 0:
+
+        # Convertir valores numéricos de forma segura
+        qty_val = _safe_int(quantity[i] if i < len(quantity) else "1", default=1)
+        cost_val = _safe_float(cost[i] if i < len(cost) else "0")
+        price_val = _safe_float(price[i] if i < len(price) else "0")
+        tax_val = _safe_float(tax_amount[i] if i < len(tax_amount) else "0")
+
+        # Si no tiene precio, saltar
+        if price_val <= 0:
             continue
-        
+
         is_tax = "on" in str(tax_list[i]) if i < len(tax_list) else False
-        
-        # Asegurar que tenemos valores por defecto para campos vacíos
-        qty = quantity[i] if i < len(quantity) and quantity[i] > 0 else 1
-        cost_val = cost[i] if i < len(cost) else 0.0
-        price_val = price[i] if i < len(price) else 0.0
-        tax_val = tax_amount[i] if i < len(tax_amount) else 0.0
-        desc = description[i] if i < len(description) else ""
-        
+        desc = _safe_str(description[i]) if i < len(description) else ""
+
         new_detail = EstimateDetail(
             estimate_id=target_id,
-            product_name=product_name[i].strip(),
+            product_name=pname,
             description=desc,
-            quantity=qty,
+            quantity=qty_val if qty_val > 0 else 1,
             cost=cost_val,
             price=price_val,
             is_taxable=is_tax,
             tax_amount=tax_val,
-            part_number=product_name[i].strip(),
+            part_number=pname,
             supplier=None
         )
         db.add(new_detail)
@@ -267,50 +316,60 @@ def update_estimate(
     request: Request = None,
     origin: Optional[str] = Form(None),
     selected_date: Optional[str] = Form(None),
-    customer_id: int = Form(...),
+    customer_id: str = Form(...),
     service_type: str = Form("Mobile"),
-    vehicle_year_id: int = Form(...),
+    vehicle_year_id: str = Form(""),
     vehicle_vin: Optional[str] = Form(None),
     vehicle_make: Optional[str] = Form(None),
     vehicle_model: Optional[str] = Form(None),
     estimated_appointment_date: Optional[str] = Form(None),
     estimated_appointment_time: Optional[str] = Form(None),
-    labor: float = Form(0.0),
-    mat: float = Form(0.0),
-    misc: float = Form(0.0),
-    subtotal: float = Form(0.0),
-    tax_total: float = Form(0.0),
-    total_amount: float = Form(0.0),
+    labor: str = Form("0"),
+    mat: str = Form("0"),
+    misc: str = Form("0"),
+    subtotal: str = Form("0"),
+    tax_total: str = Form("0"),
+    total_amount: str = Form("0"),
     alt_full_name: Optional[str] = Form(None),
     alt_phone: Optional[str] = Form(None),
     alt_relationship: Optional[str] = Form(None),
     mobile_fee_override: Optional[str] = Form(None),
     product_name: List[str] = Form([], alias="product_name[]"),
     description: List[str] = Form([], alias="description[]"),
-    quantity: List[int] = Form([], alias="quantity[]"),
-    cost: List[float] = Form([], alias="cost[]"),
-    price: List[float] = Form([], alias="price[]"),
+    quantity: List[str] = Form([], alias="quantity[]"),
+    cost: List[str] = Form([], alias="cost[]"),
+    price: List[str] = Form([], alias="price[]"),
     is_taxable: List[str] = Form(None, alias="is_taxable[]"),
-    tax_amount: List[float] = Form([], alias="tax_amount[]"),
+    tax_amount: List[str] = Form([], alias="tax_amount[]"),
     db: Session = Depends(get_db)
 ):
     target_id = estimate_id
     est = db.query(Estimate).filter(Estimate.id == target_id).first()
+
+    # ===== Convertir campos numéricos de forma segura =====
+    customer_id_int = _safe_int(customer_id)
+    vehicle_year_id_int = _safe_int(vehicle_year_id)
+    labor_f = _safe_float(labor)
+    mat_f = _safe_float(mat)
+    misc_f = _safe_float(misc)
+    subtotal_f = _safe_float(subtotal)
+    tax_total_f = _safe_float(tax_total)
+    total_amount_f = _safe_float(total_amount)
     
     if est:
         est.service_type = service_type
-        est.vehicle_year_id = vehicle_year_id
+        est.vehicle_year_id = vehicle_year_id_int
         est.vehicle_vin = vehicle_vin
         est.vehicle_make = vehicle_make
         est.vehicle_model = vehicle_model
         est.estimated_appointment_date = estimated_appointment_date
         est.estimated_appointment_time = estimated_appointment_time
-        est.labor_cost = labor
-        est.materials_cost = mat
-        est.misc_cost = misc
-        est.subtotal = subtotal
-        est.tax = tax_total
-        est.total = total_amount
+        est.labor_cost = labor_f
+        est.materials_cost = mat_f
+        est.misc_cost = misc_f
+        est.subtotal = subtotal_f
+        est.tax = tax_total_f
+        est.total = total_amount_f
         est.alt_contact_name = alt_full_name
         est.alt_contact_phone = alt_phone
         est.alt_contact_relation = alt_relationship
@@ -322,36 +381,38 @@ def update_estimate(
     tax_list = is_taxable if is_taxable else []
     
     # ============================================================
-    # NUEVO: FILTRAR FILAS VACÍAS - Ignorar filas sin product_name
+    # FILTRAR FILAS VACÍAS - Ignorar filas sin product_name
     # ============================================================
     for i in range(len(product_name)):
+        pname = _safe_str(product_name[i]) if i < len(product_name) else ""
+
         # Si el nombre del producto está vacío, saltar esta fila
-        if not product_name[i] or not product_name[i].strip():
+        if not pname:
             continue
-        
-        # Si no tiene precio o cantidad válida, saltar
-        if i >= len(price) or price[i] <= 0:
+
+        # Convertir valores numéricos de forma segura
+        qty_val = _safe_int(quantity[i] if i < len(quantity) else "1", default=1)
+        cost_val = _safe_float(cost[i] if i < len(cost) else "0")
+        price_val = _safe_float(price[i] if i < len(price) else "0")
+        tax_val = _safe_float(tax_amount[i] if i < len(tax_amount) else "0")
+
+        # Si no tiene precio, saltar
+        if price_val <= 0:
             continue
-        
+
         is_tax = "on" in str(tax_list[i]) if i < len(tax_list) else False
-        
-        # Asegurar que tenemos valores por defecto para campos vacíos
-        qty = quantity[i] if i < len(quantity) and quantity[i] > 0 else 1
-        cost_val = cost[i] if i < len(cost) else 0.0
-        price_val = price[i] if i < len(price) else 0.0
-        tax_val = tax_amount[i] if i < len(tax_amount) else 0.0
-        desc = description[i] if i < len(description) else ""
-        
+        desc = _safe_str(description[i]) if i < len(description) else ""
+
         new_detail = EstimateDetail(
             estimate_id=target_id,
-            product_name=product_name[i].strip(),
+            product_name=pname,
             description=desc,
-            quantity=qty,
+            quantity=qty_val if qty_val > 0 else 1,
             cost=cost_val,
             price=price_val,
             is_taxable=is_tax,
             tax_amount=tax_val,
-            part_number=product_name[i].strip(),
+            part_number=pname,
             supplier=None
         )
         db.add(new_detail)
