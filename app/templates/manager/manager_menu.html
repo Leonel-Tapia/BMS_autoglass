@@ -1,4 +1,4 @@
-<!-- /templates/manager/manager_menu.html - Updated 2026-09-14 (rediseño) -->
+<!-- /templates/manager/manager_menu.html - Updated 2026-09-26 (insurance card) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,7 +38,6 @@
             font-size: 22px;
         }
 
-        /* CAMBIO 2026-09-14: Back button a la derecha */
         .back-btn {
             background-color: rgba(255,255,255,0.15);
             color: white;
@@ -140,6 +139,12 @@
         .card-activity .card-btn { background-color: #fd7e14; }
         .card-activity .card-btn:hover { background-color: #d96809; }
 
+        /* NUEVO: Insurance (morado) */
+        .card-insurance { border-top-color: #8b5cf6; }
+        .card-insurance .card-icon { color: #8b5cf6; }
+        .card-insurance .card-btn { background-color: #8b5cf6; }
+        .card-insurance .card-btn:hover { background-color: #6d28d9; }
+
         .card-disabled { border-top-color: #adb5bd; opacity: 0.7; }
         .card-disabled .card-icon { color: #adb5bd; }
         .card-disabled .card-btn {
@@ -158,7 +163,6 @@
 </head>
 <body>
 
-<!-- CAMBIO 2026-09-14: Header con título a la izquierda y Back a la derecha -->
 <div class="header">
     <div class="title">
         <i class="fas fa-cogs"></i>
@@ -223,6 +227,15 @@
             <div class="card-title">Activity Concepts</div>
         </div>
         <button class="card-btn" onclick="window.location.href='/manager/activities_concepts'">Open</button>
+    </div>
+
+    <!-- NUEVO: Insurance Companies -->
+    <div class="card card-insurance">
+        <div>
+            <div class="card-icon"><i class="fas fa-building-shield"></i></div>
+            <div class="card-title">Insurance Companies</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/insurance/companies'">Open</button>
     </div>
 
 </div>

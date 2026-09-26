@@ -1,9 +1,9 @@
-# RUTA: app/main.py | ACTUALIZADO: 2026-09-16 (invoice_glass_router registered)
+# RUTA: app/main.py | ACTUALIZADO: 2026-09-26 (insurance_companies_router registered)
 # DESCRIPCIÓN: Punto de entrada principal de BMS Autoglass - Registro de módulos
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware   # 🔥 AGREGADO
+from starlette.middleware.sessions import SessionMiddleware
 
 # Importaciones de routers existentes
 from app.routers.users import users_routers, auth_login
@@ -64,6 +64,9 @@ from app.routers.invoices.technician_routes import router as technician_router
 # INVOICE GLASSES (InvoiceGlass Module)
 from app.routers.invoices.invoice_glass_router import router as invoice_glass_router
 
+# NUEVO: Insurance Companies Router
+from app.routers.insurance.insurance_companies_router import router as insurance_companies_router
+
 
 app = FastAPI(title="BMS Autoglass System")
 
@@ -96,7 +99,7 @@ app.include_router(company_router.router)
 app.include_router(callcenter_menu_router)
 app.include_router(callcenter_search_router)
 app.include_router(callcenter_lookup_router)
-app.include_router(estimates_callcenter_router)  # 🔥 NUEVA RUTA INTEGRADA
+app.include_router(estimates_callcenter_router)
 
 # 6. Inventory System
 app.include_router(inventory.router)
@@ -154,6 +157,9 @@ app.include_router(purchase_router.router)
 
 # 9. Receiving System
 app.include_router(receiving_router)
+
+# 10. Insurance Companies System
+app.include_router(insurance_companies_router)
 
 
 @app.get("/")

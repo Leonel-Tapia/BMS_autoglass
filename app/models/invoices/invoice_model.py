@@ -1,4 +1,4 @@
-# /app/models/invoices/invoice_model.py | Updated: 2026-09-25 (warranty fields)
+# /app/models/invoices/invoice_model.py | Updated: 2026-09-26 (insurance fields)
 from sqlalchemy import Column, Integer, String, ForeignKey, DECIMAL, Date, TIMESTAMP, Text, Boolean, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -77,6 +77,17 @@ class Invoice(Base):
     warranty_end_date = Column(Date, nullable=True)
     warranty_notes = Column(Text, nullable=True)
 
+    # --- CAMPOS DE ASEGURADORA (INSURANCE) ---
+    insurance_company_id = Column(Integer, ForeignKey("insurance_companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    insurance_claim_number = Column(String(100), nullable=True)
+    insurance_adjuster_name = Column(String(200), nullable=True)
+    insurance_adjuster_phone = Column(String(50), nullable=True)
+    insurance_adjuster_email = Column(String(200), nullable=True)
+    insurance_claim_date = Column(Date, nullable=True)
+    insurance_amount = Column(DECIMAL(10, 2), default=0.00)
+    insurance_status = Column(String(30), nullable=True)
+    customer_amount = Column(DECIMAL(10, 2), default=0.00)
+
     # Relaciones
     technician = relationship("User", foreign_keys=[technician_id])
     items = relationship("InvoiceItem", backref="invoice", cascade="all, delete-orphan")
@@ -88,6 +99,9 @@ class Invoice(Base):
         remote_side=[id],
         foreign_keys=[warranty_reference_invoice_id]
     )
+
+    # Relación con aseguradora
+    insurance_company = relationship("InsuranceCompany", foreign_keys=[insurance_company_id])
 
 
 class InvoiceItem(Base):
