@@ -1,4 +1,4 @@
-# /app/routers/invoices/invoices_router.py | Updated: 2026-09-25 (send invoice by email)
+# /app/routers/invoices/invoices_router.py | Updated: 2026-09-26 (warranty fields)
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Path, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from sqlalchemy.orm import Session, joinedload
@@ -228,6 +228,11 @@ def update_invoice(
     price: List[float] = Form([], alias="price[]"),
     is_taxable: List[str] = Form(None, alias="is_taxable[]"),
     tax_amount: List[float] = Form([], alias="tax_amount[]"),
+    is_warranty: Optional[str] = Form(None),
+    warranty_reference_invoice_id: Optional[str] = Form(None),
+    warranty_start_date: Optional[str] = Form(None),
+    warranty_end_date: Optional[str] = Form(None),
+    warranty_notes: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     target_id = invoice_id
@@ -261,6 +266,46 @@ def update_invoice(
         # FIX 2026-09-19: NO sobreescribir technician_id con NULL
         if technician_id is not None:
             inv.technician_id = technician_id
+
+        # ===== CAMPOS DE GARANTÍA (solo admin/manager pueden modificar) =====
+        user_role = (request.session.get("role", "") if request else "").strip().lower()
+        if user_role in ["admin", "manager"]:
+            # is_warranty: checkbox → "on", "true" o "1"
+            inv.is_warranty = (str(is_warranty).lower() in ["on", "true", "1"])
+
+            # warranty_reference_invoice_id: int o None
+            if warranty_reference_invoice_id and str(warranty_reference_invoice_id).strip():
+                try:
+                    ref_id = int(warranty_reference_invoice_id)
+                    if ref_id == target_id:
+                        ref_id = None
+                    inv.warranty_reference_invoice_id = ref_id
+                except (ValueError, TypeError):
+                    inv.warranty_reference_invoice_id = None
+            else:
+                inv.warranty_reference_invoice_id = None
+
+            # warranty_start_date: date o None
+            if warranty_start_date and str(warranty_start_date).strip():
+                try:
+                    inv.warranty_start_date = datetime.strptime(warranty_start_date, "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    inv.warranty_start_date = None
+            else:
+                inv.warranty_start_date = None
+
+            # warranty_end_date: date o None
+            if warranty_end_date and str(warranty_end_date).strip():
+                try:
+                    inv.warranty_end_date = datetime.strptime(warranty_end_date, "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    inv.warranty_end_date = None
+            else:
+                inv.warranty_end_date = None
+
+            # warranty_notes: texto libre
+            inv.warranty_notes = (warranty_notes or "").strip() or None
+        # ============================================================
         
         db.query(InvoiceItem).filter(InvoiceItem.invoice_id == target_id).delete()
         db.commit()

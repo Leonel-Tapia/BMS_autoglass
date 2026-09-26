@@ -1,4 +1,4 @@
-# /app/models/invoices/invoice_model.py | Updated: 2026-09-04
+# /app/models/invoices/invoice_model.py | Updated: 2026-09-25 (warranty fields)
 from sqlalchemy import Column, Integer, String, ForeignKey, DECIMAL, Date, TIMESTAMP, Text, Boolean, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -65,15 +65,29 @@ class Invoice(Base):
     payment_amount2 = Column(DECIMAL(12, 2), default=0.00)
     payment_status = Column(String(20), default="PENDING")
     
-    # --- TÉCNICO ASIGNADO (NUEVO) ---
+    # --- TÉCNICO ASIGNADO ---
     technician_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     notes = Column(Text)
+
+    # --- CAMPOS DE GARANTÍA (WARRANTY) ---
+    is_warranty = Column(Boolean, default=False, nullable=False)
+    warranty_reference_invoice_id = Column(Integer, ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True)
+    warranty_start_date = Column(Date, nullable=True)
+    warranty_end_date = Column(Date, nullable=True)
+    warranty_notes = Column(Text, nullable=True)
 
     # Relaciones
     technician = relationship("User", foreign_keys=[technician_id])
     items = relationship("InvoiceItem", backref="invoice", cascade="all, delete-orphan")
     estimate = relationship("Estimate", backref="invoice", uselist=False)
+
+    # Relación self-referencial: invoice actual → invoice original (si es garantía)
+    warranty_reference_invoice = relationship(
+        "Invoice",
+        remote_side=[id],
+        foreign_keys=[warranty_reference_invoice_id]
+    )
 
 
 class InvoiceItem(Base):

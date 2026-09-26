@@ -1,4 +1,4 @@
-<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-25 (part not found warning) -->
+<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-26 (warranty fields single line) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,6 +11,60 @@
         .top-header { background: #0d6e6e; color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
         .section-box { background: white; padding: 6px 8px 4px 8px; border-radius: 4px; margin-bottom: 4px; border: 1px solid #0d6e6e; }
         .section-title { color: #0d6e6e; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid #a8d5d5; margin-bottom: 6px; padding-bottom: 2px; }
+
+        /* ===== WARRANTY SECTION ===== */
+        .warranty-box {
+            background: white;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            border: 2px solid #8b5cf6;
+        }
+        .warranty-box .section-title {
+            color: #8b5cf6;
+            border-bottom: 1px solid #ddd6fe;
+        }
+        .warranty-badge-header {
+            background-color: #8b5cf6;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .warranty-fields {
+            background: #faf5ff;
+            border: 1px dashed #8b5cf6;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 6px;
+        }
+        .warranty-fields label {
+            font-size: 0.7rem;
+            color: #6d28d9;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .warranty-fields input {
+            font-size: 0.8rem;
+        }
+        .warranty-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #6d28d9;
+            cursor: pointer;
+            user-select: none;
+        }
+        .warranty-check input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #8b5cf6;
+        }
+        /* ============================= */
 
         #vehicle-details .section-title { margin-bottom: 0; }
         #vehicle-details label, #vehicle-details input, #vehicle-details .row { margin: 0 !important; padding: 0 !important; height: auto !important; }
@@ -269,6 +323,7 @@
 
     <!-- Modo solo lectura para no-admin -->
     {% set readonly = (invoice.status in ['PAID', 'VOID', 'CANCELLED', 'NO_SHOW'] and user_role != 'admin') %}
+    {% set can_edit_warranty = (user_role in ['admin', 'manager']) and not readonly %}
 
     <!-- HEADER -->
     <div class="top-header d-flex justify-content-between align-items-center">
@@ -278,6 +333,9 @@
                 <span class="badge {% if invoice.status == 'PAID' %}badge-status-paid{% elif invoice.status == 'VOID' %}badge-status-void{% elif invoice.status == 'CANCELLED' %}badge-status-cancelled{% elif invoice.status == 'NO_SHOW' %}badge-status-no-show{% else %}badge-status-pending{% endif %}">
                     Status: {{ invoice.status or 'PENDING' }}
                 </span>
+                {% if invoice.is_warranty %}
+                    <span class="warranty-badge-header">🛡️ WARRANTY</span>
+                {% endif %}
                 {% if readonly %}
                     <span class="badge badge-readonly">🔒 Read-Only Mode</span>
                 {% endif %}
@@ -490,6 +548,81 @@
             </div>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- SECCIÓN: WARRANTY INFORMATION (admin/manager only) -->
+        <!-- ============================================================ -->
+        {% if can_edit_warranty %}
+        <div class="warranty-box" id="warranty-section">
+            <div class="section-title">🛡️ Warranty Information</div>
+
+            <div class="d-flex align-items-center" style="gap: 15px; flex-wrap: wrap;">
+                <label class="warranty-check">
+                    <input type="checkbox" name="is_warranty" id="warranty_checkbox"
+                           {% if invoice.is_warranty %}checked{% endif %}
+                           onchange="toggleWarrantyFields()">
+                    ⚠️ This invoice is a Warranty Replacement
+                </label>
+                <span id="warranty_status_label" style="font-size: 0.8rem; color: #6d28d9; font-weight: bold;">
+                    {% if invoice.is_warranty %}Marked as WARRANTY{% else %}(not a warranty){% endif %}
+                </span>
+            </div>
+
+            <div class="warranty-fields" id="warranty_fields" style="{% if not invoice.is_warranty %}display: none;{% endif %}">
+                <div class="d-flex align-items-end" style="gap: 8px; flex-wrap: nowrap;">
+                    <div style="flex: 0 0 130px;">
+                        <label for="warranty_reference_invoice_id" style="margin-bottom: 2px;">Original Invoice #</label>
+                        <input type="number" min="1" step="1"
+                               name="warranty_reference_invoice_id"
+                               id="warranty_reference_invoice_id"
+                               class="form-control form-control-sm"
+                               placeholder="e.g. 50"
+                               value="{{ invoice.warranty_reference_invoice_id or '' }}">
+                    </div>
+                    <div style="flex: 0 0 160px;">
+                        <label for="warranty_start_date" style="margin-bottom: 2px;">Warranty Start</label>
+                        <input type="date"
+                               name="warranty_start_date"
+                               id="warranty_start_date"
+                               class="form-control form-control-sm"
+                               value="{{ invoice.warranty_start_date.strftime('%Y-%m-%d') if invoice.warranty_start_date else '' }}">
+                    </div>
+                    <div style="flex: 0 0 160px;">
+                        <label for="warranty_end_date" style="margin-bottom: 2px;">Warranty End</label>
+                        <input type="date"
+                               name="warranty_end_date"
+                               id="warranty_end_date"
+                               class="form-control form-control-sm"
+                               value="{{ invoice.warranty_end_date.strftime('%Y-%m-%d') if invoice.warranty_end_date else '' }}">
+                    </div>
+                    <div style="flex: 1 1 auto; min-width: 200px;">
+                        <label for="warranty_notes" style="margin-bottom: 2px;">Warranty Notes</label>
+                        <input type="text"
+                               name="warranty_notes"
+                               id="warranty_notes"
+                               class="form-control form-control-sm"
+                               placeholder="Reason for warranty, details, etc..."
+                               value="{{ invoice.warranty_notes or '' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif invoice.is_warranty %}
+        <!-- Read-only display for non-admin users when it IS a warranty -->
+        <div class="warranty-box">
+            <div class="section-title">🛡️ Warranty Information (Read-Only)</div>
+            <div class="row g-2" style="font-size: 0.85rem;">
+                <div class="col-md-3"><strong>Status:</strong> <span style="color:#6d28d9;">WARRANTY</span></div>
+                <div class="col-md-3"><strong>Original Invoice #:</strong> {{ invoice.warranty_reference_invoice_id or '—' }}</div>
+                <div class="col-md-3"><strong>Start:</strong> {{ invoice.warranty_start_date.strftime('%Y-%m-%d') if invoice.warranty_start_date else '—' }}</div>
+                <div class="col-md-3"><strong>End:</strong> {{ invoice.warranty_end_date.strftime('%Y-%m-%d') if invoice.warranty_end_date else '—' }}</div>
+                {% if invoice.warranty_notes %}
+                <div class="col-12 mt-1"><strong>Notes:</strong> {{ invoice.warranty_notes }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <!-- ============================================================ -->
+
         <!-- SECCIÓN INFERIOR: ITEMS -->
         <div class="section-box">
             <div class="section-title">
@@ -698,7 +831,6 @@
 
             <div class="d-flex justify-content-between align-items-center" style="gap: 15px;">
                 <div class="d-flex align-items-center" style="gap: 8px;">
-                    <!-- CAMBIO 2026-09-14: botón Print eliminado -->
                     <button type="button" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size: 0.75rem;" onclick="downloadPDF()">
                         ⬇️ Download PDF
                     </button>
@@ -1080,24 +1212,20 @@ document.addEventListener("input", function(e) {
             row.querySelector('input[name="price[]"]').value = part.price || 0;
             recalculateTax(row.querySelector('input[name="price[]"]'));
             updateTotals();
-            // Si la parte existe, limpiamos cualquier marca de error previa
             e.target.classList.remove("invalid-cell");
         }
     }
 });
 
-// Validación al salir del campo (blur): si la parte no existe, avisar sin romper
 document.addEventListener("focusout", function(e) {
     if (e.target && e.target.name === "product_name[]") {
         const nags = (e.target.value || "").trim();
 
-        // Si está vacío, no hacemos nada (el usuario está agregando otro row)
         if (!nags) {
             e.target.classList.remove("invalid-cell");
             return;
         }
 
-        // Si no existe en el catálogo, marcar en rojo y avisar
         if (!partsMap || !partsMap[nags]) {
             e.target.classList.add("invalid-cell");
             showMessage(
@@ -1430,8 +1558,6 @@ function closeVoidModal() {
     document.getElementById("voidInvoiceModal").style.display = "none";
 }
 
-// CAMBIO 2026-09-14: función openPrintPreview() eliminada (Print deprecado)
-
 function openActivityModal() {
     loadConcepts();
     document.getElementById('activity_concept_id').value = '';
@@ -1509,6 +1635,28 @@ async function addActivity() {
         }
     } catch (error) {
         alert('Network error: ' + error.message);
+    }
+}
+
+// ============================================================
+// WARRANTY TOGGLE
+// ============================================================
+function toggleWarrantyFields() {
+    const checkbox = document.getElementById('warranty_checkbox');
+    const fields = document.getElementById('warranty_fields');
+    const label = document.getElementById('warranty_status_label');
+    const startDate = document.getElementById('warranty_start_date');
+
+    if (checkbox.checked) {
+        fields.style.display = 'block';
+        label.textContent = 'Marked as WARRANTY';
+        if (startDate && !startDate.value) {
+            const today = new Date().toISOString().split('T')[0];
+            startDate.value = today;
+        }
+    } else {
+        fields.style.display = 'none';
+        label.textContent = '(not a warranty)';
     }
 }
 </script>
