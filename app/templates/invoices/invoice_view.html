@@ -1,4 +1,4 @@
-<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-26 (warranty fields single line) -->
+<!-- Path: app/templates/invoices/invoice_view.html | Updated: 2026-09-26 (insurance section) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,6 +64,51 @@
             cursor: pointer;
             accent-color: #8b5cf6;
         }
+        /* ============================= */
+
+        /* ===== INSURANCE SECTION ===== */
+        .insurance-box {
+            background: white;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            border: 2px solid #0078D4;
+        }
+        .insurance-box .section-title {
+            color: #0078D4;
+            border-bottom: 1px solid #b6d4fe;
+        }
+        .insurance-badge-header {
+            background-color: #0078D4;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .insurance-fields {
+            background: #f0f8ff;
+            border: 1px dashed #0078D4;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 6px;
+        }
+        .insurance-fields label {
+            font-size: 0.7rem;
+            color: #005fa3;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .insurance-fields input,
+        .insurance-fields select,
+        .insurance-fields textarea {
+            font-size: 0.8rem;
+        }
+        .insurance-status-PENDING { color: #f57f17; font-weight: bold; }
+        .insurance-status-SUBMITTED { color: #0078D4; font-weight: bold; }
+        .insurance-status-APPROVED { color: #28a745; font-weight: bold; }
+        .insurance-status-PAID { color: #1b5e20; font-weight: bold; }
+        .insurance-status-REJECTED { color: #d32f2f; font-weight: bold; }
         /* ============================= */
 
         #vehicle-details .section-title { margin-bottom: 0; }
@@ -321,11 +366,10 @@
 <body>
 <div class="container-fluid mt-2">
 
-    <!-- Modo solo lectura para no-admin -->
     {% set readonly = (invoice.status in ['PAID', 'VOID', 'CANCELLED', 'NO_SHOW'] and user_role != 'admin') %}
     {% set can_edit_warranty = (user_role in ['admin', 'manager']) and not readonly %}
+    {% set can_edit_insurance = (user_role in ['admin', 'manager']) and not readonly %}
 
-    <!-- HEADER -->
     <div class="top-header d-flex justify-content-between align-items-center">
         <div>
             <h4 class="mb-0 d-flex align-items-center" style="gap: 15px; flex-wrap: wrap;">
@@ -335,6 +379,9 @@
                 </span>
                 {% if invoice.is_warranty %}
                     <span class="warranty-badge-header">🛡️ WARRANTY</span>
+                {% endif %}
+                {% if invoice.insurance_company_id %}
+                    <span class="insurance-badge-header">🏢 INSURANCE</span>
                 {% endif %}
                 {% if readonly %}
                     <span class="badge badge-readonly">🔒 Read-Only Mode</span>
@@ -363,7 +410,6 @@
         </div>
     </div>
 
-    <!-- FORMULARIO PRINCIPAL -->
     <form id="invoice-form" action="/invoices/update/{{ invoice.id }}" method="POST" class="{% if readonly %}readonly-mode{% endif %}">
         <input type="hidden" name="invoice_id" value="{{ invoice.id }}">
         <input type="hidden" name="customer_id" value="{{ customer.id if customer else invoice.customer_id }}">
@@ -378,7 +424,6 @@
         <input type="hidden" name="alt_phone" id="alt_phone" value="{{ invoice.alt_contact_phone or '' }}">
         <input type="hidden" name="alt_relationship" id="alt_relationship" value="{{ invoice.alt_contact_relation or '' }}">
 
-        <!-- BARRA DE SELECCIÓN DE TÉCNICO -->
         <div class="row g-2 mb-2">
             <div class="col-md-6 offset-md-6">
                 <div class="d-flex align-items-center justify-content-end" style="gap: 10px; background: #f0f8ff; padding: 6px 12px; border-radius: 4px; border: 1px solid #0d6e6e;">
@@ -398,7 +443,6 @@
             </div>
         </div>
 
-        <!-- SECCIÓN SUPERIOR: DATOS GENERALES -->
         <div class="section-box">
             <div class="section-title">Invoice Information</div>
             <div class="info-grid">
@@ -548,9 +592,7 @@
             </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN: WARRANTY INFORMATION (admin/manager only) -->
-        <!-- ============================================================ -->
+        <!-- WARRANTY SECTION -->
         {% if can_edit_warranty %}
         <div class="warranty-box" id="warranty-section">
             <div class="section-title">🛡️ Warranty Information</div>
@@ -607,7 +649,6 @@
             </div>
         </div>
         {% elif invoice.is_warranty %}
-        <!-- Read-only display for non-admin users when it IS a warranty -->
         <div class="warranty-box">
             <div class="section-title">🛡️ Warranty Information (Read-Only)</div>
             <div class="row g-2" style="font-size: 0.85rem;">
@@ -621,9 +662,135 @@
             </div>
         </div>
         {% endif %}
-        <!-- ============================================================ -->
 
-        <!-- SECCIÓN INFERIOR: ITEMS -->
+        <!-- INSURANCE SECTION -->
+        {% if can_edit_insurance %}
+        <div class="insurance-box" id="insurance-section">
+            <div class="section-title">🏢 Insurance Information</div>
+
+            <div class="d-flex align-items-center" style="gap: 15px; flex-wrap: wrap;">
+                <label class="warranty-check" style="color: #0078D4;">
+                    <input type="checkbox" name="has_insurance" id="insurance_checkbox"
+                           {% if invoice.insurance_company_id %}checked{% endif %}
+                           onchange="toggleInsuranceFields()">
+                    🏢 This invoice is covered by insurance
+                </label>
+                <span id="insurance_status_label" style="font-size: 0.8rem; color: #0078D4; font-weight: bold;">
+                    {% if invoice.insurance_company_id %}Marked as INSURANCE{% else %}(no insurance){% endif %}
+                </span>
+            </div>
+
+            <div class="insurance-fields" id="insurance_fields" style="{% if not invoice.insurance_company_id %}display: none;{% endif %}">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label for="insurance_company_id">Insurance Company *</label>
+                        <select name="insurance_company_id" id="insurance_company_id" class="form-control form-control-sm">
+                            <option value="">-- Select --</option>
+                            {% if invoice.insurance_company %}
+                                <option value="{{ invoice.insurance_company.id }}" selected>
+                                    {{ invoice.insurance_company.name }}
+                                </option>
+                            {% endif %}
+                        </select>
+                        <small class="text-muted" style="font-size:0.65rem;">
+                            <a href="/insurance/companies/add?return_url=/invoices/view/{{ invoice.id }}" target="_blank">
+                                + Add new insurance company
+                            </a>
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="insurance_claim_number">Claim #</label>
+                        <input type="text" name="insurance_claim_number" id="insurance_claim_number"
+                               class="form-control form-control-sm" maxlength="100"
+                               placeholder="e.g. ABC-12345"
+                               value="{{ invoice.insurance_claim_number or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="insurance_claim_date">Claim Date</label>
+                        <input type="date" name="insurance_claim_date" id="insurance_claim_date"
+                               class="form-control form-control-sm"
+                               value="{{ invoice.insurance_claim_date.strftime('%Y-%m-%d') if invoice.insurance_claim_date else '' }}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="insurance_adjuster_name">Adjuster Name</label>
+                        <input type="text" name="insurance_adjuster_name" id="insurance_adjuster_name"
+                               class="form-control form-control-sm" maxlength="200"
+                               value="{{ invoice.insurance_adjuster_name or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="insurance_adjuster_phone">Adjuster Phone</label>
+                        <input type="text" name="insurance_adjuster_phone" id="insurance_adjuster_phone"
+                               class="form-control form-control-sm" maxlength="50"
+                               value="{{ invoice.insurance_adjuster_phone or '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="insurance_adjuster_email">Adjuster Email</label>
+                        <input type="email" name="insurance_adjuster_email" id="insurance_adjuster_email"
+                               class="form-control form-control-sm" maxlength="200"
+                               value="{{ invoice.insurance_adjuster_email or '' }}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="insurance_amount">Insurance Amount ($)</label>
+                        <input type="number" step="0.01" min="0" name="insurance_amount" id="insurance_amount"
+                               class="form-control form-control-sm text-end"
+                               value="{{ '%.2f'|format(invoice.insurance_amount or 0) }}"
+                               oninput="autoCalcCustomerAmount()">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="customer_amount">Customer Amount ($)</label>
+                        <input type="number" step="0.01" min="0" name="customer_amount" id="customer_amount"
+                               class="form-control form-control-sm text-end"
+                               value="{{ '%.2f'|format(invoice.customer_amount or 0) }}"
+                               oninput="validateInsuranceAmounts()">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="insurance_status">Claim Status</label>
+                        <select name="insurance_status" id="insurance_status" class="form-control form-control-sm">
+                            <option value="">-- Select --</option>
+                            <option value="PENDING" {% if invoice.insurance_status == 'PENDING' %}selected{% endif %}>PENDING</option>
+                            <option value="SUBMITTED" {% if invoice.insurance_status == 'SUBMITTED' %}selected{% endif %}>SUBMITTED</option>
+                            <option value="APPROVED" {% if invoice.insurance_status == 'APPROVED' %}selected{% endif %}>APPROVED</option>
+                            <option value="PAID" {% if invoice.insurance_status == 'PAID' %}selected{% endif %}>PAID</option>
+                            <option value="REJECTED" {% if invoice.insurance_status == 'REJECTED' %}selected{% endif %}>REJECTED</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Total Coverage</label>
+                        <div style="padding-top: 4px; font-size: 0.85rem;">
+                            <strong>Invoice Total:</strong> ${{ "%.2f"|format(invoice.total or 0) }}<br>
+                            <span id="insurance_coverage_label" style="font-size: 0.75rem; color: #6c757d;">
+                                (Insurance + Customer amounts should equal total)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif invoice.insurance_company_id %}
+        <div class="insurance-box">
+            <div class="section-title">🏢 Insurance Information (Read-Only)</div>
+            <div class="row g-2" style="font-size: 0.85rem;">
+                <div class="col-md-3"><strong>Company:</strong> {{ invoice.insurance_company.name if invoice.insurance_company else '—' }}</div>
+                <div class="col-md-3"><strong>Claim #:</strong> {{ invoice.insurance_claim_number or '—' }}</div>
+                <div class="col-md-3"><strong>Status:</strong> <span class="insurance-status-{{ invoice.insurance_status or 'PENDING' }}">{{ invoice.insurance_status or '—' }}</span></div>
+                <div class="col-md-3"><strong>Insurance:</strong> ${{ "%.2f"|format(invoice.insurance_amount or 0) }}</div>
+                <div class="col-md-3"><strong>Customer:</strong> ${{ "%.2f"|format(invoice.customer_amount or 0) }}</div>
+                {% if invoice.insurance_adjuster_name %}
+                <div class="col-md-3"><strong>Adjuster:</strong> {{ invoice.insurance_adjuster_name }}</div>
+                {% endif %}
+                {% if invoice.insurance_adjuster_phone %}
+                <div class="col-md-3"><strong>Phone:</strong> {{ invoice.insurance_adjuster_phone }}</div>
+                {% endif %}
+                {% if invoice.insurance_claim_date %}
+                <div class="col-md-3"><strong>Claim Date:</strong> {{ invoice.insurance_claim_date.strftime('%Y-%m-%d') }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- SECCIÓN ITEMS -->
         <div class="section-box">
             <div class="section-title">
                 Invoice Items — Page <span id="page-number">1</span>
@@ -663,9 +830,6 @@
             <button type="button" class="btn btn-sm btn-info text-dark fw-bold mb-2" onclick="addPartRow()" {% if readonly %}disabled{% endif %}>Add Part</button>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN: PAYMENT INFORMATION -->
-        <!-- ============================================================ -->
         <div class="section-box" id="payment-section">
             <div class="section-title d-flex justify-content-between align-items-center">
                 <span>💰 Payment Information</span>
@@ -792,9 +956,7 @@
                 </table>
             </div>
         </div>
-        <!-- FIN SECCIÓN DE PAGOS -->
 
-        <!-- FOOTER FIJO -->
         <div id="footer-fixed" style="
             position: fixed;
             bottom: 0;
@@ -893,7 +1055,6 @@
     </form>
 </div>
 
-<!-- DATALISTS -->
 <datalist id="parts-list"></datalist>
 
 <!-- MODAL ALT CUSTOMER -->
@@ -958,7 +1119,7 @@
     </div>
 </div>
 
-<!-- MODAL PARA RECHAZO/BOUNCE DE PAGO -->
+<!-- MODAL RECHAZO PAGO -->
 <div id="rejectPaymentModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 450px; max-width: 90%;">
         <h4 class="mb-3 text-danger text-center" id="reject-modal-title">Reject Payment</h4>
@@ -979,7 +1140,7 @@
     </div>
 </div>
 
-<!-- MODAL PARA MENSAJES -->
+<!-- MODAL MENSAJES -->
 <div id="messageModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 350px; max-width: 90%;">
         <h5 id="message-title" class="text-center"></h5>
@@ -990,7 +1151,7 @@
     </div>
 </div>
 
-<!-- MODAL PARA ANULAR (VOID) INVOICE -->
+<!-- MODAL VOID -->
 <div id="voidInvoiceModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 400px; max-width: 90%;">
         <h3 class="mb-3 text-danger text-center">Void Invoice</h3>
@@ -1009,9 +1170,7 @@
     </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- MODAL: ACTIVITY LOG -->
-<!-- ============================================================ -->
+<!-- MODAL ACTIVITY LOG -->
 <div id="activityModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 800px; max-width: 95%; background: white; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
         
@@ -1095,10 +1254,7 @@
     </div>
 </div>
 
-<!-- ============================================================ -->
 <!-- SCRIPTS -->
-<!-- ============================================================ -->
-
 <script>
 const TAX_RATE = parseFloat("{{ company.general_sales_tax if company and company.general_sales_tax else 1.75 }}") / 100;
 const ROWS_PER_PAGE = 15;
@@ -1659,12 +1815,94 @@ function toggleWarrantyFields() {
         label.textContent = '(not a warranty)';
     }
 }
+
+// ============================================================
+// INSURANCE TOGGLE + LOAD
+// ============================================================
+function toggleInsuranceFields() {
+    const checkbox = document.getElementById('insurance_checkbox');
+    const fields = document.getElementById('insurance_fields');
+    const label = document.getElementById('insurance_status_label');
+
+    if (checkbox.checked) {
+        fields.style.display = 'block';
+        label.textContent = 'Marked as INSURANCE';
+    } else {
+        fields.style.display = 'none';
+        label.textContent = '(no insurance)';
+        document.getElementById('insurance_company_id').value = '';
+        document.getElementById('insurance_claim_number').value = '';
+        document.getElementById('insurance_adjuster_name').value = '';
+        document.getElementById('insurance_adjuster_phone').value = '';
+        document.getElementById('insurance_adjuster_email').value = '';
+        document.getElementById('insurance_claim_date').value = '';
+        document.getElementById('insurance_amount').value = '0.00';
+        document.getElementById('customer_amount').value = '0.00';
+        document.getElementById('insurance_status').value = '';
+    }
+}
+
+async function loadInsuranceCompanies() {
+    const select = document.getElementById('insurance_company_id');
+    if (!select) return;
+
+    const currentValue = select.value;
+
+    try {
+        const r = await fetch('/insurance/companies/json');
+        const data = await r.json();
+
+        select.innerHTML = '<option value="">-- Select --</option>';
+
+        data.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            select.appendChild(opt);
+        });
+
+        if (currentValue) {
+            select.value = currentValue;
+        }
+    } catch (e) {
+        console.error('Error loading insurance companies:', e);
+    }
+}
+
+function autoCalcCustomerAmount() {
+    const invoiceTotal = parseFloat('{{ invoice.total or 0 }}') || 0;
+    const insuranceAmount = parseFloat(document.getElementById('insurance_amount').value) || 0;
+    const customerAmount = Math.max(0, invoiceTotal - insuranceAmount);
+    document.getElementById('customer_amount').value = customerAmount.toFixed(2);
+    validateInsuranceAmounts();
+}
+
+function validateInsuranceAmounts() {
+    const invoiceTotal = parseFloat('{{ invoice.total or 0 }}') || 0;
+    const insuranceAmount = parseFloat(document.getElementById('insurance_amount').value) || 0;
+    const customerAmount = parseFloat(document.getElementById('customer_amount').value) || 0;
+    const sum = insuranceAmount + customerAmount;
+    const label = document.getElementById('insurance_coverage_label');
+
+    if (!label) return;
+
+    if (Math.abs(sum - invoiceTotal) < 0.01) {
+        label.textContent = '✓ Amounts match the invoice total';
+        label.style.color = '#28a745';
+    } else {
+        const diff = (invoiceTotal - sum).toFixed(2);
+        label.textContent = '⚠️ Difference: $' + diff;
+        label.style.color = '#f57c00';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadInsuranceCompanies();
+    validateInsuranceAmounts();
+});
 </script>
 
-<!-- ============================================================ -->
 <!-- SCRIPTS PARA PAGOS -->
-<!-- ============================================================ -->
-
 <script>
 const INVOICE_ID = '{{ invoice.id }}';
 const INVOICE_TOTAL = parseFloat('{{ invoice.total or 0 }}');
@@ -1824,9 +2062,6 @@ function closeMessageModal() {
     document.getElementById('messageModal').style.display = 'none';
 }
 
-// ============================================================
-// DOWNLOAD PDF
-// ============================================================
 function downloadPDF() {
     const invoiceId = '{{ invoice.id }}';
     window.location.href = `/invoices/download/${invoiceId}`;

@@ -1,4 +1,4 @@
-<!-- Path: app/templates/call_center/callcenter_lookup.html | Updated: 2026-08-25 | Time: 15:30 -->
+<!-- Path: app/templates/call_center/call_center_lookup.html | Updated: 2026-09-26 (warranty/insurance badges) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,6 +39,10 @@
         /* Estilo para filas Void */
         .row-void { background-color: #f8d7da !important; color: #721c24 !important; }
         .row-void td { background-color: #f8d7da !important; color: #721c24 !important; }
+
+        /* ===== Badges inline de Warranty / Insurance ===== */
+        .badge-warranty-inline { color: #8b5cf6; font-size: 13px; margin-left: 4px; }
+        .badge-insurance-inline { color: #0078D4; font-size: 13px; margin-left: 4px; }
     </style>
 </head>
 <body>
@@ -231,11 +235,21 @@ async function loadInvoiceHistory(customerId) {
             // Determinar clase para Void
             const isVoid = statusUpper === 'VOID' || statusUpper === 'VOIDED';
             const rowClass = isVoid ? 'row-void' : '';
+
+            // ===== Badges de Garantía y Aseguradora =====
+            let flags = '';
+            if (inv.is_warranty) {
+                flags += ' <span class="badge-warranty-inline" title="Warranty Replacement">🛡️</span>';
+            }
+            if (inv.has_insurance) {
+                flags += ' <span class="badge-insurance-inline" title="Has Insurance">🏢</span>';
+            }
+            // ============================================
             
             html += `
                 <tr class="${rowClass}">
                     <td>${date}</td>
-                    <td><a href="/invoices/view/${inv.id}?return_url=${returnUrl}" ${isVoid ? 'style="color:#721c24;"' : ''}>${inv.invoice_number}</a></td>
+                    <td><a href="/invoices/view/${inv.id}?return_url=${returnUrl}" ${isVoid ? 'style="color:#721c24;"' : ''}>${inv.invoice_number}</a>${flags}</td>
                     <td>${inv.estimate_id || '-'}</td>
                     <td>${inv.year || '-'}</td>
                     <td>${inv.make || '-'}</td>

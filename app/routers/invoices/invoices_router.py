@@ -1,4 +1,4 @@
-# /app/routers/invoices/invoices_router.py | Updated: 2026-09-26 (warranty fields)
+# /app/routers/invoices/invoices_router.py | Updated: 2026-09-26 (insurance + history badges)
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Path, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from sqlalchemy.orm import Session, joinedload
@@ -233,6 +233,16 @@ def update_invoice(
     warranty_start_date: Optional[str] = Form(None),
     warranty_end_date: Optional[str] = Form(None),
     warranty_notes: Optional[str] = Form(None),
+    has_insurance: Optional[str] = Form(None),
+    insurance_company_id: Optional[str] = Form(None),
+    insurance_claim_number: Optional[str] = Form(None),
+    insurance_adjuster_name: Optional[str] = Form(None),
+    insurance_adjuster_phone: Optional[str] = Form(None),
+    insurance_adjuster_email: Optional[str] = Form(None),
+    insurance_claim_date: Optional[str] = Form(None),
+    insurance_amount: Optional[str] = Form(None),
+    insurance_status: Optional[str] = Form(None),
+    customer_amount: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     target_id = invoice_id
@@ -305,6 +315,63 @@ def update_invoice(
 
             # warranty_notes: texto libre
             inv.warranty_notes = (warranty_notes or "").strip() or None
+        # ============================================================
+
+        # ===== CAMPOS DE ASEGURADORA (solo admin/manager pueden modificar) =====
+        if user_role in ["admin", "manager"]:
+            has_ins = (str(has_insurance).lower() in ["on", "true", "1"])
+
+            if has_ins:
+                # insurance_company_id: int o None
+                if insurance_company_id and str(insurance_company_id).strip():
+                    try:
+                        inv.insurance_company_id = int(insurance_company_id)
+                    except (ValueError, TypeError):
+                        inv.insurance_company_id = None
+                else:
+                    inv.insurance_company_id = None
+
+                # Campos de texto
+                inv.insurance_claim_number = (insurance_claim_number or "").strip() or None
+                inv.insurance_adjuster_name = (insurance_adjuster_name or "").strip() or None
+                inv.insurance_adjuster_phone = (insurance_adjuster_phone or "").strip() or None
+                inv.insurance_adjuster_email = (insurance_adjuster_email or "").strip() or None
+
+                # insurance_claim_date: date o None
+                if insurance_claim_date and str(insurance_claim_date).strip():
+                    try:
+                        inv.insurance_claim_date = datetime.strptime(insurance_claim_date, "%Y-%m-%d").date()
+                    except (ValueError, TypeError):
+                        inv.insurance_claim_date = None
+                else:
+                    inv.insurance_claim_date = None
+
+                # insurance_amount: decimal o 0
+                try:
+                    inv.insurance_amount = Decimal(str(insurance_amount)) if insurance_amount else Decimal("0.00")
+                except:
+                    inv.insurance_amount = Decimal("0.00")
+
+                # customer_amount: decimal o 0
+                try:
+                    inv.customer_amount = Decimal(str(customer_amount)) if customer_amount else Decimal("0.00")
+                except:
+                    inv.customer_amount = Decimal("0.00")
+
+                # insurance_status: string o None
+                inv.insurance_status = (insurance_status or "").strip() or None
+
+            else:
+                # Si se desmarca el checkbox, limpiar todos los campos
+                inv.insurance_company_id = None
+                inv.insurance_claim_number = None
+                inv.insurance_adjuster_name = None
+                inv.insurance_adjuster_phone = None
+                inv.insurance_adjuster_email = None
+                inv.insurance_claim_date = None
+                inv.insurance_amount = Decimal("0.00")
+                inv.insurance_status = None
+                inv.customer_amount = Decimal("0.00")
         # ============================================================
         
         db.query(InvoiceItem).filter(InvoiceItem.invoice_id == target_id).delete()
@@ -416,6 +483,8 @@ def get_invoice_history(
             "operator": inv.operator_username or "",
             "date": inv.estimated_appointment_date.strftime("%Y-%m-%d") if inv.estimated_appointment_date else None,
             "appointment_time": inv.estimated_appointment_time.strftime("%I:%M %p") if inv.estimated_appointment_time else None,
+            "is_warranty": bool(inv.is_warranty) if inv.is_warranty is not None else False,
+            "has_insurance": bool(inv.insurance_company_id),
         })
     
     return JSONResponse(content={
@@ -790,7 +859,7 @@ async def delete_payment(
 
 
 # ============================================================
-# 8. INVOICES WORKSHOP VIEW (with appointment time, sorted by time)
+# 8. INVOICES WORKSHOP VIEW
 # ============================================================
 @router.get("/workshop", response_class=HTMLResponse)
 def invoices_workshop_view(
@@ -834,7 +903,6 @@ def invoices_workshop_view(
         elif status_filter.upper() == "VOID":
             base_query = base_query.filter(Invoice.status.ilike("void"))
     
-    # Filtro por técnico (dropdown del Workshop)
     if tech_filter and tech_filter != "all":
         if tech_filter == "unassigned":
             base_query = base_query.filter(Invoice.technician_id.is_(None))
@@ -1041,14 +1109,12 @@ def _build_invoice_pdf(invoice_id: int, db: Session) -> bytes:
     invoice_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice_id).all()
     company = db.query(Company).first()
 
-    # Vehicle year (lookup desde Year table)
     vehicle_year = None
     if invoice.vehicle_year_id:
         year_record = db.query(Year).filter(Year.id == invoice.vehicle_year_id).first()
         if year_record:
             vehicle_year = year_record.year
 
-    # Payments
     payments = db.query(InvoicePayment).filter(
         InvoicePayment.invoice_id == invoice_id
     ).order_by(asc(InvoicePayment.payment_date)).all()
@@ -1060,7 +1126,6 @@ def _build_invoice_pdf(invoice_id: int, db: Session) -> bytes:
 
     balance_due = float(invoice.total or 0) - total_paid
 
-    # ===== DESGLOSE PARA EL PDF =====
     items_total = sum(
         float(it.price or 0) * float(it.quantity or 1) for it in invoice_items
     )
@@ -1071,12 +1136,10 @@ def _build_invoice_pdf(invoice_id: int, db: Session) -> bytes:
     subtotal = float(invoice.subtotal or 0)
     total = float(invoice.total or 0)
 
-    # Mobile fee = total - subtotal - tax (el resto es mobile fee)
     mobile_fee = total - subtotal - tax
     if mobile_fee < 0:
         mobile_fee = 0.0
 
-    # ===== LOGO EN BASE64 PARA EL PDF =====
     logo_base64 = ""
     try:
         logo_path = os.path.join("app", "static", "images", "bms.jpg")
@@ -1198,10 +1261,6 @@ async def optimize_invoices_route(
     technician_id: Optional[int] = Query(None, description="ID del técnico (opcional)"),
     db: Session = Depends(get_db)
 ):
-    """
-    Calcula la ruta óptima desde la base (Company.origin_address) para las facturas de un día.
-    Guarda la hora sugerida en tentative_time SIN modificar estimated_appointment_time.
-    """
     try:
         target_date = datetime.strptime(date, "%Y-%m-%d").date()
     except ValueError:
@@ -1333,10 +1392,6 @@ async def apply_tentative_time(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """
-    Copia tentative_time a estimated_appointment_date + estimated_appointment_time.
-    Se llama SOLO cuando el manager confirma con el cliente que acepta el cambio.
-    """
     try:
         invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
         if not invoice:
