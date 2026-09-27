@@ -1,4 +1,4 @@
-# RUTA: app/main.py | ACTUALIZADO: 2026-09-26 (insurance_companies_router registered)
+# RUTA: app/main.py | ACTUALIZADO: 2026-09-27 (reports_router registered)
 # DESCRIPCIÓN: Punto de entrada principal de BMS Autoglass - Registro de módulos
 
 from fastapi import FastAPI
@@ -66,6 +66,9 @@ from app.routers.invoices.invoice_glass_router import router as invoice_glass_ro
 
 # NUEVO: Insurance Companies Router
 from app.routers.insurance.insurance_companies_router import router as insurance_companies_router
+
+# NUEVO: Reports Router
+from app.routers.reports.reports_router import router as reports_router
 
 
 app = FastAPI(title="BMS Autoglass System")
@@ -160,6 +163,9 @@ app.include_router(receiving_router)
 
 # 10. Insurance Companies System
 app.include_router(insurance_companies_router)
+
+# 11. Reports System (NUEVO)
+app.include_router(reports_router)
 
 
 @app.get("/")

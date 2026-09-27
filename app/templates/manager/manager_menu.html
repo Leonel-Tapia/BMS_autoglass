@@ -1,4 +1,4 @@
-<!-- /templates/manager/manager_menu.html - Updated 2026-09-26 (insurance card) -->
+<!-- /templates/manager/manager_menu.html - Updated 2026-09-26 (reports card) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,11 +139,17 @@
         .card-activity .card-btn { background-color: #fd7e14; }
         .card-activity .card-btn:hover { background-color: #d96809; }
 
-        /* NUEVO: Insurance (morado) */
+        /* Insurance (morado) */
         .card-insurance { border-top-color: #8b5cf6; }
         .card-insurance .card-icon { color: #8b5cf6; }
         .card-insurance .card-btn { background-color: #8b5cf6; }
         .card-insurance .card-btn:hover { background-color: #6d28d9; }
+
+        /* NUEVO: Reports (morado) */
+        .card-reports { border-top-color: #8b5cf6; }
+        .card-reports .card-icon { color: #8b5cf6; }
+        .card-reports .card-btn { background-color: #8b5cf6; }
+        .card-reports .card-btn:hover { background-color: #6d28d9; }
 
         .card-disabled { border-top-color: #adb5bd; opacity: 0.7; }
         .card-disabled .card-icon { color: #adb5bd; }
@@ -229,13 +235,22 @@
         <button class="card-btn" onclick="window.location.href='/manager/activities_concepts'">Open</button>
     </div>
 
-    <!-- NUEVO: Insurance Companies -->
+    <!-- Insurance Companies -->
     <div class="card card-insurance">
         <div>
             <div class="card-icon"><i class="fas fa-building-shield"></i></div>
             <div class="card-title">Insurance Companies</div>
         </div>
         <button class="card-btn" onclick="window.location.href='/insurance/companies'">Open</button>
+    </div>
+
+    <!-- NUEVO: Reports -->
+    <div class="card card-reports">
+        <div>
+            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="card-title">Reports</div>
+        </div>
+        <button class="card-btn" onclick="window.location.href='/reports'">Open</button>
     </div>
 
 </div>
