@@ -1,4 +1,4 @@
-# /app/routers/reports/reports_router.py | Updated: 2026-09-27 (period report + helpers)
+# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (technician ranking)
 
 from fastapi import APIRouter, Request, Query, Depends
 from sqlalchemy.orm import Session, joinedload
@@ -30,7 +30,7 @@ def get_db():
 
 
 # ============================================================
-# HELPERS (shared by daily & period)
+# SHARED HELPERS
 # ============================================================
 
 def _invoiced_summary(db: Session, start_date: date, end_exclusive: date) -> dict:
@@ -86,6 +86,20 @@ def _collected_summary(db: Session, start_date: date, end_exclusive: date):
     return float(cap), float(pd)
 
 
+def _payments_by_invoice(db: Session, invoice_ids):
+    """Return {invoice_id: paid_amount} using DEPOSITED+PENDING only."""
+    if not invoice_ids:
+        return {}
+    rows = db.query(
+        InvoicePayment.invoice_id,
+        func.coalesce(func.sum(InvoicePayment.amount), 0).label("paid")
+    ).filter(
+        InvoicePayment.invoice_id.in_(invoice_ids),
+        InvoicePayment.payment_status.in_(["DEPOSITED", "PENDING"])
+    ).group_by(InvoicePayment.invoice_id).all()
+    return {r.invoice_id: float(r.paid or 0) for r in rows}
+
+
 def _technicians_breakdown(db: Session, start_date: date, end_exclusive: date) -> list:
     """Return list of technicians with their invoices in the range (excludes VOID)."""
     invoices = db.query(Invoice).options(
@@ -96,18 +110,7 @@ def _technicians_breakdown(db: Session, start_date: date, end_exclusive: date) -
         Invoice.status != "VOID"
     ).order_by(Invoice.technician_id, Invoice.id).all()
 
-    invoice_ids = [inv.id for inv in invoices]
-
-    payments_map = {}
-    if invoice_ids:
-        rows = db.query(
-            InvoicePayment.invoice_id,
-            func.coalesce(func.sum(InvoicePayment.amount), 0).label("paid")
-        ).filter(
-            InvoicePayment.invoice_id.in_(invoice_ids),
-            InvoicePayment.payment_status.in_(["DEPOSITED", "PENDING"])
-        ).group_by(InvoicePayment.invoice_id).all()
-        payments_map = {r.invoice_id: float(r.paid or 0) for r in rows}
+    payments_map = _payments_by_invoice(db, [inv.id for inv in invoices])
 
     tech_map = {}
     for inv in invoices:
@@ -152,7 +155,6 @@ def _technicians_breakdown(db: Session, start_date: date, end_exclusive: date) -
 # ============================================================
 
 def _month_range(today: date):
-    """Return (first_day, last_day) of the month containing `today`."""
     first = today.replace(day=1)
     if today.month == 12:
         last = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
@@ -162,7 +164,7 @@ def _month_range(today: date):
 
 
 def _week_range(today: date):
-    """Return (monday, sunday) of the week containing `today` (week starts Monday)."""
+    """Week starts Monday."""
     monday = today - timedelta(days=today.weekday())
     return monday, monday + timedelta(days=6)
 
@@ -171,13 +173,41 @@ def _fmt_date(d: date) -> str:
     return d.strftime("%b %d, %Y")
 
 
+def _resolve_period(preset, date_from, date_to):
+    """Return (preset, start_date, end_date, range_warning)."""
+    today = date.today()
+    range_warning = False
+
+    if preset == "today":
+        start, end = today, today
+    elif preset == "week":
+        start, end = _week_range(today)
+    elif preset == "custom" and date_from and date_to:
+        try:
+            start = datetime.strptime(date_from, "%Y-%m-%d").date()
+            end   = datetime.strptime(date_to,   "%Y-%m-%d").date()
+            if start > end:
+                start, end = end, start
+        except ValueError:
+            preset = "month"
+            start, end = _month_range(today)
+    else:
+        preset = "month"
+        start, end = _month_range(today)
+
+    if (end - start).days > MAX_RANGE_DAYS:
+        end = start + timedelta(days=MAX_RANGE_DAYS)
+        range_warning = True
+
+    return preset, start, end, range_warning
+
+
 # ============================================================
 # REPORTS MAIN MENU
 # ============================================================
 
 @router.get("")
 def reports_menu(request: Request, db: Session = Depends(get_db)):
-    """Reports main menu page (grid of report cards)."""
     company = db.query(Company).first()
     return templates.TemplateResponse(
         request=request,
@@ -196,7 +226,6 @@ def report_daily(
     report_date: str = Query(default=None, alias="date"),
     db: Session = Depends(get_db)
 ):
-    """Daily report: invoiced, collected, pending + breakdown + by technician."""
     company = db.query(Company).first()
 
     target_date = date.today()
@@ -241,34 +270,8 @@ def report_period(
     date_to: str = Query(default=None),
     db: Session = Depends(get_db)
 ):
-    """Period report: week, month, or custom range (max 2 years)."""
     company = db.query(Company).first()
-    today = date.today()
-    range_warning = False
-
-    # --- Resolve date range ---
-    if preset == "today":
-        start, end = today, today
-    elif preset == "week":
-        start, end = _week_range(today)
-    elif preset == "custom" and date_from and date_to:
-        try:
-            start = datetime.strptime(date_from, "%Y-%m-%d").date()
-            end   = datetime.strptime(date_to,   "%Y-%m-%d").date()
-            if start > end:
-                start, end = end, start
-        except ValueError:
-            preset = "month"
-            start, end = _month_range(today)
-    else:
-        preset = "month"
-        start, end = _month_range(today)
-
-    # --- Enforce max range ---
-    if (end - start).days > MAX_RANGE_DAYS:
-        end = start + timedelta(days=MAX_RANGE_DAYS)
-        range_warning = True
-
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
     end_exclusive = end + timedelta(days=1)
 
     invoiced             = _invoiced_summary(db, start, end_exclusive)
@@ -284,14 +287,173 @@ def report_period(
         request=request,
         name="reports/report_period.html",
         context={
-            "company":        company,
-            "preset":         preset,
-            "date_from":      start.isoformat(),
-            "date_to":        end.isoformat(),
-            "range_label":    f"{_fmt_date(start)} – {_fmt_date(end)}",
-            "range_days":     (end - start).days + 1,
-            "range_warning":  range_warning,
-            "summary":        summary,
-            "technicians":    technicians,
+            "company":       company,
+            "preset":        preset,
+            "date_from":     start.isoformat(),
+            "date_to":       end.isoformat(),
+            "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "summary":       summary,
+            "technicians":   technicians,
+        }
+    )
+
+
+# ============================================================
+# TECHNICIAN RANKING
+# ============================================================
+
+@router.get("/technicians")
+def report_technicians(
+    request: Request,
+    preset: str = Query(default=None),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    company = db.query(Company).first()
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
+    end_exclusive = end + timedelta(days=1)
+
+    technicians = _technicians_breakdown(db, start, end_exclusive)
+
+    # Compute % collected
+    for t in technicians:
+        t["pct_collected"] = (t["total_paid"] / t["total_invoiced"] * 100) if t["total_invoiced"] > 0 else 0.0
+
+    # Sort: named techs by invoiced desc, Unassigned always last
+    technicians.sort(key=lambda t: (t["technician_id"] is None, -t["total_invoiced"]))
+
+    # Totals row
+    totals = {
+        "invoiced": sum(t["total_invoiced"] for t in technicians),
+        "paid":     sum(t["total_paid"] for t in technicians),
+        "balance":  sum(t["total_balance"] for t in technicians),
+        "count":    sum(len(t["invoices"]) for t in technicians),
+    }
+    totals["pct_collected"] = (totals["paid"] / totals["invoiced"] * 100) if totals["invoiced"] > 0 else 0.0
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/technicians_ranking.html",
+        context={
+            "company":       company,
+            "preset":        preset,
+            "date_from":     start.isoformat(),
+            "date_to":       end.isoformat(),
+            "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "technicians":   technicians,
+            "totals":        totals,
+        }
+    )
+
+
+# ============================================================
+# TECHNICIAN DETAIL
+# ============================================================
+
+@router.get("/technicians/{tech_id}")
+def report_technician_detail(
+    request: Request,
+    tech_id: int,
+    preset: str = Query(default=None),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    company = db.query(Company).first()
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
+    end_exclusive = end + timedelta(days=1)
+
+    # tech_id == 0 → Unassigned (technician_id IS NULL)
+    is_unassigned = (tech_id == 0)
+    tech_user = None
+    tech_name = "Unassigned"
+
+    if not is_unassigned:
+        tech_user = db.query(User).filter(User.id == tech_id).first()
+        if tech_user:
+            tech_name = tech_user.full_name
+        else:
+            tech_name = f"Technician #{tech_id}"
+
+    # Query invoices in range for this technician
+    q = db.query(Invoice).filter(
+        Invoice.created_at >= start,
+        Invoice.created_at < end_exclusive,
+        Invoice.status != "VOID"
+    )
+    if is_unassigned:
+        q = q.filter(Invoice.technician_id.is_(None))
+    else:
+        q = q.filter(Invoice.technician_id == tech_id)
+
+    invoices = q.order_by(Invoice.id).all()
+    payments_map = _payments_by_invoice(db, [inv.id for inv in invoices])
+
+    invoice_rows = []
+    total_invoiced = 0.0
+    total_paid = 0.0
+    labor_sum = materials_sum = misc_sum = tax_sum = subtotal_sum = 0.0
+
+    for inv in invoices:
+        paid    = payments_map.get(inv.id, 0.0)
+        total   = float(inv.total or 0)
+        vehicle = f"{inv.vehicle_make or ''} {inv.vehicle_model or ''}".strip()
+
+        invoice_rows.append({
+            "id":             inv.id,
+            "invoice_number": inv.invoice_number or f"#{inv.id}",
+            "customer_id":    inv.customer_id,
+            "vehicle":        vehicle,
+            "status":         inv.status or "",
+            "total":          total,
+            "paid":           paid,
+            "balance":        total - paid,
+        })
+
+        total_invoiced += total
+        total_paid     += paid
+        labor_sum      += float(inv.labor_cost or 0)
+        materials_sum  += float(inv.materials_cost or 0)
+        misc_sum       += float(inv.misc_cost or 0)
+        tax_sum        += float(inv.tax or 0)
+        subtotal_sum   += float(inv.subtotal or 0)
+
+    total_balance = total_invoiced - total_paid
+    mobile_fee = total_invoiced - subtotal_sum - tax_sum
+    pct_collected = (total_paid / total_invoiced * 100) if total_invoiced > 0 else 0.0
+
+    summary = {
+        "invoiced_total":     total_invoiced,
+        "invoiced_labor":     labor_sum,
+        "invoiced_materials": materials_sum,
+        "invoiced_misc":      misc_sum,
+        "invoiced_tax":       tax_sum,
+        "mobile_fee":         mobile_fee,
+        "collected":          total_paid,
+        "balance":            total_balance,
+        "pct_collected":      pct_collected,
+        "invoiced_count":     len(invoices),
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/technician_detail.html",
+        context={
+            "company":       company,
+            "tech_id":       tech_id,
+            "technician_name": tech_name,
+            "preset":        preset,
+            "date_from":     start.isoformat(),
+            "date_to":       end.isoformat(),
+            "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "summary":       summary,
+            "invoices":      invoice_rows,
         }
     )

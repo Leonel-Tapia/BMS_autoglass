@@ -1,0 +1,409 @@
+<!-- /templates/reports/technicians_ranking.html | Updated 2026-09-28 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.trade_name }} – Technician Ranking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef1f5 0%, #dde3ec 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header .title {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: 0.15s;
+        }
+
+        .back-btn:hover { background-color: white; color: #6d28d9; }
+
+        .content {
+            width: 94%;
+            max-width: 1200px;
+            margin: 14px auto 30px auto;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .range-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 7px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #666;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            transition: 0.15s;
+        }
+
+        .preset-btn:hover { background: #e5e7eb; color: #333; }
+
+        .preset-btn.active {
+            background: #8b5cf6;
+            color: white;
+            border-color: #8b5cf6;
+        }
+
+        .range-sep { color: #ccc; margin: 0 4px; }
+
+        .custom-form { display: flex; align-items: center; gap: 6px; }
+
+        .custom-form label {
+            font-weight: 600;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .custom-form input[type="date"] {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn-run {
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.15s;
+        }
+
+        .btn-run:hover { background-color: #6d28d9; }
+
+        .export-btns { display: flex; gap: 8px; }
+
+        .btn-export {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: not-allowed;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .range-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .range-label strong { color: #333; }
+
+        .warning-banner {
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 14px 18px;
+            margin-bottom: 14px;
+        }
+
+        .panel h2 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel h2 i { color: #8b5cf6; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: #f7f5ff;
+            color: #555;
+            font-weight: 600;
+            padding: 7px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+        }
+
+        tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+
+        tbody tr.rank-row {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        tbody tr.rank-row:hover { background: #fafaff; }
+
+        .rank-pos {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            background: #f3f4f6;
+            color: #666;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .rank-pos.top1 { background: #fef3c7; color: #b45309; }
+        .rank-pos.top2 { background: #e5e7eb; color: #4b5563; }
+        .rank-pos.top3 { background: #fed7aa; color: #c2410c; }
+
+        .balance-due { color: #d97706; font-weight: 600; }
+
+        .pct-bar {
+            display: inline-block;
+            min-width: 50px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .pct-high { background: #d1fae5; color: #065f46; }
+        .pct-mid  { background: #fef3c7; color: #92400e; }
+        .pct-low  { background: #fee2e2; color: #991b1b; }
+
+        .total-row td {
+            background: #fafafa;
+            border-top: 2px solid #e5e7eb;
+            font-weight: 700;
+        }
+
+        .unassigned-name { color: #888; font-style: italic; }
+
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 24px 0;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; gap: 8px; padding: 12px 15px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .range-bar { flex-direction: column; align-items: stretch; }
+            .custom-form { flex-wrap: wrap; }
+            thead th, tbody td { padding: 6px 8px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">
+        <i class="fas fa-user-gear"></i>
+        Technician Ranking
+    </div>
+    <a href="/reports" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="content">
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="range-bar">
+            <a href="/reports/technicians?preset=today"
+               class="preset-btn {% if preset == 'today' %}active{% endif %}">Today</a>
+            <a href="/reports/technicians?preset=week"
+               class="preset-btn {% if preset == 'week' %}active{% endif %}">This Week</a>
+            <a href="/reports/technicians?preset=month"
+               class="preset-btn {% if preset == 'month' %}active{% endif %}">This Month</a>
+
+            <span class="range-sep">|</span>
+
+            <form method="get" action="/reports/technicians" class="custom-form">
+                <input type="hidden" name="preset" value="custom">
+                <label for="date_from">From</label>
+                <input type="date" id="date_from" name="date_from" value="{{ date_from }}">
+                <label for="date_to">To</label>
+                <input type="date" id="date_to" name="date_to" value="{{ date_to }}">
+                <button type="submit" class="btn-run">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </form>
+        </div>
+        <div class="export-btns">
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Range label -->
+    <div class="range-label">
+        Showing <strong>{{ range_label }}</strong> ({{ range_days }} day(s))
+    </div>
+
+    {% if range_warning %}
+    <div class="warning-banner">
+        <i class="fas fa-triangle-exclamation"></i>
+        Range exceeded the 2-year limit. Showing the first 2 years only.
+    </div>
+    {% endif %}
+
+    <!-- Ranking -->
+    <div class="panel">
+        <h2><i class="fas fa-ranking-star"></i> Ranking</h2>
+        {% if technicians %}
+        <table>
+            <thead>
+                <tr>
+                    <th class="text-center" style="width:48px;">#</th>
+                    <th>Technician</th>
+                    <th class="text-center">Invoices</th>
+                    <th class="text-right">Invoiced</th>
+                    <th class="text-right">Collected</th>
+                    <th class="text-right">Balance</th>
+                    <th class="text-center">% Collected</th>
+                    <th class="text-center" style="width:48px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in technicians %}
+                <tr class="rank-row"
+                    onclick="window.location.href='/reports/technicians/{{ t.technician_id if t.technician_id is not none else 0 }}?preset={{ preset }}&date_from={{ date_from }}&date_to={{ date_to }}'">
+                    <td class="text-center">
+                        {% if t.technician_id is none %}
+                            <span class="rank-pos">—</span>
+                        {% else %}
+                            {% set pos = loop.index %}
+                            <span class="rank-pos {% if pos == 1 %}top1{% elif pos == 2 %}top2{% elif pos == 3 %}top3{% endif %}">{{ pos }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="{% if t.technician_id is none %}unassigned-name{% endif %}">{{ t.technician_name }}</td>
+                    <td class="text-center">{{ t.invoices|length }}</td>
+                    <td class="text-right">${{ "%.2f"|format(t.total_invoiced) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(t.total_paid) }}</td>
+                    <td class="text-right {% if t.total_balance > 0 %}balance-due{% endif %}">${{ "%.2f"|format(t.total_balance) }}</td>
+                    <td class="text-center">
+                        {% if t.pct_collected >= 90 %}
+                            <span class="pct-bar pct-high">{{ "%.0f"|format(t.pct_collected) }}%</span>
+                        {% elif t.pct_collected >= 50 %}
+                            <span class="pct-bar pct-mid">{{ "%.0f"|format(t.pct_collected) }}%</span>
+                        {% else %}
+                            <span class="pct-bar pct-low">{{ "%.0f"|format(t.pct_collected) }}%</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center"><i class="fas fa-chevron-right" style="color:#8b5cf6;"></i></td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td></td>
+                    <td>Totals</td>
+                    <td class="text-center">{{ totals.count }}</td>
+                    <td class="text-right">${{ "%.2f"|format(totals.invoiced) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(totals.paid) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(totals.balance) }}</td>
+                    <td class="text-center">{{ "%.0f"|format(totals.pct_collected) }}%</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No invoices for this period.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+</body>
+</html>

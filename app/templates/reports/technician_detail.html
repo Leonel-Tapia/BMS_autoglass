@@ -1,0 +1,388 @@
+<!-- /templates/reports/technician_detail.html | Updated 2026-09-28 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.trade_name }} – {{ technician_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef1f5 0%, #dde3ec 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header .title {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: 0.15s;
+        }
+
+        .back-btn:hover { background-color: white; color: #6d28d9; }
+
+        .content {
+            width: 94%;
+            max-width: 1200px;
+            margin: 14px auto 30px auto;
+        }
+
+        .tech-banner {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 16px 20px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-left: 5px solid #8b5cf6;
+        }
+
+        .tech-banner .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #f3e8ff;
+            color: #6d28d9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .tech-banner .info h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #222;
+        }
+
+        .tech-banner .info .meta {
+            font-size: 13px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn-export {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: not-allowed;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .range-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .range-label strong { color: #333; }
+
+        .warning-banner {
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-left: 5px solid #8b5cf6;
+        }
+
+        .summary-card .s-label {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .s-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #222;
+            margin: 3px 0;
+        }
+
+        .summary-card .s-sub {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .summary-card.invoiced  { border-left-color: #8b5cf6; }
+        .summary-card.collected { border-left-color: #10b981; }
+        .summary-card.balance   { border-left-color: #f59e0b; }
+        .summary-card.pct       { border-left-color: #3b82f6; }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 14px 18px;
+            margin-bottom: 14px;
+        }
+
+        .panel h2 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel h2 i { color: #8b5cf6; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: #f7f5ff;
+            color: #555;
+            font-weight: 600;
+            padding: 7px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+        }
+
+        tbody td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+
+        .total-row td {
+            background: #fafafa;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .balance-due { color: #d97706; font-weight: 600; }
+
+        .badge {
+            background: #e5e7eb;
+            color: #555;
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 18px 0;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; gap: 8px; padding: 12px 15px; }
+            .tech-banner { flex-direction: column; text-align: center; }
+            thead th, tbody td { padding: 6px 8px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">
+        <i class="fas fa-user-gear"></i>
+        Technician Detail
+    </div>
+    <a href="/reports/technicians?preset={{ preset }}&date_from={{ date_from }}&date_to={{ date_to }}" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Ranking
+    </a>
+</div>
+
+<div class="content">
+
+    <!-- Tech banner -->
+    <div class="tech-banner">
+        <div class="avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="info">
+            <h1>{{ technician_name }}</h1>
+            <div class="meta">{{ range_label }} · {{ range_days }} day(s)</div>
+        </div>
+    </div>
+
+    {% if range_warning %}
+    <div class="warning-banner">
+        <i class="fas fa-triangle-exclamation"></i>
+        Range exceeded the 2-year limit. Showing the first 2 years only.
+    </div>
+    {% endif %}
+
+    <!-- Export placeholder -->
+    <div class="controls">
+        <button class="btn-export" disabled title="Coming soon">
+            <i class="fas fa-file-pdf"></i> PDF
+        </button>
+        <button class="btn-export" disabled title="Coming soon">
+            <i class="fas fa-file-excel"></i> Excel
+        </button>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-grid">
+        <div class="summary-card invoiced">
+            <div class="s-label">Invoiced</div>
+            <div class="s-value">${{ "%.2f"|format(summary.invoiced_total) }}</div>
+            <div class="s-sub">{{ summary.invoiced_count }} invoice(s)</div>
+        </div>
+        <div class="summary-card collected">
+            <div class="s-label">Collected</div>
+            <div class="s-value">${{ "%.2f"|format(summary.collected) }}</div>
+            <div class="s-sub">DEPOSITED + PENDING</div>
+        </div>
+        <div class="summary-card balance">
+            <div class="s-label">Balance</div>
+            <div class="s-value">${{ "%.2f"|format(summary.balance) }}</div>
+            <div class="s-sub">Pending to collect</div>
+        </div>
+        <div class="summary-card pct">
+            <div class="s-label">% Collected</div>
+            <div class="s-value">{{ "%.0f"|format(summary.pct_collected) }}%</div>
+            <div class="s-sub">of invoiced</div>
+        </div>
+    </div>
+
+    <!-- Breakdown -->
+    <div class="panel">
+        <h2><i class="fas fa-list-ul"></i> Invoiced Breakdown</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Concept</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Labor</td>     <td class="text-right">${{ "%.2f"|format(summary.invoiced_labor) }}</td></tr>
+                <tr><td>Materials</td> <td class="text-right">${{ "%.2f"|format(summary.invoiced_materials) }}</td></tr>
+                <tr><td>Misc</td>      <td class="text-right">${{ "%.2f"|format(summary.invoiced_misc) }}</td></tr>
+                <tr><td>Tax</td>       <td class="text-right">${{ "%.2f"|format(summary.invoiced_tax) }}</td></tr>
+                <tr><td>Mobile Fee</td><td class="text-right">${{ "%.2f"|format(summary.mobile_fee) }}</td></tr>
+                <tr class="total-row">
+                    <td><strong>Total Invoiced</strong></td>
+                    <td class="text-right"><strong>${{ "%.2f"|format(summary.invoiced_total) }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Invoices -->
+    <div class="panel">
+        <h2><i class="fas fa-file-invoice"></i> Invoices</h2>
+        {% if invoices %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Customer</th>
+                    <th>Vehicle</th>
+                    <th>Status</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Paid</th>
+                    <th class="text-right">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>{{ inv.invoice_number }}</td>
+                    <td>#{{ inv.customer_id }}</td>
+                    <td>{{ inv.vehicle or "—" }}</td>
+                    <td><span class="badge">{{ inv.status }}</span></td>
+                    <td class="text-right">${{ "%.2f"|format(inv.total) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(inv.paid) }}</td>
+                    <td class="text-right {% if inv.balance > 0 %}balance-due{% endif %}">${{ "%.2f"|format(inv.balance) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No invoices for this period.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+</body>
+</html>
