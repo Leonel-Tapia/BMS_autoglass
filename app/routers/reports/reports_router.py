@@ -1,4 +1,4 @@
-# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (technician ranking)
+# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (top products - part number only)
 
 from fastapi import APIRouter, Request, Query, Depends
 from sqlalchemy.orm import Session, joinedload
@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 
 from app.core.template_loader import jinja as templates
 from app.database.database import SessionLocal
-from app.models.invoices.invoice_model import Invoice
+from app.models.invoices.invoice_model import Invoice, InvoiceItem
 from app.models.invoices.invoice_payment_model import InvoicePayment
 from app.models.company.user import User  # noqa: F401 (registra el modelo para relationships)
 from app.models.company.company import Company
@@ -318,14 +318,11 @@ def report_technicians(
 
     technicians = _technicians_breakdown(db, start, end_exclusive)
 
-    # Compute % collected
     for t in technicians:
         t["pct_collected"] = (t["total_paid"] / t["total_invoiced"] * 100) if t["total_invoiced"] > 0 else 0.0
 
-    # Sort: named techs by invoiced desc, Unassigned always last
     technicians.sort(key=lambda t: (t["technician_id"] is None, -t["total_invoiced"]))
 
-    # Totals row
     totals = {
         "invoiced": sum(t["total_invoiced"] for t in technicians),
         "paid":     sum(t["total_paid"] for t in technicians),
@@ -368,7 +365,6 @@ def report_technician_detail(
     preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
     end_exclusive = end + timedelta(days=1)
 
-    # tech_id == 0 → Unassigned (technician_id IS NULL)
     is_unassigned = (tech_id == 0)
     tech_user = None
     tech_name = "Unassigned"
@@ -380,7 +376,6 @@ def report_technician_detail(
         else:
             tech_name = f"Technician #{tech_id}"
 
-    # Query invoices in range for this technician
     q = db.query(Invoice).filter(
         Invoice.created_at >= start,
         Invoice.created_at < end_exclusive,
@@ -444,9 +439,116 @@ def report_technician_detail(
         request=request,
         name="reports/technician_detail.html",
         context={
-            "company":       company,
-            "tech_id":       tech_id,
+            "company":         company,
+            "tech_id":         tech_id,
             "technician_name": tech_name,
+            "preset":          preset,
+            "date_from":       start.isoformat(),
+            "date_to":         end.isoformat(),
+            "range_label":     f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":      (end - start).days + 1,
+            "range_warning":   range_warning,
+            "summary":         summary,
+            "invoices":        invoice_rows,
+        }
+    )
+
+
+# ============================================================
+# APPOINTMENTS REPORT
+# ============================================================
+
+_NON_COMPLETED_STATUSES = ("VOID", "CANCELLED", "NO_SHOW")
+
+
+@router.get("/appointments")
+def report_appointments(
+    request: Request,
+    preset: str = Query(default=None),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    """Appointments report: scheduled vs completed vs no-show/cancelled."""
+    company = db.query(Company).first()
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
+    end_exclusive = end + timedelta(days=1)
+
+    base_q = db.query(Invoice).filter(
+        Invoice.estimated_appointment_date >= start,
+        Invoice.estimated_appointment_date < end_exclusive
+    )
+
+    scheduled = base_q.count()
+
+    completed = base_q.filter(
+        ~Invoice.status.in_(_NON_COMPLETED_STATUSES)
+    ).count()
+
+    no_show   = base_q.filter(Invoice.status == "NO_SHOW").count()
+    cancelled = base_q.filter(Invoice.status == "CANCELLED").count()
+    voided    = base_q.filter(Invoice.status == "VOID").count()
+
+    rate = (completed / scheduled * 100) if scheduled > 0 else 0.0
+
+    summary = {
+        "scheduled": scheduled,
+        "completed": completed,
+        "no_show":   no_show,
+        "cancelled": cancelled,
+        "voided":    voided,
+        "rate":      rate,
+    }
+
+    daily_rows = []
+    cursor = start
+    while cursor <= end:
+        day_start = cursor
+        day_end   = cursor + timedelta(days=1)
+
+        d_scheduled = db.query(func.count(Invoice.id)).filter(
+            Invoice.estimated_appointment_date >= day_start,
+            Invoice.estimated_appointment_date < day_end
+        ).scalar() or 0
+
+        d_completed = db.query(func.count(Invoice.id)).filter(
+            Invoice.estimated_appointment_date >= day_start,
+            Invoice.estimated_appointment_date < day_end,
+            ~Invoice.status.in_(_NON_COMPLETED_STATUSES)
+        ).scalar() or 0
+
+        d_no_show = db.query(func.count(Invoice.id)).filter(
+            Invoice.estimated_appointment_date >= day_start,
+            Invoice.estimated_appointment_date < day_end,
+            Invoice.status == "NO_SHOW"
+        ).scalar() or 0
+
+        d_cancelled = db.query(func.count(Invoice.id)).filter(
+            Invoice.estimated_appointment_date >= day_start,
+            Invoice.estimated_appointment_date < day_end,
+            Invoice.status == "CANCELLED"
+        ).scalar() or 0
+
+        d_rate = (d_completed / d_scheduled * 100) if d_scheduled > 0 else 0.0
+
+        if d_scheduled > 0:
+            daily_rows.append({
+                "date":       cursor.isoformat(),
+                "date_label": _fmt_date(cursor),
+                "scheduled":  int(d_scheduled),
+                "completed":  int(d_completed),
+                "no_show":    int(d_no_show),
+                "cancelled":  int(d_cancelled),
+                "rate":       d_rate,
+            })
+
+        cursor += timedelta(days=1)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/report_appointments.html",
+        context={
+            "company":       company,
             "preset":        preset,
             "date_from":     start.isoformat(),
             "date_to":       end.isoformat(),
@@ -454,6 +556,79 @@ def report_technician_detail(
             "range_days":    (end - start).days + 1,
             "range_warning": range_warning,
             "summary":       summary,
-            "invoices":      invoice_rows,
+            "daily_rows":    daily_rows,
+        }
+    )
+
+
+# ============================================================
+# TOP 200 GLASSES
+# ============================================================
+
+@router.get("/top-products")
+def report_top_products(
+    request: Request,
+    preset: str = Query(default=None),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    """Top 200 products by installed quantity (excludes VOID invoices)."""
+    company = db.query(Company).first()
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
+    end_exclusive = end + timedelta(days=1)
+
+    q = db.query(
+        InvoiceItem.part_number.label("part_number"),
+        func.coalesce(func.sum(InvoiceItem.quantity), 0).label("total_qty"),
+        func.count(func.distinct(InvoiceItem.invoice_id)).label("invoice_count"),
+        func.coalesce(func.sum(InvoiceItem.price * InvoiceItem.quantity), 0).label("total_revenue"),
+    ).join(
+        Invoice, InvoiceItem.invoice_id == Invoice.id
+    ).filter(
+        Invoice.created_at >= start,
+        Invoice.created_at < end_exclusive,
+        Invoice.status != "VOID"
+    ).group_by(
+        InvoiceItem.part_number
+    ).order_by(
+        func.sum(InvoiceItem.quantity).desc()
+    ).limit(200)
+
+    rows = []
+    grand_qty = 0
+    grand_revenue = 0.0
+    for idx, r in enumerate(q.all(), start=1):
+        qty     = int(r.total_qty or 0)
+        revenue = float(r.total_revenue or 0)
+        rows.append({
+            "rank":          idx,
+            "part_number":   r.part_number or "—",
+            "total_qty":     qty,
+            "invoice_count": int(r.invoice_count or 0),
+            "total_revenue": revenue,
+        })
+        grand_qty     += qty
+        grand_revenue += revenue
+
+    summary = {
+        "unique_products": len(rows),
+        "total_qty":       grand_qty,
+        "total_revenue":   grand_revenue,
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/report_top_products.html",
+        context={
+            "company":       company,
+            "preset":        preset,
+            "date_from":     start.isoformat(),
+            "date_to":       end.isoformat(),
+            "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "summary":       summary,
+            "rows":          rows,
         }
     )

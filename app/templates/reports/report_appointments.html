@@ -1,0 +1,438 @@
+<!-- /templates/reports/report_appointments.html | Updated 2026-09-28 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.trade_name }} – Appointments Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef1f5 0%, #dde3ec 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header .title {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: 0.15s;
+        }
+
+        .back-btn:hover { background-color: white; color: #6d28d9; }
+
+        .content {
+            width: 94%;
+            max-width: 1200px;
+            margin: 14px auto 30px auto;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .range-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 7px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #666;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            transition: 0.15s;
+        }
+
+        .preset-btn:hover { background: #e5e7eb; color: #333; }
+
+        .preset-btn.active {
+            background: #8b5cf6;
+            color: white;
+            border-color: #8b5cf6;
+        }
+
+        .range-sep { color: #ccc; margin: 0 4px; }
+
+        .custom-form { display: flex; align-items: center; gap: 6px; }
+
+        .custom-form label {
+            font-weight: 600;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .custom-form input[type="date"] {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn-run {
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.15s;
+        }
+
+        .btn-run:hover { background-color: #6d28d9; }
+
+        .export-btns { display: flex; gap: 8px; }
+
+        .btn-export {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: not-allowed;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .range-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .range-label strong { color: #333; }
+
+        .warning-banner {
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-left: 5px solid #8b5cf6;
+        }
+
+        .summary-card .s-label {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .s-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #222;
+            margin: 3px 0;
+        }
+
+        .summary-card .s-sub {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .summary-card.scheduled { border-left-color: #8b5cf6; }
+        .summary-card.completed { border-left-color: #10b981; }
+        .summary-card.no-show   { border-left-color: #ef4444; }
+        .summary-card.cancelled { border-left-color: #6b7280; }
+        .summary-card.rate      { border-left-color: #3b82f6; }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 14px 18px;
+            margin-bottom: 14px;
+        }
+
+        .panel h2 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel h2 i { color: #8b5cf6; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: #f7f5ff;
+            color: #555;
+            font-weight: 600;
+            padding: 7px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+        }
+
+        tbody td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+
+        .total-row td {
+            background: #fafafa;
+            border-top: 2px solid #e5e7eb;
+            font-weight: 700;
+        }
+
+        .rate-bar {
+            display: inline-block;
+            min-width: 50px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .rate-high { background: #d1fae5; color: #065f46; }
+        .rate-mid  { background: #fef3c7; color: #92400e; }
+        .rate-low  { background: #fee2e2; color: #991b1b; }
+
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 24px 0;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; gap: 8px; padding: 12px 15px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .range-bar { flex-direction: column; align-items: stretch; }
+            .custom-form { flex-wrap: wrap; }
+            .summary-card .s-value { font-size: 20px; }
+            thead th, tbody td { padding: 6px 8px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">
+        <i class="fas fa-calendar-check"></i>
+        Appointments Report
+    </div>
+    <a href="/reports" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="content">
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="range-bar">
+            <a href="/reports/appointments?preset=today"
+               class="preset-btn {% if preset == 'today' %}active{% endif %}">Today</a>
+            <a href="/reports/appointments?preset=week"
+               class="preset-btn {% if preset == 'week' %}active{% endif %}">This Week</a>
+            <a href="/reports/appointments?preset=month"
+               class="preset-btn {% if preset == 'month' %}active{% endif %}">This Month</a>
+
+            <span class="range-sep">|</span>
+
+            <form method="get" action="/reports/appointments" class="custom-form">
+                <input type="hidden" name="preset" value="custom">
+                <label for="date_from">From</label>
+                <input type="date" id="date_from" name="date_from" value="{{ date_from }}">
+                <label for="date_to">To</label>
+                <input type="date" id="date_to" name="date_to" value="{{ date_to }}">
+                <button type="submit" class="btn-run">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </form>
+        </div>
+        <div class="export-btns">
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Range label -->
+    <div class="range-label">
+        Showing <strong>{{ range_label }}</strong> ({{ range_days }} day(s))
+    </div>
+
+    {% if range_warning %}
+    <div class="warning-banner">
+        <i class="fas fa-triangle-exclamation"></i>
+        Range exceeded the 2-year limit. Showing the first 2 years only.
+    </div>
+    {% endif %}
+
+    <!-- Summary -->
+    <div class="summary-grid">
+        <div class="summary-card scheduled">
+            <div class="s-label">Scheduled</div>
+            <div class="s-value">{{ summary.scheduled }}</div>
+            <div class="s-sub">appointments</div>
+        </div>
+        <div class="summary-card completed">
+            <div class="s-label">Completed</div>
+            <div class="s-value">{{ summary.completed }}</div>
+            <div class="s-sub">attended</div>
+        </div>
+        <div class="summary-card no-show">
+            <div class="s-label">No-Show</div>
+            <div class="s-value">{{ summary.no_show }}</div>
+            <div class="s-sub">did not arrive</div>
+        </div>
+        <div class="summary-card cancelled">
+            <div class="s-label">Cancelled</div>
+            <div class="s-value">{{ summary.cancelled }}</div>
+            <div class="s-sub">cancelled by customer</div>
+        </div>
+        <div class="summary-card rate">
+            <div class="s-label">Completion Rate</div>
+            <div class="s-value">{{ "%.0f"|format(summary.rate) }}%</div>
+            <div class="s-sub">completed / scheduled</div>
+        </div>
+    </div>
+
+    <!-- Daily breakdown -->
+    <div class="panel">
+        <h2><i class="fas fa-calendar-day"></i> Daily Breakdown</h2>
+        {% if daily_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th class="text-center">Scheduled</th>
+                    <th class="text-center">Completed</th>
+                    <th class="text-center">No-Show</th>
+                    <th class="text-center">Cancelled</th>
+                    <th class="text-center">Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in daily_rows %}
+                <tr>
+                    <td>{{ r.date_label }}</td>
+                    <td class="text-center">{{ r.scheduled }}</td>
+                    <td class="text-center">{{ r.completed }}</td>
+                    <td class="text-center">{{ r.no_show }}</td>
+                    <td class="text-center">{{ r.cancelled }}</td>
+                    <td class="text-center">
+                        {% if r.rate >= 90 %}
+                            <span class="rate-bar rate-high">{{ "%.0f"|format(r.rate) }}%</span>
+                        {% elif r.rate >= 50 %}
+                            <span class="rate-bar rate-mid">{{ "%.0f"|format(r.rate) }}%</span>
+                        {% else %}
+                            <span class="rate-bar rate-low">{{ "%.0f"|format(r.rate) }}%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td>Totals</td>
+                    <td class="text-center">{{ summary.scheduled }}</td>
+                    <td class="text-center">{{ summary.completed }}</td>
+                    <td class="text-center">{{ summary.no_show }}</td>
+                    <td class="text-center">{{ summary.cancelled }}</td>
+                    <td class="text-center">{{ "%.0f"|format(summary.rate) }}%</td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No appointments for this period.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-<!-- /templates/reports/reports_menu.html | Updated 2026-09-28 (Back to Main Menu) -->
+<!-- /templates/reports/reports_menu.html | Updated 2026-09-28 (top products subtitle) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -203,24 +203,24 @@
         <button class="card-btn" onclick="window.location.href='/reports/technicians'">Open</button>
     </div>
 
-    <!-- Appointments (Coming Soon) -->
-    <div class="card card-soon">
+    <!-- Appointments (ACTIVE) -->
+    <div class="card card-active">
         <div>
             <div class="card-icon"><i class="fas fa-calendar-check"></i></div>
             <div class="card-title">Appointments</div>
             <div class="card-desc">Scheduled vs. completed appointments</div>
         </div>
-        <button class="card-btn" disabled>Coming Soon</button>
+        <button class="card-btn" onclick="window.location.href='/reports/appointments'">Open</button>
     </div>
 
-    <!-- Top Products (Coming Soon) -->
-    <div class="card card-soon">
+    <!-- Top Products (ACTIVE) -->
+    <div class="card card-active">
         <div>
             <div class="card-icon"><i class="fas fa-trophy"></i></div>
             <div class="card-title">Top 200 Glasses</div>
-            <div class="card-desc">Most installed windshields by quantity</div>
+            <div class="card-desc">Most sold products</div>
         </div>
-        <button class="card-btn" disabled>Coming Soon</button>
+        <button class="card-btn" onclick="window.location.href='/reports/top-products'">Open</button>
     </div>
 
     <!-- Insurance (Coming Soon) -->
