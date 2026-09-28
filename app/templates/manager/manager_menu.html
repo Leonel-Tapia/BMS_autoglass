@@ -1,4 +1,4 @@
-<!-- /templates/manager/manager_menu.html - Updated 2026-09-26 (reports card) -->
+<!-- /templates/manager/manager_menu.html - Updated 2026-09-28 (reports card removed) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -145,12 +145,6 @@
         .card-insurance .card-btn { background-color: #8b5cf6; }
         .card-insurance .card-btn:hover { background-color: #6d28d9; }
 
-        /* NUEVO: Reports (morado) */
-        .card-reports { border-top-color: #8b5cf6; }
-        .card-reports .card-icon { color: #8b5cf6; }
-        .card-reports .card-btn { background-color: #8b5cf6; }
-        .card-reports .card-btn:hover { background-color: #6d28d9; }
-
         .card-disabled { border-top-color: #adb5bd; opacity: 0.7; }
         .card-disabled .card-icon { color: #adb5bd; }
         .card-disabled .card-btn {
@@ -242,15 +236,6 @@
             <div class="card-title">Insurance Companies</div>
         </div>
         <button class="card-btn" onclick="window.location.href='/insurance/companies'">Open</button>
-    </div>
-
-    <!-- NUEVO: Reports -->
-    <div class="card card-reports">
-        <div>
-            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-            <div class="card-title">Reports</div>
-        </div>
-        <button class="card-btn" onclick="window.location.href='/reports'">Open</button>
     </div>
 
 </div>

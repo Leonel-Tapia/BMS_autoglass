@@ -1,4 +1,4 @@
-<!-- /templates/reports/reports_menu.html | Updated 2026-09-27 (company title) -->
+<!-- /templates/reports/reports_menu.html | Updated 2026-09-28 (Back to Main Menu) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -133,13 +133,11 @@
             background-color: #6d28d9;
         }
 
-        /* Active report (purple) */
         .card-active { border-top-color: #8b5cf6; }
         .card-active .card-icon { color: #8b5cf6; }
         .card-active .card-btn { background-color: #8b5cf6; }
         .card-active .card-btn:hover { background-color: #6d28d9; }
 
-        /* Coming soon (gray) */
         .card-soon {
             border-top-color: #adb5bd;
             opacity: 0.75;
@@ -166,7 +164,7 @@
         <i class="fas fa-chart-line"></i>
         Reports
     </div>
-    <a href="/manager/menu" class="back-btn">
+    <a href="/company/main_menu" class="back-btn">
         <i class="fas fa-arrow-left"></i> Back
     </a>
 </div>
@@ -185,14 +183,14 @@
         <button class="card-btn" onclick="window.location.href='/reports/daily'">Open</button>
     </div>
 
-    <!-- Period Report (Coming Soon) -->
-    <div class="card card-soon">
+    <!-- Period Report (ACTIVE) -->
+    <div class="card card-active">
         <div>
             <div class="card-icon"><i class="fas fa-calendar-week"></i></div>
             <div class="card-title">Period Report</div>
             <div class="card-desc">Week, month or custom date range</div>
         </div>
-        <button class="card-btn" disabled>Coming Soon</button>
+        <button class="card-btn" onclick="window.location.href='/reports/period'">Open</button>
     </div>
 
     <!-- Technician Ranking (Coming Soon) -->
