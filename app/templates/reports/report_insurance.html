@@ -1,0 +1,543 @@
+<!-- /templates/reports/report_insurance.html | Updated 2026-09-28 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.trade_name }} – Insurance Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef1f5 0%, #dde3ec 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header .title {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: 0.15s;
+        }
+
+        .back-btn:hover { background-color: white; color: #6d28d9; }
+
+        .content {
+            width: 94%;
+            max-width: 1200px;
+            margin: 14px auto 30px auto;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .range-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 7px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #666;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            transition: 0.15s;
+        }
+
+        .preset-btn:hover { background: #e5e7eb; color: #333; }
+
+        .preset-btn.active {
+            background: #8b5cf6;
+            color: white;
+            border-color: #8b5cf6;
+        }
+
+        .range-sep { color: #ccc; margin: 0 4px; }
+
+        .custom-form { display: flex; align-items: center; gap: 6px; }
+
+        .custom-form label {
+            font-weight: 600;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .custom-form input[type="date"] {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn-run {
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.15s;
+        }
+
+        .btn-run:hover { background-color: #6d28d9; }
+
+        .export-btns { display: flex; gap: 8px; }
+
+        .btn-export {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: not-allowed;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .range-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .range-label strong { color: #333; }
+
+        .warning-banner {
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-left: 5px solid #8b5cf6;
+        }
+
+        .summary-card .s-label {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .s-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #222;
+            margin: 3px 0;
+        }
+
+        .summary-card .s-sub {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .summary-card.claims    { border-left-color: #8b5cf6; }
+        .summary-card.invoiced  { border-left-color: #3b82f6; }
+        .summary-card.insurance { border-left-color: #10b981; }
+        .summary-card.customer  { border-left-color: #f59e0b; }
+        .summary-card.companies { border-left-color: #6366f1; }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 14px 18px;
+            margin-bottom: 14px;
+        }
+
+        .panel h2 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel h2 i { color: #8b5cf6; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: #f7f5ff;
+            color: #555;
+            font-weight: 600;
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+        }
+
+        tbody td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+
+        .total-row td {
+            background: #f0edff;
+            border-top: 2px solid #d8cdfc;
+            font-weight: 700;
+        }
+
+        .chevron {
+            color: #8b5cf6;
+            margin-right: 8px;
+            font-size: 12px;
+            transition: transform 0.15s;
+            display: inline-block;
+        }
+
+        .chevron.open { transform: rotate(90deg); }
+
+        .company-row {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .company-row:hover { background: #fafaff; }
+
+        .company-detail td {
+            background: #fafafa;
+            padding: 10px 16px;
+        }
+
+        .claims-table {
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .claims-table thead th {
+            background: #f3f4f6;
+            font-size: 11px;
+            padding: 6px 10px;
+        }
+
+        .claims-table tbody td {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            background: #e5e7eb;
+            color: #555;
+        }
+
+        .badge.badge-pending  { background: #fef3c7; color: #92400e; }
+        .badge.badge-approved { background: #dbeafe; color: #1e40af; }
+        .badge.badge-denied   { background: #fee2e2; color: #991b1b; }
+        .badge.badge-paid     { background: #d1fae5; color: #065f46; }
+        .badge.badge-partial  { background: #fed7aa; color: #c2410c; }
+
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 24px 0;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            .claims-table { overflow-x: auto; display: block; }
+            .claims-table table { min-width: 800px; }
+        }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; gap: 8px; padding: 12px 15px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .range-bar { flex-direction: column; align-items: stretch; }
+            .custom-form { flex-wrap: wrap; }
+            .summary-card .s-value { font-size: 20px; }
+            thead th, tbody td { padding: 6px 8px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">
+        <i class="fas fa-building-shield"></i>
+        Insurance Report
+    </div>
+    <a href="/reports" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="content">
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="range-bar">
+            <a href="/reports/insurance?preset=today"
+               class="preset-btn {% if preset == 'today' %}active{% endif %}">Today</a>
+            <a href="/reports/insurance?preset=week"
+               class="preset-btn {% if preset == 'week' %}active{% endif %}">This Week</a>
+            <a href="/reports/insurance?preset=month"
+               class="preset-btn {% if preset == 'month' %}active{% endif %}">This Month</a>
+
+            <span class="range-sep">|</span>
+
+            <form method="get" action="/reports/insurance" class="custom-form">
+                <input type="hidden" name="preset" value="custom">
+                <label for="date_from">From</label>
+                <input type="date" id="date_from" name="date_from" value="{{ date_from }}">
+                <label for="date_to">To</label>
+                <input type="date" id="date_to" name="date_to" value="{{ date_to }}">
+                <button type="submit" class="btn-run">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </form>
+        </div>
+        <div class="export-btns">
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Range label -->
+    <div class="range-label">
+        Showing claim dates <strong>{{ range_label }}</strong> ({{ range_days }} day(s))
+    </div>
+
+    {% if range_warning %}
+    <div class="warning-banner">
+        <i class="fas fa-triangle-exclamation"></i>
+        Range exceeded the 2-year limit. Showing the first 2 years only.
+    </div>
+    {% endif %}
+
+    <!-- Summary -->
+    <div class="summary-grid">
+        <div class="summary-card claims">
+            <div class="s-label">Total Claims</div>
+            <div class="s-value">{{ totals.claims }}</div>
+            <div class="s-sub">claims filed</div>
+        </div>
+        <div class="summary-card companies">
+            <div class="s-label">Companies</div>
+            <div class="s-value">{{ totals.companies }}</div>
+            <div class="s-sub">with claims in range</div>
+        </div>
+        <div class="summary-card invoiced">
+            <div class="s-label">Total Invoiced</div>
+            <div class="s-value">${{ "%.2f"|format(totals.invoiced) }}</div>
+            <div class="s-sub">full invoice amount</div>
+        </div>
+        <div class="summary-card insurance">
+            <div class="s-label">Insurance Paid</div>
+            <div class="s-value">${{ "%.2f"|format(totals.insurance) }}</div>
+            <div class="s-sub">covered by insurance</div>
+        </div>
+        <div class="summary-card customer">
+            <div class="s-label">Customer Paid</div>
+            <div class="s-value">${{ "%.2f"|format(totals.customer) }}</div>
+            <div class="s-sub">out of pocket</div>
+        </div>
+    </div>
+
+    <!-- By Insurance Company -->
+    <div class="panel">
+        <h2><i class="fas fa-building-shield"></i> By Insurance Company</h2>
+        {% if companies %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Insurance Company</th>
+                    <th class="text-center">Claims</th>
+                    <th class="text-right">Invoiced</th>
+                    <th class="text-right">Insurance</th>
+                    <th class="text-right">Customer</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in companies %}
+                <tr class="company-row" onclick="toggleCompany({{ loop.index0 }})">
+                    <td>
+                        <i class="fas fa-chevron-right chevron" id="chev-{{ loop.index0 }}"></i>
+                        {{ c.company_name }}
+                    </td>
+                    <td class="text-center">{{ c.claims|length }}</td>
+                    <td class="text-right">${{ "%.2f"|format(c.total_invoiced) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(c.total_insurance) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(c.total_customer) }}</td>
+                </tr>
+                <tr class="company-detail" id="detail-{{ loop.index0 }}" style="display:none;">
+                    <td colspan="5">
+                        <div class="claims-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Invoice #</th>
+                                        <th>Customer</th>
+                                        <th>Vehicle</th>
+                                        <th>Claim #</th>
+                                        <th>Claim Date</th>
+                                        <th class="text-right">Total</th>
+                                        <th class="text-right">Insurance</th>
+                                        <th class="text-right">Customer</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for r in c.claims %}
+                                    <tr>
+                                        <td>{{ r.invoice_number }}</td>
+                                        <td>{{ r.customer_name }}</td>
+                                        <td>{{ r.vehicle or "—" }}</td>
+                                        <td>{{ r.claim_number }}</td>
+                                        <td>{{ r.claim_date_label }}</td>
+                                        <td class="text-right">${{ "%.2f"|format(r.total) }}</td>
+                                        <td class="text-right">${{ "%.2f"|format(r.insurance) }}</td>
+                                        <td class="text-right">${{ "%.2f"|format(r.customer) }}</td>
+                                        <td>
+                                            {% if r.status %}
+                                                {% set s = r.status|upper %}
+                                                <span class="badge
+                                                    {% if s == 'PENDING' %}badge-pending
+                                                    {% elif s == 'APPROVED' %}badge-approved
+                                                    {% elif s == 'DENIED' %}badge-denied
+                                                    {% elif s == 'PAID' %}badge-paid
+                                                    {% elif s == 'PARTIAL' %}badge-partial
+                                                    {% endif %}">{{ r.status }}</span>
+                                            {% else %}
+                                                <span style="color:#bbb;">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td>Totals</td>
+                    <td class="text-center">{{ totals.claims }}</td>
+                    <td class="text-right">${{ "%.2f"|format(totals.invoiced) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(totals.insurance) }}</td>
+                    <td class="text-right">${{ "%.2f"|format(totals.customer) }}</td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No insurance claims for this period.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    function toggleCompany(idx) {
+        const row  = document.getElementById('detail-' + idx);
+        const chev = document.getElementById('chev-' + idx);
+        if (row.style.display === 'none') {
+            row.style.display = '';
+            chev.classList.add('open');
+        } else {
+            row.style.display = 'none';
+            chev.classList.remove('open');
+        }
+    }
+</script>
+
+</body>
+</html>

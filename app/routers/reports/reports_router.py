@@ -1,4 +1,4 @@
-# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (outstanding report)
+# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (insurance report)
 
 from fastapi import APIRouter, Request, Query, Depends
 from sqlalchemy.orm import Session, joinedload
@@ -9,6 +9,7 @@ from app.core.template_loader import jinja as templates
 from app.database.database import SessionLocal
 from app.models.invoices.invoice_model import Invoice, InvoiceItem
 from app.models.invoices.invoice_payment_model import InvoicePayment
+from app.models.invoices.insurance_company_model import InsuranceCompany
 from app.models.company.user import User  # noqa: F401 (registra el modelo para relationships)
 from app.models.company.company import Company
 from app.models.customers.customer_model import Customer
@@ -657,7 +658,6 @@ def report_outstanding(
     end = None
     end_exclusive = None
 
-    # ---- Resolve date range ----
     if preset == "custom" and date_from and date_to:
         try:
             start = datetime.strptime(date_from, "%Y-%m-%d").date()
@@ -683,7 +683,6 @@ def report_outstanding(
         range_label   = f"{_fmt_date(start)} – {_fmt_date(end)}"
         range_days    = (end - start).days + 1
 
-    # ---- Query invoices with outstanding status ----
     q = db.query(Invoice).filter(
         Invoice.status.in_(["PENDING", "PARTIALLY_PAID"])
     )
@@ -696,14 +695,12 @@ def report_outstanding(
 
     payments_map = _payments_by_invoice(db, [inv.id for inv in invoices])
 
-    # ---- Bulk-load customer names ----
     customer_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
     customers_map = {}
     if customer_ids:
         custs = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()
         customers_map = {c.id: c.name for c in custs}
 
-    # ---- Build rows ----
     rows = []
     grand_total   = 0.0
     grand_paid    = 0.0
@@ -715,7 +712,7 @@ def report_outstanding(
         balance = total - paid
 
         if balance <= 0:
-            continue  # sanity check
+            continue
 
         inv_date = inv.created_at.date() if inv.created_at else None
         age_days = (today - inv_date).days if inv_date else 0
@@ -761,5 +758,230 @@ def report_outstanding(
             "range_warning": range_warning,
             "summary":       summary,
             "rows":          rows,
+        }
+    )
+
+
+# ============================================================
+# INSURANCE REPORT
+# ============================================================
+
+@router.get("/insurance")
+def report_insurance(
+    request: Request,
+    preset: str = Query(default=None),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    """Insurance report: claims grouped by insurance company."""
+    company = db.query(Company).first()
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
+    end_exclusive = end + timedelta(days=1)
+
+    # Base query: invoices with insurance company + claim date in range, non-VOID
+    invoices = db.query(Invoice).options(
+        joinedload(Invoice.insurance_company)
+    ).filter(
+        Invoice.insurance_company_id.isnot(None),
+        Invoice.insurance_claim_date.isnot(None),
+        Invoice.insurance_claim_date >= start,
+        Invoice.insurance_claim_date < end_exclusive,
+        Invoice.status != "VOID"
+    ).order_by(Invoice.insurance_company_id, Invoice.id).all()
+
+    # Customer names
+    customer_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
+    customers_map = {}
+    if customer_ids:
+        custs = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()
+        customers_map = {c.id: c.name for c in custs}
+
+    # Group by insurance company
+    comp_map = {}
+    for inv in invoices:
+        comp_id   = inv.insurance_company_id
+        comp_name = inv.insurance_company.name if inv.insurance_company else f"Company #{comp_id}"
+
+        if comp_id not in comp_map:
+            comp_map[comp_id] = {
+                "company_id":      comp_id,
+                "company_name":    comp_name,
+                "claims":          [],
+                "total_invoiced":  0.0,
+                "total_insurance": 0.0,
+                "total_customer":  0.0,
+            }
+
+        total     = float(inv.total or 0)
+        ins_amt   = float(inv.insurance_amount or 0)
+        cust_amt  = float(inv.customer_amount or 0)
+        vehicle   = f"{inv.vehicle_make or ''} {inv.vehicle_model or ''}".strip()
+        claim_date_label = _fmt_date(inv.insurance_claim_date) if inv.insurance_claim_date else "—"
+
+        comp_map[comp_id]["claims"].append({
+            "id":             inv.id,
+            "invoice_number": inv.invoice_number or f"#{inv.id}",
+            "customer_id":    inv.customer_id,
+            "customer_name":  customers_map.get(inv.customer_id, f"#{inv.customer_id}"),
+            "vehicle":        vehicle,
+            "claim_number":   inv.insurance_claim_number or "—",
+            "claim_date_label": claim_date_label,
+            "total":          total,
+            "insurance":      ins_amt,
+            "customer":       cust_amt,
+            "status":         inv.insurance_status or "",
+        })
+        comp_map[comp_id]["total_invoiced"]  += total
+        comp_map[comp_id]["total_insurance"] += ins_amt
+        comp_map[comp_id]["total_customer"]  += cust_amt
+
+    companies = list(comp_map.values())
+    companies.sort(key=lambda c: c["total_invoiced"], reverse=True)
+
+    # Grand totals
+    totals = {
+        "claims":          sum(len(c["claims"]) for c in companies),
+        "invoiced":        sum(c["total_invoiced"] for c in companies),
+        "insurance":       sum(c["total_insurance"] for c in companies),
+        "customer":        sum(c["total_customer"] for c in companies),
+        "companies":       len(companies),
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/report_insurance.html",
+        context={
+            "company":       company,
+            "preset":        preset,
+            "date_from":     start.isoformat(),
+            "date_to":       end.isoformat(),
+            "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "companies":     companies,
+            "totals":        totals,
+        }
+    )
+
+# ============================================================
+# WARRANTY REPORT
+# ============================================================
+
+@router.get("/warranty")
+def report_warranty(
+    request: Request,
+    preset: str = Query(default=None),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    show: str = Query(default="all"),  # 'all' | 'active'
+    db: Session = Depends(get_db)
+):
+    """Warranty report: flat list of warranty jobs with status."""
+    company = db.query(Company).first()
+    preset, start, end, range_warning = _resolve_period(preset, date_from, date_to)
+    end_exclusive = end + timedelta(days=1)
+    today = date.today()
+
+    # ---- Main query: warranty invoices with start date in range ----
+    invoices = db.query(Invoice).options(
+        joinedload(Invoice.warranty_reference_invoice)
+    ).filter(
+        Invoice.is_warranty == True,
+        Invoice.status != "VOID",
+        Invoice.warranty_start_date.isnot(None),
+        Invoice.warranty_start_date >= start,
+        Invoice.warranty_start_date < end_exclusive
+    ).order_by(Invoice.warranty_start_date.desc(), Invoice.id.desc()).all()
+
+    # ---- Unknown dates: warranty invoices with NULL start date (all-time) ----
+    unknown_invoices = db.query(Invoice).options(
+        joinedload(Invoice.warranty_reference_invoice)
+    ).filter(
+        Invoice.is_warranty == True,
+        Invoice.status != "VOID",
+        Invoice.warranty_start_date.is_(None)
+    ).order_by(Invoice.id.desc()).all()
+
+    # ---- Customer names ----
+    all_customer_ids = set()
+    for inv in invoices + unknown_invoices:
+        if inv.customer_id:
+            all_customer_ids.add(inv.customer_id)
+
+    customers_map = {}
+    if all_customer_ids:
+        custs = db.query(Customer).filter(Customer.id.in_(all_customer_ids)).all()
+        customers_map = {c.id: c.name for c in custs}
+
+    # ---- Row builder ----
+    def _build_row(inv):
+        vehicle = f"{inv.vehicle_make or ''} {inv.vehicle_model or ''}".strip()
+        s_d = inv.warranty_start_date
+        e_d = inv.warranty_end_date
+
+        if s_d and e_d:
+            if today < s_d:
+                status = "Future"
+            elif today > e_d:
+                status = "Expired"
+            else:
+                status = "Active"
+        elif s_d and not e_d:
+            status = "Active"
+        else:
+            status = "Unknown"
+
+        orig_inv = inv.warranty_reference_invoice
+        if orig_inv:
+            orig_label = orig_inv.invoice_number or f"#{orig_inv.id}"
+        else:
+            orig_label = "—"
+
+        return {
+            "id":               inv.id,
+            "invoice_number":   inv.invoice_number or f"#{inv.id}",
+            "customer_id":      inv.customer_id,
+            "customer_name":    customers_map.get(inv.customer_id, f"#{inv.customer_id}"),
+            "vehicle":          vehicle,
+            "original_invoice": orig_label,
+            "start_label":      _fmt_date(s_d) if s_d else "—",
+            "end_label":        _fmt_date(e_d) if e_d else "—",
+            "notes":            inv.warranty_notes or "",
+            "total":            float(inv.total or 0),
+            "status":           status,
+        }
+
+    rows = [_build_row(inv) for inv in invoices]
+    unknown_rows = [_build_row(inv) for inv in unknown_invoices]
+
+    # ---- Summary: always reflects ALL warranties in period (ignores toggle) ----
+    summary = {
+        "total":    len(rows),
+        "active":   sum(1 for r in rows if r["status"] == "Active"),
+        "expired":  sum(1 for r in rows if r["status"] == "Expired"),
+        "future":   sum(1 for r in rows if r["status"] == "Future"),
+        "amount":   sum(r["total"] for r in rows),
+    }
+
+    # ---- Apply toggle ----
+    if show == "active":
+        rows = [r for r in rows if r["status"] == "Active"]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/report_warranty.html",
+        context={
+            "company":       company,
+            "preset":        preset,
+            "date_from":     start.isoformat(),
+            "date_to":       end.isoformat(),
+            "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
+            "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "show":          show,
+            "summary":       summary,
+            "rows":          rows,
+            "unknown_rows":  unknown_rows,
         }
     )
