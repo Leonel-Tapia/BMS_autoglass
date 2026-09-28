@@ -1,4 +1,4 @@
-# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (top products - part number only)
+# /app/routers/reports/reports_router.py | Updated: 2026-09-28 (outstanding report)
 
 from fastapi import APIRouter, Request, Query, Depends
 from sqlalchemy.orm import Session, joinedload
@@ -11,6 +11,7 @@ from app.models.invoices.invoice_model import Invoice, InvoiceItem
 from app.models.invoices.invoice_payment_model import InvoicePayment
 from app.models.company.user import User  # noqa: F401 (registra el modelo para relationships)
 from app.models.company.company import Company
+from app.models.customers.customer_model import Customer
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -627,6 +628,136 @@ def report_top_products(
             "date_to":       end.isoformat(),
             "range_label":   f"{_fmt_date(start)} – {_fmt_date(end)}",
             "range_days":    (end - start).days + 1,
+            "range_warning": range_warning,
+            "summary":       summary,
+            "rows":          rows,
+        }
+    )
+
+
+# ============================================================
+# OUTSTANDING (PENDING BALANCES)
+# ============================================================
+
+@router.get("/outstanding")
+def report_outstanding(
+    request: Request,
+    preset: str = Query(default="all"),
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    db: Session = Depends(get_db)
+):
+    """Outstanding report: invoices with pending balance (all-time by default)."""
+    company = db.query(Company).first()
+    today = date.today()
+    range_warning = False
+    range_label = None
+    range_days = None
+    start = None
+    end = None
+    end_exclusive = None
+
+    # ---- Resolve date range ----
+    if preset == "custom" and date_from and date_to:
+        try:
+            start = datetime.strptime(date_from, "%Y-%m-%d").date()
+            end   = datetime.strptime(date_to,   "%Y-%m-%d").date()
+            if start > end:
+                start, end = end, start
+        except ValueError:
+            preset = "all"
+            start = end = None
+    elif preset == "month":
+        start, end = _month_range(today)
+    elif preset == "year":
+        start = today.replace(month=1, day=1)
+        end   = today.replace(month=12, day=31)
+    else:
+        preset = "all"
+
+    if start and end:
+        if (end - start).days > MAX_RANGE_DAYS:
+            end = start + timedelta(days=MAX_RANGE_DAYS)
+            range_warning = True
+        end_exclusive = end + timedelta(days=1)
+        range_label   = f"{_fmt_date(start)} – {_fmt_date(end)}"
+        range_days    = (end - start).days + 1
+
+    # ---- Query invoices with outstanding status ----
+    q = db.query(Invoice).filter(
+        Invoice.status.in_(["PENDING", "PARTIALLY_PAID"])
+    )
+    if end_exclusive:
+        q = q.filter(
+            Invoice.created_at >= start,
+            Invoice.created_at < end_exclusive
+        )
+    invoices = q.all()
+
+    payments_map = _payments_by_invoice(db, [inv.id for inv in invoices])
+
+    # ---- Bulk-load customer names ----
+    customer_ids = list({inv.customer_id for inv in invoices if inv.customer_id})
+    customers_map = {}
+    if customer_ids:
+        custs = db.query(Customer).filter(Customer.id.in_(customer_ids)).all()
+        customers_map = {c.id: c.name for c in custs}
+
+    # ---- Build rows ----
+    rows = []
+    grand_total   = 0.0
+    grand_paid    = 0.0
+    grand_balance = 0.0
+
+    for inv in invoices:
+        paid    = payments_map.get(inv.id, 0.0)
+        total   = float(inv.total or 0)
+        balance = total - paid
+
+        if balance <= 0:
+            continue  # sanity check
+
+        inv_date = inv.created_at.date() if inv.created_at else None
+        age_days = (today - inv_date).days if inv_date else 0
+        vehicle  = f"{inv.vehicle_make or ''} {inv.vehicle_model or ''}".strip()
+
+        rows.append({
+            "id":             inv.id,
+            "invoice_number": inv.invoice_number or f"#{inv.id}",
+            "customer_id":    inv.customer_id,
+            "customer_name":  customers_map.get(inv.customer_id, f"#{inv.customer_id}"),
+            "vehicle":        vehicle,
+            "date_iso":       inv_date.isoformat() if inv_date else "",
+            "date_label":     _fmt_date(inv_date) if inv_date else "—",
+            "age_days":       age_days,
+            "total":          total,
+            "paid":           paid,
+            "balance":        balance,
+            "status":         inv.status or "",
+        })
+        grand_total   += total
+        grand_paid    += paid
+        grand_balance += balance
+
+    rows.sort(key=lambda r: r["balance"], reverse=True)
+
+    summary = {
+        "count":   len(rows),
+        "total":   grand_total,
+        "paid":    grand_paid,
+        "balance": grand_balance,
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reports/report_outstanding.html",
+        context={
+            "company":       company,
+            "preset":        preset,
+            "date_from":     start.isoformat() if start else "",
+            "date_to":       end.isoformat() if end else "",
+            "range_label":   range_label,
+            "range_days":    range_days,
             "range_warning": range_warning,
             "summary":       summary,
             "rows":          rows,

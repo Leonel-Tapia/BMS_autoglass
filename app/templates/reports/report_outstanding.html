@@ -1,0 +1,499 @@
+<!-- /templates/reports/report_outstanding.html | Updated 2026-09-28 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.trade_name }} – Outstanding</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef1f5 0%, #dde3ec 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 12px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header .title {
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: 0.15s;
+        }
+
+        .back-btn:hover { background-color: white; color: #6d28d9; }
+
+        .content {
+            width: 94%;
+            max-width: 1200px;
+            margin: 14px auto 30px auto;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .range-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 7px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #666;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            transition: 0.15s;
+        }
+
+        .preset-btn:hover { background: #e5e7eb; color: #333; }
+
+        .preset-btn.active {
+            background: #8b5cf6;
+            color: white;
+            border-color: #8b5cf6;
+        }
+
+        .range-sep { color: #ccc; margin: 0 4px; }
+
+        .custom-form { display: flex; align-items: center; gap: 6px; }
+
+        .custom-form label {
+            font-weight: 600;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .custom-form input[type="date"] {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn-run {
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.15s;
+        }
+
+        .btn-run:hover { background-color: #6d28d9; }
+
+        .export-btns { display: flex; gap: 8px; }
+
+        .btn-export {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: not-allowed;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .range-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .range-label strong { color: #333; }
+
+        .warning-banner {
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-left: 5px solid #8b5cf6;
+        }
+
+        .summary-card .s-label {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .s-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #222;
+            margin: 3px 0;
+        }
+
+        .summary-card .s-sub {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .summary-card.count   { border-left-color: #8b5cf6; }
+        .summary-card.total   { border-left-color: #3b82f6; }
+        .summary-card.paid    { border-left-color: #10b981; }
+        .summary-card.balance { border-left-color: #f59e0b; }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            padding: 14px 18px;
+            margin-bottom: 14px;
+        }
+
+        .panel h2 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel h2 i { color: #8b5cf6; }
+
+        .table-scroll {
+            max-height: 620px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #ececec;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: #f7f5ff;
+            color: #555;
+            font-weight: 600;
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            box-shadow: 0 1px 0 #e5e7eb;
+        }
+
+        tbody td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:nth-child(even) { background: #fafafd; }
+        tbody tr:hover { background: #f3efff; }
+
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+
+        .col-invnum  { width: 110px; }
+        .col-cust    { width: 22%; }
+        .col-veh     { width: 15%; }
+        .col-date    { width: 105px; }
+        .col-age     { width: 70px; }
+        .col-total   { width: 95px; }
+        .col-paid    { width: 95px; }
+        .col-bal     { width: 105px; }
+        .col-status  { width: 110px; }
+
+        .total-row td {
+            background: #f4f1ff;
+            border-top: 2px solid #d8cdfc;
+            font-weight: 700;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .balance-cell {
+            font-weight: 700;
+            color: #b45309;
+        }
+
+        .badge {
+            background: #e5e7eb;
+            color: #555;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge.badge-pending { background: #fee2e2; color: #991b1b; }
+        .badge.badge-partial { background: #fef3c7; color: #92400e; }
+
+        .age-pill {
+            display: inline-block;
+            min-width: 34px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .age-fresh  { background: #d1fae5; color: #065f46; }
+        .age-warn   { background: #fef3c7; color: #92400e; }
+        .age-late   { background: #fed7aa; color: #c2410c; }
+        .age-danger { background: #fee2e2; color: #991b1b; }
+
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 24px 0;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            .table-scroll { overflow-x: auto; }
+            table { min-width: 900px; }
+        }
+
+        @media (max-width: 700px) {
+            .header { flex-direction: column; gap: 8px; padding: 12px 15px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .range-bar { flex-direction: column; align-items: stretch; }
+            .custom-form { flex-wrap: wrap; }
+            .summary-card .s-value { font-size: 20px; }
+            thead th, tbody td { padding: 6px 8px; font-size: 12px; }
+            .table-scroll { max-height: 450px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">
+        <i class="fas fa-file-invoice-dollar"></i>
+        Outstanding
+    </div>
+    <a href="/reports" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="content">
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="range-bar">
+            <a href="/reports/outstanding?preset=all"
+               class="preset-btn {% if preset == 'all' %}active{% endif %}">All Time</a>
+            <a href="/reports/outstanding?preset=month"
+               class="preset-btn {% if preset == 'month' %}active{% endif %}">This Month</a>
+            <a href="/reports/outstanding?preset=year"
+               class="preset-btn {% if preset == 'year' %}active{% endif %}">This Year</a>
+
+            <span class="range-sep">|</span>
+
+            <form method="get" action="/reports/outstanding" class="custom-form">
+                <input type="hidden" name="preset" value="custom">
+                <label for="date_from">From</label>
+                <input type="date" id="date_from" name="date_from" value="{{ date_from }}">
+                <label for="date_to">To</label>
+                <input type="date" id="date_to" name="date_to" value="{{ date_to }}">
+                <button type="submit" class="btn-run">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            </form>
+        </div>
+        <div class="export-btns">
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn-export" disabled title="Coming soon">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Range label -->
+    <div class="range-label">
+        {% if range_label %}
+            Showing invoices created <strong>{{ range_label }}</strong> ({{ range_days }} day(s))
+        {% else %}
+            Showing <strong>all outstanding invoices</strong> (all-time)
+        {% endif %}
+    </div>
+
+    {% if range_warning %}
+    <div class="warning-banner">
+        <i class="fas fa-triangle-exclamation"></i>
+        Range exceeded the 2-year limit. Showing the first 2 years only.
+    </div>
+    {% endif %}
+
+    <!-- Summary -->
+    <div class="summary-grid">
+        <div class="summary-card count">
+            <div class="s-label">Open Invoices</div>
+            <div class="s-value">{{ summary.count }}</div>
+            <div class="s-sub">with balance due</div>
+        </div>
+        <div class="summary-card total">
+            <div class="s-label">Total Invoiced</div>
+            <div class="s-value">${{ "%.2f"|format(summary.total) }}</div>
+            <div class="s-sub">original amount</div>
+        </div>
+        <div class="summary-card paid">
+            <div class="s-label">Collected</div>
+            <div class="s-value">${{ "%.2f"|format(summary.paid) }}</div>
+            <div class="s-sub">already received</div>
+        </div>
+        <div class="summary-card balance">
+            <div class="s-label">Outstanding Balance</div>
+            <div class="s-value">${{ "%.2f"|format(summary.balance) }}</div>
+            <div class="s-sub">pending to collect</div>
+        </div>
+    </div>
+
+    <!-- Outstanding table -->
+    <div class="panel">
+        <h2><i class="fas fa-list"></i> Outstanding Invoices</h2>
+        {% if rows %}
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-invnum">Invoice #</th>
+                        <th class="col-cust">Customer</th>
+                        <th class="col-veh">Vehicle</th>
+                        <th class="col-date">Date</th>
+                        <th class="text-center col-age">Age</th>
+                        <th class="text-right col-total">Total</th>
+                        <th class="text-right col-paid">Paid</th>
+                        <th class="text-right col-bal">Balance</th>
+                        <th class="col-status">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr>
+                        <td>{{ r.invoice_number }}</td>
+                        <td>{{ r.customer_name }}</td>
+                        <td>{{ r.vehicle or "—" }}</td>
+                        <td>{{ r.date_label }}</td>
+                        <td class="text-center">
+                            {% if r.age_days <= 30 %}
+                                <span class="age-pill age-fresh">{{ r.age_days }}d</span>
+                            {% elif r.age_days <= 60 %}
+                                <span class="age-pill age-warn">{{ r.age_days }}d</span>
+                            {% elif r.age_days <= 90 %}
+                                <span class="age-pill age-late">{{ r.age_days }}d</span>
+                            {% else %}
+                                <span class="age-pill age-danger">{{ r.age_days }}d</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">${{ "%.2f"|format(r.total) }}</td>
+                        <td class="text-right">${{ "%.2f"|format(r.paid) }}</td>
+                        <td class="text-right balance-cell">${{ "%.2f"|format(r.balance) }}</td>
+                        <td>
+                            <span class="badge {% if r.status == 'PENDING' %}badge-pending{% elif r.status == 'PARTIALLY_PAID' %}badge-partial{% endif %}">{{ r.status }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="5">Totals ({{ summary.count }} invoices)</td>
+                        <td class="text-right">${{ "%.2f"|format(summary.total) }}</td>
+                        <td class="text-right">${{ "%.2f"|format(summary.paid) }}</td>
+                        <td class="text-right balance-cell">${{ "%.2f"|format(summary.balance) }}</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty">No outstanding invoices. Everything is collected.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+</body>
+</html>
