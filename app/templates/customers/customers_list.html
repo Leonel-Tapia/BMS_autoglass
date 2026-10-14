@@ -153,7 +153,7 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Phone</th>
+                    <th>Primary Phone</th>
                     <th>Address</th>
                     <th>City</th>
                     <th>State</th>
@@ -169,7 +169,7 @@
                         <a href="/call_center/lookup/{{ c.id }}?next={{ next | default('/customers/list') }}" 
                            class="customer-link">{{ c.name }}</a>
                     </td>
-                    <td>{{ c.phone }}</td>
+                    <td>{{ c.contact_phone }}</td>
                     <td>{{ c.address }}</td>
                     <td>{{ c.city }}</td>
                     <td>{{ c.state }}</td>

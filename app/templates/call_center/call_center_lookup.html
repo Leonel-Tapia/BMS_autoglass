@@ -50,14 +50,14 @@
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
         <div style="flex-grow: 1;">
-            <strong style="font-size: 16px;">{{ customer.name }}</strong>
+            <strong style="font-size: 16px;">{{ customer.name }}</strong>{% if customer.contact_phone %} | <span style="font-size: 14px; color: #555;">{{ customer.contact_phone }}</span>{% endif %}
             <span class="customer-since">
                 {% if customer.created_at %}
                     | Customer since: {{ customer.created_at.strftime('%Y-%m-%d') }}
                 {% endif %}
             </span>
             <br>
-            <span style="font-size: 14px; color: #555;">{{ customer.phone }} — {{ customer.address }}</span> | 
+            <span style="font-size: 14px; color: #555;">{{ customer.address }}</span> | 
             <span style="font-size: 14px;">{{ customer.language }}</span> | 
             <span style="font-size: 14px;"><strong>Mood:</strong> 
                 <span class="{% if customer.mood == 'bad' %}mood-bad{% else %}mood-good{% endif %}">
