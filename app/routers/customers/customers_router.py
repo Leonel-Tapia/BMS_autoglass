@@ -31,7 +31,9 @@ def customers_search_json(q: str = "", db: Session = Depends(get_db)):
             or_(
                 Customer.name.ilike(f"%{q}%"),
                 Customer.phone.ilike(f"%{q}%"),
-                Customer.phone_numeric.ilike(f"%{q_clean}%") if q_clean else False
+                Customer.contact_phone.ilike(f"%{q}%"),
+                Customer.phone_numeric.ilike(f"%{q_clean}%") if q_clean else False,
+                Customer.contact_phone_numeric.ilike(f"%{q_clean}%") if q_clean else False
             )
         )
         .order_by(Customer.name.asc())
@@ -43,6 +45,11 @@ def customers_search_json(q: str = "", db: Session = Depends(get_db)):
             "id": c.id,
             "name": c.name,
             "phone": c.phone,
+            "contact_phone": c.contact_phone,
+            "address": c.address,
+            "city": c.city,
+            "state": c.state,
+            "zip_code": c.zip_code,
             "mood": c.mood,
             "status": c.status
         }

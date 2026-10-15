@@ -241,11 +241,11 @@
                             <td>
                                 <a href="/call_center/lookup/${c.id}?next=/customers/list" class="customer-link">${c.name || ''}</a>
                             </td>
-                            <td>${c.phone || ''}</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
+                            <td>${c.contact_phone || c.phone || ''}</td>
+                            <td>${c.address || ''}</td>
+                            <td>${c.city || ''}</td>
+                            <td>${c.state || ''}</td>
+                            <td>${c.zip_code || ''}</td>
                             <td>
                                 ${c.mood && ['sad','angry'].includes(c.mood.toLowerCase())
                                     ? '<span class="text-danger fw-bold">' + c.mood + '</span>'
