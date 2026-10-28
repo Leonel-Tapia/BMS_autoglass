@@ -57,7 +57,7 @@
                 {% endif %}
             </span>
             <br>
-            <span style="font-size: 14px; color: #555;">{{ customer.address }}</span> | 
+            <span style="font-size: 14px; color: #555;">{{ customer.address }}{% if customer.city %}, {{ customer.city }}{% endif %}{% if customer.state %}, {{ customer.state }}{% endif %}{% if customer.zip_code %} {{ customer.zip_code }}{% endif %}</span> | 
             <span style="font-size: 14px;">{{ customer.language }}</span> | 
             <span style="font-size: 14px;"><strong>Mood:</strong> 
                 <span class="{% if customer.mood == 'bad' %}mood-bad{% else %}mood-good{% endif %}">
@@ -73,7 +73,7 @@
                class="btn-small">Edit Customer</a>
 
             <!-- View Map -->
-            <a href="https://maps.google.com/?q={{ customer.address }}" target="_blank" class="btn-small">View Map</a>
+            <a href="https://maps.google.com/?q={{ customer.address }}{% if customer.city %} {{ customer.city }}{% endif %}{% if customer.state %} {{ customer.state }}{% endif %}{% if customer.zip_code %} {{ customer.zip_code }}{% endif %}" target="_blank" class="btn-small">View Map</a>
 
             <!-- ESTIMATES BUTTON - Dinámico según rol -->
             {% set estimate_origin = 'call_center' if request.session.get('role')|lower == 'sales' else 'manager' %}
