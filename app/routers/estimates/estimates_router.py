@@ -12,6 +12,7 @@ from app.models.estimates.estimate_model import Estimate, EstimateDetail
 from app.models.customers.customer_model import Customer
 from app.models.inventory.year_model import Year
 from app.models.inventory.time_model import TimeCatalog
+from app.models.invoices.invoice_model import Invoice
 from app.models.company.company import Company
 
 router = APIRouter(
@@ -85,6 +86,42 @@ def check_availability(
     is_occupied = estimate_exists or invoice_exists
 
     return {"exists": is_occupied}
+
+@router.get("/invoices/check_bulk")
+def check_availability_bulk(
+    date: str,
+    service_type: str,
+    exclude_estimate_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    service_type_upper = service_type.upper()
+    
+    # 1. Estimados ocupados en esa fecha y servicio
+    estimates = db.query(Estimate).filter(
+        Estimate.estimated_appointment_date == date,
+        Estimate.service_type == service_type_upper,
+        Estimate.status != "Void"
+    ).all()
+    
+    occupied_times = set()
+    for est in estimates:
+        if exclude_estimate_id and est.id == exclude_estimate_id:
+            continue
+        if est.estimated_appointment_time:
+            occupied_times.add(str(est.estimated_appointment_time)[:5])
+            
+    # 2. Facturas (Invoices) ocupadas en esa fecha
+    # Nota: Invoice no tiene service_type en la BD, por lo que se bloquea la hora globalmente
+    invoices = db.query(Invoice).filter(
+        Invoice.estimated_appointment_date == date,
+        Invoice.status != "Void"
+    ).all()
+    
+    for inv in invoices:
+        if inv.estimated_appointment_time:
+            occupied_times.add(str(inv.estimated_appointment_time)[:5])
+            
+    return {"occupied": list(occupied_times)}
 
 
 # ============================================================

@@ -340,11 +340,15 @@
                 </div>
 
                 <div class="d-flex align-items-center" style="gap: 15px;">
-                    {% set cancel_url = '/customers/list' %}
-                    {% if origin == 'call_center' %}
-                        {% set cancel_url = '/call_center/search' %}
-                    {% elif origin == 'manager' %}
-                        {% set cancel_url = '/manager/dashboard' %}
+                    {% set cancel_url = request.query_params.get('next') or '/customers/list' %}
+                    {% if not request.query_params.get('next') %}
+                        {% if origin == 'call_center' %}
+                            {% set cancel_url = '/call_center/search' %}
+                        {% elif origin == 'manager' %}
+                            {% set cancel_url = '/manager/dashboard' %}
+                        {% elif origin == 'technician' %}
+                            {% set cancel_url = '/technician/dashboard' %}
+                        {% endif %}
                     {% endif %}
 
                     <a href="{{ cancel_url }}" class="btn btn-secondary btn-sm">Cancel</a>
@@ -742,33 +746,32 @@ async function loadTimes(date, serviceType, containerId, countId) {
     const currentSelectedTime = document.getElementById("time-hidden").value;
     const currentMilitary = convertToMilitary(currentSelectedTime);
 
-    const promises = timeCatalog.map(async (time) => {
-        try {
-            let url = `/estimates/invoices/check?date=${date}&time=${encodeURIComponent(time)}&service_type=${serviceType}`;
-            if (currentEstimateId) {
-                url += `&exclude_estimate_id=${currentEstimateId}`;
-            }
-            const r = await fetch(url);
-            const data = await r.json();
-            return { time, exists: data.exists };
-        } catch (e) {
-            return { time, exists: false };
+    let occupiedSet = new Set();
+    try {
+        let url = `/estimates/invoices/check_bulk?date=${date}&service_type=${serviceType}`;
+        if (currentEstimateId) {
+            url += `&exclude_estimate_id=${currentEstimateId}`;
         }
-    });
+        const r = await fetch(url);
+        const data = await r.json();
+        occupiedSet = new Set(data.occupied || []);
+    } catch (e) {
+        console.error("Error loading bulk times", e);
+    }
 
-    const results = await Promise.all(promises);
     container.innerHTML = ""; 
     
     let unavailableCount = 0;
 
-    results.forEach(({ time, exists }) => {
+    timeCatalog.forEach((time) => {
         const btn = document.createElement("button");
         btn.classList.add("time-btn");
 
         const display = convertToDisplay(time);
+        const cleanTime = time.substring(0, 5);
 
-        const isCurrentEstimateTime = (date === document.getElementById("appointment-date").value && time.substring(0,5) === currentMilitary.substring(0,5));
-        const isOccupied = exists || isCurrentEstimateTime;
+        const isCurrentEstimateTime = (date === document.getElementById("appointment-date").value && cleanTime === currentMilitary.substring(0, 5));
+        const isOccupied = occupiedSet.has(cleanTime) || isCurrentEstimateTime;
 
         if (isOccupied) {
             unavailableCount++;
