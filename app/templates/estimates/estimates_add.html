@@ -209,7 +209,7 @@
                     <label class="mb-0 mt-1">Time</label>
 
                     <input id="time-display" class="form-control form-control-sm"
-                           style="height:26px;" placeholder="Select time..."
+                           style="height:26px; cursor:pointer;" placeholder="Select time..."
                            value="{{ estimate.estimated_appointment_time.strftime('%H:%M') if estimate and estimate.estimated_appointment_time else '' }}"
                            readonly>
 
@@ -848,6 +848,10 @@ document.getElementById("appointment-date").addEventListener("click", function()
     } else {
         openAppointmentModal();
     }
+});
+
+document.getElementById("time-display").addEventListener("click", function() {
+    openAppointmentModal();
 });
 </script>
 
