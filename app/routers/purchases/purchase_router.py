@@ -11,12 +11,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from decimal import Decimal
 import datetime
+import json
 
 from app.database.database import get_db 
 from app.models.vendors.vendor_model import Vendor 
 from app.models.purchases.purchase_model import PurchaseOrder, PurchaseOrderDetail
 from app.models.purchases.purchase_order_receiving import PurchaseOrderReceiving
-from app.models.inventory.inventory import InventoryPart 
+from app.models.inventory.windshield_catalog_model import WindshieldCatalog 
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 templates = Jinja2Templates(directory="app/templates")
@@ -27,11 +28,11 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/create", response_class=HTMLResponse)
 def create_purchase_order_view(request: Request, vendor_id: int = None, db: Session = Depends(get_db)):
     vendor_data = db.query(Vendor).filter(Vendor.id == vendor_id).first() if vendor_id else None
-    parts_catalog = db.query(InventoryPart).filter(InventoryPart.is_active == True).all()
+    parts_catalog = db.query(WindshieldCatalog).all()
     return templates.TemplateResponse(
         request=request, 
         name="purchases/purchase_create.html", 
-        context={"title": "New PO", "vendor": vendor_data, "parts_catalog": parts_catalog}
+        context={"title": "New PO", "vendor": vendor_data, "parts_catalog": parts_catalog, "parts_catalog_json": json.dumps([{"id": p.id, "nags_code": str(p.nags_code).strip(), "description": str(p.description).strip(), "cost": float(p.cost or 0)} for p in parts_catalog])}
     )
 
 # ============================================================
@@ -55,16 +56,33 @@ async def save_purchase_order_draft(request: Request, db: Session = Depends(get_
                 content={"message": "Duplicate part numbers are not allowed."}
             )
 
+        def parse_date(val):
+            if not val:
+                return None
+            try:
+                return datetime.datetime.strptime(str(val), "%Y-%m-%d").date()
+            except ValueError:
+                return None
+
+        payment_terms_val = data.get("payment_terms") or data.get("terms_days")
+        try:
+            payment_terms_val = int(payment_terms_val) if payment_terms_val is not None else None
+        except (ValueError, TypeError):
+            payment_terms_val = None
+
         # CREAR ENCABEZADO
         new_po = PurchaseOrder(
             po_number=f"PO-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
-            po_date=data.get("order_date") or datetime.date.today(),
+            po_date=parse_date(data.get("order_date")) or datetime.date.today(),
             vendor_id=data.get("vendor_id"),
             vendor_invoice_number=data.get("vendor_invoice_number", ""),
             status="DRAFT",
             shipping_handling=Decimal(str(data.get("shipping_handling", 0))),
             tax_amount=Decimal(str(data.get("tax_amount", 0))),
-            internal_notes=data.get("internal_notes", "")
+            internal_notes=data.get("internal_notes", ""),
+            expected_delivery_date=parse_date(data.get("delivery_date")),
+            payment_terms=payment_terms_val,
+            payment_due_date=parse_date(data.get("payment_due_date"))
         )
         db.add(new_po)
         db.flush()
@@ -130,7 +148,7 @@ def edit_purchase_order_view(request: Request, po_id: int, db: Session = Depends
 
     po.details.sort(key=lambda d: (d.part_number or "").lower())
     vendor = db.query(Vendor).filter(Vendor.id == po.vendor_id).first()
-    parts_catalog = db.query(InventoryPart).filter(InventoryPart.is_active == True).all()
+    parts_catalog = db.query(WindshieldCatalog).all()
 
     return templates.TemplateResponse(
         request=request,

@@ -21,6 +21,7 @@ class PurchaseOrder(Base):
     
     payment_terms = Column(Integer, nullable=True)
     payment_type = Column(String(30), nullable=True)
+    payment_due_date = Column(Date, nullable=True)
     vendor_invoice_number = Column(String(50), nullable=True)
     
     shipping_handling = Column(Numeric(12, 2), default=0.00, nullable=True)
