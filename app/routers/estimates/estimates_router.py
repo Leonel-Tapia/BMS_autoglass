@@ -162,6 +162,7 @@ def edit_estimate_view(
     request: Request, 
     origin: Optional[str] = None,
     selected_date: Optional[str] = None,
+    next: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     estimate = db.query(Estimate).filter(Estimate.id == estimate_id).first()
@@ -175,6 +176,9 @@ def edit_estimate_view(
     times = db.query(TimeCatalog).order_by(TimeCatalog.time_value.asc()).all()
     company = db.query(Company).first()
 
+    # Capturar de donde viene el usuario (Referer o parametro next)
+    referer = next or request.headers.get("referer")
+
     return templates.TemplateResponse(
         request=request,
         name="estimates/estimates_editar.html",
@@ -186,7 +190,8 @@ def edit_estimate_view(
             "times": times,
             "company": company,
             "origin": origin,
-            "selected_date": selected_date
+            "selected_date": selected_date,
+        "next": referer or ""
         }
     )
 
@@ -338,10 +343,16 @@ def save_estimate(
     
     db.commit()
 
-    resolved_origin = origin or request.query_params.get("origin")
-    origin_param = f"?origin={resolved_origin}" if resolved_origin else ""
+    resolved_origin = origin or (request.query_params.get('origin') if request else None)
     
-    return RedirectResponse(url=f"/estimates/after_save/{target_id}{origin_param}", status_code=303)
+    if next and next != 'None' and next != '':
+        url = next
+    elif resolved_origin == 'call_center' and selected_date and selected_date != 'None':
+        url = '/call_center/daily_estimates?date=' + selected_date
+    else:
+        url = '/call_center/lookup/' + str(customer_id_int)
+    
+    return RedirectResponse(url=url, status_code=303)
 
 
 # ============================================================
@@ -353,6 +364,7 @@ def update_estimate(
     request: Request = None,
     origin: Optional[str] = Form(None),
     selected_date: Optional[str] = Form(None),
+    next: Optional[str] = Form(None),
     customer_id: str = Form(...),
     service_type: str = Form("Mobile"),
     vehicle_year_id: str = Form(""),
@@ -459,7 +471,13 @@ def update_estimate(
     resolved_origin = origin or (request.query_params.get("origin") if request else None)
     origin_param = f"?origin={resolved_origin}" if resolved_origin else ""
     
-    return RedirectResponse(url=f"/estimates/after_save/{target_id}{origin_param}", status_code=303)
+    if next and next != 'None' and next != '':
+        final_url = next
+    elif origin == 'call_center' and selected_date and selected_date != 'None':
+        final_url = f"/call_center/daily_estimates?date={selected_date}"
+    else:
+        final_url = f"/call_center/lookup/{customer_id_int}"
+    return RedirectResponse(url=final_url, status_code=303)
 
 
 # ============================================================

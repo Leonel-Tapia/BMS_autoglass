@@ -200,10 +200,10 @@
                         </div>
                     </div>
 
-                    <input type="date" id="appointment-date" name="estimated_appointment_date"
-                           class="form-control form-control-sm border-warning" style="height:26px; background-color: #fffbeb;"
-                           value="{{ estimate.estimated_appointment_date or '' }}"
-                           onchange="updateDayName(); validateMainFields();">
+                    <input type="hidden" id="appointment-date-hidden" name="estimated_appointment_date" value="{{ estimate.estimated_appointment_date or '' }}">
+                    <input type="text" id="appointment-date" readonly
+                           class="form-control form-control-sm border-warning" style="height:26px; background-color: #fffbeb; cursor: pointer;"
+                           placeholder="Click to select date...">
                     
                     <label class="mb-0 mt-1">Time</label>
 
@@ -488,8 +488,12 @@ document.addEventListener("input", function(e) {
         if (partsMap && partsMap[nags]) {
             const part = partsMap[nags];
             row.querySelector('input[name="description[]"]').value = part.description || "";
-            row.querySelector('input[name="cost[]"]').value = part.cost || 0;
+            const costInput = row.querySelector('input[name="cost[]"]');
+            costInput.value = part.cost || 0;
             row.querySelector('input[name="price[]"]').value = part.price || 0;
+            
+            costInput.focus();
+            costInput.select();
             recalculateTax(row.querySelector('input[name="price[]"]'));
             updateTotals();
             validateMainFields();
@@ -671,8 +675,8 @@ document.getElementById('make-input').addEventListener('change', function() {
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-            <div style="font-size: 1rem;" class="text-muted">
-                Selected: <span id="modal-selected-preview" class="fw-bold text-dark">None</span>
+            <div style="font-size: 1.1rem;" class="text-muted">
+                Selected: <span id="modal-selected-preview" class="fw-bolder text-dark" style="font-size: 1.1rem; letter-spacing: 0.5px;">None</span>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button type="button" onclick="closeAppointmentModalCancel()" class="btn btn-secondary btn-sm px-3">Cancel</button>
@@ -689,7 +693,7 @@ let tempSelectedTime = "";
 let tempSelectedServiceType = "";
 
 function updateDayName() {
-    const input = document.getElementById("appointment-date");
+    const input = document.getElementById("appointment-date-hidden");
     const span = document.getElementById("day-of-week");
     if (!input.value) { span.textContent = ""; return; }
     const date = new Date(input.value + "T00:00:00");
@@ -714,7 +718,7 @@ const timeCatalog = [
 ];
 
 function openAppointmentModal(date) {
-    const mainDate = document.getElementById("appointment-date").value;
+    const mainDate = document.getElementById("appointment-date-hidden").value;
     tempSelectedDate = date || mainDate || new Date().toISOString().split('T')[0];
     tempSelectedTime = document.getElementById("time-hidden").value;
     tempSelectedServiceType = document.getElementById("service_type").value;
@@ -723,8 +727,11 @@ function openAppointmentModal(date) {
     updateModalDayName();
 
     const currentDisplayTime = document.getElementById("time-display").value;
+    let displayDate = tempSelectedDate;
+    const p = tempSelectedDate.split('-');
+    if(p.length === 3) displayDate = p[1] + "-" + p[2] + "-" + p[0];
     if (currentDisplayTime) {
-        document.getElementById("modal-selected-preview").innerText = `${tempSelectedDate} @ ${currentDisplayTime} (${tempSelectedServiceType || 'NONE'})`;
+        document.getElementById("modal-selected-preview").innerText = `${displayDate} @ ${currentDisplayTime} (${tempSelectedServiceType || 'NONE'})`;
     } else {
         document.getElementById("modal-selected-preview").innerText = "None selected";
     }
@@ -816,7 +823,10 @@ function tempSelectTime(date, time, serviceType, display) {
     tempSelectedDate = date;
     tempSelectedTime = time;
     tempSelectedServiceType = serviceType;
-    document.getElementById("modal-selected-preview").innerText = `${date} @ ${display} (${serviceType})`;
+    let displayDate2 = date;
+    const p2 = date.split('-');
+    if(p2.length === 3) displayDate2 = p2[1] + "-" + p2[2] + "-" + p2[0];
+    document.getElementById("modal-selected-preview").innerText = `${displayDate2} @ ${display} (${serviceType})`;
 }
 
 function closeAppointmentModalSubmit() {
@@ -824,7 +834,13 @@ function closeAppointmentModalSubmit() {
         alert("Please select an available time slot first.");
         return;
     }
-    document.getElementById("appointment-date").value = tempSelectedDate;
+    document.getElementById("appointment-date-hidden").value = tempSelectedDate;
+    if (tempSelectedDate) {
+        const parts = tempSelectedDate.split('-');
+        if(parts.length === 3) {
+            document.getElementById("appointment-date").value = parts[1] + "-" + parts[2] + "-" + parts[0];
+        }
+    }
     updateDayName();
     document.getElementById("time-hidden").value = tempSelectedTime;
     document.getElementById("time-display").value = convertToDisplay(tempSelectedTime);
@@ -867,13 +883,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 document.getElementById("appointment-date").addEventListener("click", function() {
-    const date = this.value;
-    if (date) {
-        updateDayName();
-        openAppointmentModal(date);
-    } else {
-        openAppointmentModal();
-    }
+    openAppointmentModal(document.getElementById("appointment-date-hidden").value);
 });
 </script>
 
@@ -882,6 +892,15 @@ document.addEventListener("DOMContentLoaded", function() {
     const now = new Date();
     const formatted = (now.getMonth() + 1).toString().padStart(2, '0') + "/" + now.getDate().toString().padStart(2, '0') + "/" + now.getFullYear();
     document.getElementById("current-date").textContent = formatted;
+    
+    const hiddenDate = document.getElementById("appointment-date-hidden").value;
+    if (hiddenDate) {
+        const parts = hiddenDate.split('-');
+        if(parts.length === 3) {
+            document.getElementById("appointment-date").value = parts[1] + "-" + parts[2] + "-" + parts[0];
+        }
+    }
+
     updateDayName();
     updateTotals();
     validateMainFields();
@@ -895,7 +914,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <script>
 function validateMainFields() {
-    const fields = ["vehicle_year_id", "make-input", "model-input", "appointment-date", "time-hidden", "service_type"];
+    const fields = ["vehicle_year_id", "make-input", "model-input", "appointment-date-hidden", "time-hidden", "service_type"];
     const incomplete = fields.some(id => {
         const el = document.getElementById(id);
         return !el || !el.value.trim();
