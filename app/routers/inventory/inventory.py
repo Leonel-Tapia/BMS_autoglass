@@ -6,12 +6,16 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from app.models.purchases.purchase_model import PurchaseOrderDetail
+from app.models.invoices.invoice_model import InvoiceItem
 from decimal import Decimal
 from typing import Optional
 
 # Importamos la base de datos y el modelo
 from app.database.database import get_db
 from app.models.inventory.inventory import InventoryPart
+from app.models.inventory.windshield_catalog_model import WindshieldCatalog
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 templates = Jinja2Templates(directory="app/templates")
@@ -114,4 +118,47 @@ async def update_inventory_part(old_sku: str, request: Request, db: Session = De
 
 @router.get("/list")
 async def list_parts(db: Session = Depends(get_db)):
-    return db.query(InventoryPart).order_by(InventoryPart.part_number.asc()).all()
+    # Subconsultas para entradas (Compras) y salidas (Facturas)
+    entradas_subq = db.query(
+        PurchaseOrderDetail.part_number,
+        func.sum(PurchaseOrderDetail.quantity_ordered).label('total_in')
+    ).group_by(PurchaseOrderDetail.part_number).subquery()
+
+    salidas_subq = db.query(
+        InvoiceItem.part_number,
+        func.sum(InvoiceItem.quantity).label('total_out')
+    ).group_by(InvoiceItem.part_number).subquery()
+
+    # Consulta principal cruzando WindshieldCatalog con movimientos
+    query = db.query(
+        WindshieldCatalog,
+        func.coalesce(entradas_subq.c.total_in, 0).label('total_in'),
+        func.coalesce(salidas_subq.c.total_out, 0).label('total_out')
+    ).outerjoin(
+        entradas_subq, WindshieldCatalog.nags_code == entradas_subq.c.part_number
+    ).outerjoin(
+        salidas_subq, WindshieldCatalog.nags_code == salidas_subq.c.part_number
+    ).order_by(WindshieldCatalog.nags_code.asc())
+
+    result = []
+    for catalog_item, total_in, total_out in query.all():
+        total_in = float(total_in)
+        total_out = float(total_out)
+        stock = total_in - total_out
+
+        # L?gica: Mostrar si stock > 0 o si hubo movimientos (entradas/salidas)
+        if stock > 0 or total_in > 0 or total_out > 0:
+            result.append({
+                "id": catalog_item.id,
+                "sku": catalog_item.nags_code,
+                "part_number": catalog_item.nags_code,
+                "part_name": catalog_item.description,
+                "description": catalog_item.description,
+                "quantity_on_hand": int(stock),
+                "minimum_quantity": 0,
+                "unit_cost": float(catalog_item.cost) if catalog_item.cost else 0.00,
+                "unit_sale": float(catalog_item.price) if catalog_item.price else 0.00,
+                "total_cost": float(stock * catalog_item.cost) if catalog_item.cost else 0.00,
+                "is_active": True
+            })
+    return result

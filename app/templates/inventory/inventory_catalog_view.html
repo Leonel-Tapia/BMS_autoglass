@@ -217,12 +217,9 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 18%;">Part Number</th>
-                <th style="width: 35%;">Name</th>
-                <th style="width: 10%; text-align:center;">Stock</th>
-                <th style="width: 10%; text-align:right;">Cost</th>
-                <th style="width: 10%; text-align:right;">Price</th>
-                <th style="width: 12%; text-align:right;">Total</th>
+                <th style="width: 25%;">Part Number</th>
+                <th style="width: 45%;">Name</th>
+                <th style="width: 15%; text-align:center;">Stock</th>
                 <th style="width: 10%; text-align:center;">Status</th>
                 <th style="width: 5%; text-align:center;"></th>
             </tr>
@@ -268,9 +265,6 @@
                 <td class="col-part-number">${part.part_number || part.sku}</td>
                 <td>${part.part_name}</td>
                 <td class="col-stock">${part.quantity_on_hand}</td>
-                <td class="col-money">$${parseFloat(part.unit_cost).toFixed(2)}</td>
-                <td class="col-money">$${parseFloat(part.unit_sale).toFixed(2)}</td>
-                <td class="col-money">$${parseFloat(part.total_cost || 0).toFixed(2)}</td>
                 <td style="text-align:center;">
                     <span class="status-pill ${part.is_active ? 'status-active' : 'status-inactive'}">
                         ${part.is_active ? 'ACTIVE' : 'INACTIVE'}
