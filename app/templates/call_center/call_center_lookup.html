@@ -145,7 +145,7 @@
                 {% for estimate, year in estimates %}
                 <tr {% if estimate.status == 'Void' %}style="background-color: #f8d7da; color: #721c24;"{% endif %}>
                     <td>{{ estimate.estimated_appointment_date }}</td>
-                    <td><a href="/estimates/edit/{{ estimate.id }}?origin={{ estimate_origin }}">{{ estimate.id }}</a></td>
+                    <td><a href="/estimates/edit/{{ estimate.id }}?origin={{ estimate_origin }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Edit Estimate">✏️ {{ estimate.id }}</a></td>
                     <td>
                         {% if estimate.invoice_number %}
                             INV-{{ estimate.invoice_number }}

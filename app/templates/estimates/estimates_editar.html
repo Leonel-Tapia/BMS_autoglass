@@ -358,12 +358,7 @@
                 </div>
 
                 <div class="d-flex align-items-center" style="gap: 10px;">
-                    {% if request.query_params.get('origin') == 'call_center' %}
-                        <a href="/call_center/daily_estimates?date={{ request.query_params.get('selected_date') }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
-                    {% else %}
-                        <a href="/call_center/lookup/{{ customer.id }}?next={{ next }}" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
-
-                    {% endif %}
+                    <a href="javascript:history.back()" class="btn btn-secondary btn-sm py-1 px-3">Cancel</a>
 
                     <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm py-1 px-4" id="save-btn">
                         Update Changes

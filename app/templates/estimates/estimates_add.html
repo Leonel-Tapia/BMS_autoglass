@@ -341,18 +341,7 @@
                 </div>
 
                 <div class="d-flex align-items-center" style="gap: 15px;">
-                    {% set cancel_url = request.query_params.get('next') or '/customers/list' %}
-                    {% if not request.query_params.get('next') %}
-                        {% if origin == 'call_center' %}
-                            {% set cancel_url = '/call_center/search' %}
-                        {% elif origin == 'manager' %}
-                            {% set cancel_url = '/manager/dashboard' %}
-                        {% elif origin == 'technician' %}
-                            {% set cancel_url = '/technician/dashboard' %}
-                        {% endif %}
-                    {% endif %}
-
-                    <a href="{{ cancel_url }}" class="btn btn-secondary btn-sm">Cancel</a>
+                    <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Cancel</a>
 
                     <button type="submit" class="btn btn-success btn-sm px-4" id="save-btn">
                         Save
